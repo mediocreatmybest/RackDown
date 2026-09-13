@@ -1,0 +1,223 @@
+<svg id="rackdown-1ex9yw3-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 1171.45" data-external-placement="bottom" data-connection-routing="direct" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1ex9yw3-title" aria-describedby="rackdown-1ex9yw3-desc">
+  <title id="rackdown-1ex9yw3-title">Home Lab rack diagram</title>
+  <desc id="rackdown-1ex9yw3-desc">1 rack, 7 devices, 7 connections.</desc>
+  <style>
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
+  .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
+  .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
+  .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
+  .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+  .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
+  .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
+  .rackdown-device-label { font-size: var(--rackdown-label-size, 12px); font-weight: 600; }
+  .rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #64748b); font-weight: 500; }
+  .rackdown-device-label-compact { font-size: var(--rackdown-label-size, 9px); }
+  .rackdown-connection { fill: none; vector-effect: non-scaling-stroke; }
+  :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
+  :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
+  .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+  .rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
+  .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
+  @media (prefers-color-scheme: dark) {
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+  .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
+  .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
+  .rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
+  .rackdown-blank { fill: var(--rackdown-blank-fill, #475569); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+  .rackdown-shelf { fill: var(--rackdown-shelf-fill, #293548); stroke: var(--rackdown-shelf-stroke, #94a3b8); }
+  .rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #cbd5e1); }
+  :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }
+  .rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }
+  }
+  </style>
+  <g id="rackdown-1ex9yw3-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
+    <rect class="rackdown-rack" x="0" y="0" width="482.6" height="1066.8" />
+    <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">Home Lab · Front</text>
+    <text class="rackdown-u-label" data-u="24" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
+    <line class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45" />
+    <text class="rackdown-u-label" data-u="23" x="-3.5" y="66.675" text-anchor="end" dominant-baseline="middle">23</text>
+    <line class="rackdown-u-line" x1="0" y1="88.9" x2="482.6" y2="88.9" />
+    <text class="rackdown-u-label" data-u="22" x="-3.5" y="111.125" text-anchor="end" dominant-baseline="middle">22</text>
+    <line class="rackdown-u-line" x1="0" y1="133.35" x2="482.6" y2="133.35" />
+    <text class="rackdown-u-label" data-u="21" x="-3.5" y="155.575" text-anchor="end" dominant-baseline="middle">21</text>
+    <line class="rackdown-u-line" x1="0" y1="177.8" x2="482.6" y2="177.8" />
+    <text class="rackdown-u-label" data-u="20" x="-3.5" y="200.025" text-anchor="end" dominant-baseline="middle">20</text>
+    <line class="rackdown-u-line" x1="0" y1="222.25" x2="482.6" y2="222.25" />
+    <text class="rackdown-u-label" data-u="19" x="-3.5" y="244.475" text-anchor="end" dominant-baseline="middle">19</text>
+    <line class="rackdown-u-line" x1="0" y1="266.7" x2="482.6" y2="266.7" />
+    <text class="rackdown-u-label" data-u="18" x="-3.5" y="288.925" text-anchor="end" dominant-baseline="middle">18</text>
+    <line class="rackdown-u-line" x1="0" y1="311.15" x2="482.6" y2="311.15" />
+    <text class="rackdown-u-label" data-u="17" x="-3.5" y="333.375" text-anchor="end" dominant-baseline="middle">17</text>
+    <line class="rackdown-u-line" x1="0" y1="355.6" x2="482.6" y2="355.6" />
+    <text class="rackdown-u-label" data-u="16" x="-3.5" y="377.825" text-anchor="end" dominant-baseline="middle">16</text>
+    <line class="rackdown-u-line" x1="0" y1="400.05" x2="482.6" y2="400.05" />
+    <text class="rackdown-u-label" data-u="15" x="-3.5" y="422.275" text-anchor="end" dominant-baseline="middle">15</text>
+    <line class="rackdown-u-line" x1="0" y1="444.5" x2="482.6" y2="444.5" />
+    <text class="rackdown-u-label" data-u="14" x="-3.5" y="466.725" text-anchor="end" dominant-baseline="middle">14</text>
+    <line class="rackdown-u-line" x1="0" y1="488.95" x2="482.6" y2="488.95" />
+    <text class="rackdown-u-label" data-u="13" x="-3.5" y="511.175" text-anchor="end" dominant-baseline="middle">13</text>
+    <line class="rackdown-u-line" x1="0" y1="533.4" x2="482.6" y2="533.4" />
+    <text class="rackdown-u-label" data-u="12" x="-3.5" y="555.625" text-anchor="end" dominant-baseline="middle">12</text>
+    <line class="rackdown-u-line" x1="0" y1="577.85" x2="482.6" y2="577.85" />
+    <text class="rackdown-u-label" data-u="11" x="-3.5" y="600.075" text-anchor="end" dominant-baseline="middle">11</text>
+    <line class="rackdown-u-line" x1="0" y1="622.3" x2="482.6" y2="622.3" />
+    <text class="rackdown-u-label" data-u="10" x="-3.5" y="644.525" text-anchor="end" dominant-baseline="middle">10</text>
+    <line class="rackdown-u-line" x1="0" y1="666.75" x2="482.6" y2="666.75" />
+    <text class="rackdown-u-label" data-u="9" x="-3.5" y="688.975" text-anchor="end" dominant-baseline="middle">9</text>
+    <line class="rackdown-u-line" x1="0" y1="711.2" x2="482.6" y2="711.2" />
+    <text class="rackdown-u-label" data-u="8" x="-3.5" y="733.425" text-anchor="end" dominant-baseline="middle">8</text>
+    <line class="rackdown-u-line" x1="0" y1="755.65" x2="482.6" y2="755.65" />
+    <text class="rackdown-u-label" data-u="7" x="-3.5" y="777.875" text-anchor="end" dominant-baseline="middle">7</text>
+    <line class="rackdown-u-line" x1="0" y1="800.1" x2="482.6" y2="800.1" />
+    <text class="rackdown-u-label" data-u="6" x="-3.5" y="822.325" text-anchor="end" dominant-baseline="middle">6</text>
+    <line class="rackdown-u-line" x1="0" y1="844.55" x2="482.6" y2="844.55" />
+    <text class="rackdown-u-label" data-u="5" x="-3.5" y="866.775" text-anchor="end" dominant-baseline="middle">5</text>
+    <line class="rackdown-u-line" x1="0" y1="889" x2="482.6" y2="889" />
+    <text class="rackdown-u-label" data-u="4" x="-3.5" y="911.225" text-anchor="end" dominant-baseline="middle">4</text>
+    <line class="rackdown-u-line" x1="0" y1="933.45" x2="482.6" y2="933.45" />
+    <text class="rackdown-u-label" data-u="3" x="-3.5" y="955.675" text-anchor="end" dominant-baseline="middle">3</text>
+    <line class="rackdown-u-line" x1="0" y1="977.9" x2="482.6" y2="977.9" />
+    <text class="rackdown-u-label" data-u="2" x="-3.5" y="1000.125" text-anchor="end" dominant-baseline="middle">2</text>
+    <line class="rackdown-u-line" x1="0" y1="1022.35" x2="482.6" y2="1022.35" />
+    <text class="rackdown-u-label" data-u="1" x="-3.5" y="1044.575" text-anchor="end" dominant-baseline="middle">1</text>
+  </g>
+  <g id="rackdown-1ex9yw3-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
+    <rect class="rackdown-rack" x="508" y="0" width="482.6" height="1066.8" />
+    <text class="rackdown-rack-title" x="749.3" y="-7.5" text-anchor="middle">Home Lab · Rear</text>
+    <text class="rackdown-u-label" data-u="24" x="504.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
+    <line class="rackdown-u-line" x1="508" y1="44.45" x2="990.6" y2="44.45" />
+    <text class="rackdown-u-label" data-u="23" x="504.5" y="66.675" text-anchor="end" dominant-baseline="middle">23</text>
+    <line class="rackdown-u-line" x1="508" y1="88.9" x2="990.6" y2="88.9" />
+    <text class="rackdown-u-label" data-u="22" x="504.5" y="111.125" text-anchor="end" dominant-baseline="middle">22</text>
+    <line class="rackdown-u-line" x1="508" y1="133.35" x2="990.6" y2="133.35" />
+    <text class="rackdown-u-label" data-u="21" x="504.5" y="155.575" text-anchor="end" dominant-baseline="middle">21</text>
+    <line class="rackdown-u-line" x1="508" y1="177.8" x2="990.6" y2="177.8" />
+    <text class="rackdown-u-label" data-u="20" x="504.5" y="200.025" text-anchor="end" dominant-baseline="middle">20</text>
+    <line class="rackdown-u-line" x1="508" y1="222.25" x2="990.6" y2="222.25" />
+    <text class="rackdown-u-label" data-u="19" x="504.5" y="244.475" text-anchor="end" dominant-baseline="middle">19</text>
+    <line class="rackdown-u-line" x1="508" y1="266.7" x2="990.6" y2="266.7" />
+    <text class="rackdown-u-label" data-u="18" x="504.5" y="288.925" text-anchor="end" dominant-baseline="middle">18</text>
+    <line class="rackdown-u-line" x1="508" y1="311.15" x2="990.6" y2="311.15" />
+    <text class="rackdown-u-label" data-u="17" x="504.5" y="333.375" text-anchor="end" dominant-baseline="middle">17</text>
+    <line class="rackdown-u-line" x1="508" y1="355.6" x2="990.6" y2="355.6" />
+    <text class="rackdown-u-label" data-u="16" x="504.5" y="377.825" text-anchor="end" dominant-baseline="middle">16</text>
+    <line class="rackdown-u-line" x1="508" y1="400.05" x2="990.6" y2="400.05" />
+    <text class="rackdown-u-label" data-u="15" x="504.5" y="422.275" text-anchor="end" dominant-baseline="middle">15</text>
+    <line class="rackdown-u-line" x1="508" y1="444.5" x2="990.6" y2="444.5" />
+    <text class="rackdown-u-label" data-u="14" x="504.5" y="466.725" text-anchor="end" dominant-baseline="middle">14</text>
+    <line class="rackdown-u-line" x1="508" y1="488.95" x2="990.6" y2="488.95" />
+    <text class="rackdown-u-label" data-u="13" x="504.5" y="511.175" text-anchor="end" dominant-baseline="middle">13</text>
+    <line class="rackdown-u-line" x1="508" y1="533.4" x2="990.6" y2="533.4" />
+    <text class="rackdown-u-label" data-u="12" x="504.5" y="555.625" text-anchor="end" dominant-baseline="middle">12</text>
+    <line class="rackdown-u-line" x1="508" y1="577.85" x2="990.6" y2="577.85" />
+    <text class="rackdown-u-label" data-u="11" x="504.5" y="600.075" text-anchor="end" dominant-baseline="middle">11</text>
+    <line class="rackdown-u-line" x1="508" y1="622.3" x2="990.6" y2="622.3" />
+    <text class="rackdown-u-label" data-u="10" x="504.5" y="644.525" text-anchor="end" dominant-baseline="middle">10</text>
+    <line class="rackdown-u-line" x1="508" y1="666.75" x2="990.6" y2="666.75" />
+    <text class="rackdown-u-label" data-u="9" x="504.5" y="688.975" text-anchor="end" dominant-baseline="middle">9</text>
+    <line class="rackdown-u-line" x1="508" y1="711.2" x2="990.6" y2="711.2" />
+    <text class="rackdown-u-label" data-u="8" x="504.5" y="733.425" text-anchor="end" dominant-baseline="middle">8</text>
+    <line class="rackdown-u-line" x1="508" y1="755.65" x2="990.6" y2="755.65" />
+    <text class="rackdown-u-label" data-u="7" x="504.5" y="777.875" text-anchor="end" dominant-baseline="middle">7</text>
+    <line class="rackdown-u-line" x1="508" y1="800.1" x2="990.6" y2="800.1" />
+    <text class="rackdown-u-label" data-u="6" x="504.5" y="822.325" text-anchor="end" dominant-baseline="middle">6</text>
+    <line class="rackdown-u-line" x1="508" y1="844.55" x2="990.6" y2="844.55" />
+    <text class="rackdown-u-label" data-u="5" x="504.5" y="866.775" text-anchor="end" dominant-baseline="middle">5</text>
+    <line class="rackdown-u-line" x1="508" y1="889" x2="990.6" y2="889" />
+    <text class="rackdown-u-label" data-u="4" x="504.5" y="911.225" text-anchor="end" dominant-baseline="middle">4</text>
+    <line class="rackdown-u-line" x1="508" y1="933.45" x2="990.6" y2="933.45" />
+    <text class="rackdown-u-label" data-u="3" x="504.5" y="955.675" text-anchor="end" dominant-baseline="middle">3</text>
+    <line class="rackdown-u-line" x1="508" y1="977.9" x2="990.6" y2="977.9" />
+    <text class="rackdown-u-label" data-u="2" x="504.5" y="1000.125" text-anchor="end" dominant-baseline="middle">2</text>
+    <line class="rackdown-u-line" x1="508" y1="1022.35" x2="990.6" y2="1022.35" />
+    <text class="rackdown-u-label" data-u="1" x="504.5" y="1044.575" text-anchor="end" dominant-baseline="middle">1</text>
+  </g>
+  <line id="rackdown-1ex9yw3-connection-1" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-12" data-routing="direct" data-media="fibre" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#56b4e9" x1="482.6" y1="377.825" x2="482.6" y2="288.925">
+    <title>core:SFP+ 25 → gw:port.11 (fibre)</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-2" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-13" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#0072b2" x1="482.6" y1="377.825" x2="482.6" y2="622.3">
+    <title>core:Port 1 → server-a:iDRAC9</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-3" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-14" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" x1="482.6" y1="377.825" x2="482.6" y2="711.2">
+    <title>core:Port 2 → server-b:iDRAC9</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" x1="482.6" y1="377.825" x2="482.6" y2="622.3">
+    <title>core:Port 3 → server-a:Expansion NIC 1</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="direct" data-media="fibre" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" x1="482.6" y1="377.825" x2="482.6" y2="466.725">
+    <title>core:SFP+ 26 → fibre:1 (fibre)</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" x1="482.6" y1="466.725" x2="495.3" y2="1079.5">
+    <title>fibre:12 → Remote Rack</title>
+  </line>
+  <line id="rackdown-1ex9yw3-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" x1="482.6" y1="288.925" x2="415.1" y2="1079.5">
+    <title>gw:port.9 → ISP Handover</title>
+  </line>
+  <g id="rackdown-1ex9yw3-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="ubiquiti-unifi-dream-machine-pro" data-position-u="18" data-u-height="1" data-mount-face="front" data-alias="gw">
+    <clipPath id="rackdown-1ex9yw3-device-1-clip">
+      <rect x="0" y="266.7" width="482.6" height="44.45" />
+    </clipPath>
+    <title>Gateway</title>
+    <rect class="rackdown-device" x="0" y="266.7" width="482.6" height="44.45" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-1-clip)" x="241.3" y="288.925" text-anchor="middle" dominant-baseline="middle">Gateway</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="ubiquiti-unifi-switch-pro-hd-24-poe" data-position-u="16" data-u-height="1" data-mount-face="front" data-alias="core">
+    <clipPath id="rackdown-1ex9yw3-device-2-clip">
+      <rect x="0" y="355.6" width="482.6" height="44.45" />
+    </clipPath>
+    <title>Core Switch</title>
+    <rect class="rackdown-device" x="0" y="355.6" width="482.6" height="44.45" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-2-clip)" x="241.3" y="377.825" text-anchor="middle" dominant-baseline="middle">Core Switch</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="patch" data-position-u="14" data-u-height="1" data-mount-face="front" data-alias="fibre">
+    <clipPath id="rackdown-1ex9yw3-device-3-clip">
+      <rect x="0" y="444.5" width="482.6" height="44.45" />
+    </clipPath>
+    <title>Fibre Patch</title>
+    <rect class="rackdown-device" x="0" y="444.5" width="482.6" height="44.45" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-3-clip)" x="241.3" y="466.725" text-anchor="middle" dominant-baseline="middle">Fibre Patch</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="dell-poweredge-r740" data-position-u="10" data-u-height="2" data-mount-face="front" data-alias="server-a">
+    <clipPath id="rackdown-1ex9yw3-device-4-clip">
+      <rect x="0" y="577.85" width="482.6" height="88.9" />
+    </clipPath>
+    <title>Server A</title>
+    <rect class="rackdown-device" x="0" y="577.85" width="482.6" height="88.9" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-4-clip)" x="241.3" y="622.3" text-anchor="middle" dominant-baseline="middle">Server A</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-5" class="rackdown-device-group rackdown-device-front" data-device-id="device-8" data-device-type="dell-poweredge-r740" data-position-u="8" data-u-height="2" data-mount-face="front" data-alias="server-b">
+    <clipPath id="rackdown-1ex9yw3-device-5-clip">
+      <rect x="0" y="666.75" width="482.6" height="88.9" />
+    </clipPath>
+    <title>Server B</title>
+    <rect class="rackdown-device" x="0" y="666.75" width="482.6" height="88.9" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-5-clip)" x="241.3" y="711.2" text-anchor="middle" dominant-baseline="middle">Server B</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="4" data-u-height="1" data-mount-face="rear" data-alias="power">
+    <clipPath id="rackdown-1ex9yw3-device-6-clip">
+      <rect x="508" y="889" width="482.6" height="44.45" />
+    </clipPath>
+    <title>Power</title>
+    <rect class="rackdown-device" x="508" y="889" width="482.6" height="44.45" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-6-clip)" x="749.3" y="911.225" text-anchor="middle" dominant-baseline="middle">Power</text>
+  </g>
+  <g id="rackdown-1ex9yw3-device-7" class="rackdown-device-group rackdown-blank-group rackdown-device-front" data-device-id="device-10" data-device-type="blank" data-position-u="1" data-u-height="1" data-mount-face="front" data-item-role="blank">
+    <clipPath id="rackdown-1ex9yw3-device-7-clip">
+      <rect x="0" y="1022.35" width="482.6" height="44.45" />
+    </clipPath>
+    <title>blank</title>
+    <rect class="rackdown-device rackdown-blank" x="0" y="1022.35" width="482.6" height="44.45" />
+  </g>
+  <g id="rackdown-1ex9yw3-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Remote Rack" data-link-style="wiki" data-placement="bottom" data-target="Remote Rack">
+    <title>Remote Rack</title>
+    <rect class="rackdown-external-box" x="457.2" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
+    <text class="rackdown-external-label" x="495.3" y="1087.5" text-anchor="middle" dominant-baseline="middle">Remote Rack</text>
+  </g>
+  <g id="rackdown-1ex9yw3-external-2" class="rackdown-external-group" data-external-id="external-2" data-label="ISP Handover" data-link-style="wiki" data-placement="bottom" data-target="ISP Handover">
+    <title>ISP Handover</title>
+    <rect class="rackdown-external-box" x="377" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
+    <text class="rackdown-external-label" x="415.1" y="1087.5" text-anchor="middle" dominant-baseline="middle">ISP Handover</text>
+  </g>
+</svg>

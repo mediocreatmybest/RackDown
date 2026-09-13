@@ -1,6 +1,19 @@
 {
-  "$schema-note": "Canonical examples are every *.rackdown file in this directory; they are discovered automatically and checked/rendered by CI. The list below declares which renders are additionally committed as SVG under generatedDirectory. Add an entry here (and run pnpm examples:generate) when a curated README/example render becomes canonical.",
+  "$schema-note": "Canonical examples are every *.rackdown file in this directory; they are discovered automatically and checked/rendered by CI. The list below declares which renders are additionally committed as SVG under generatedDirectory.",
   "generatedDirectory": "generated",
   "defaultRenderOptions": ["--sizing", "responsive"],
-  "generated": []
+  "generated": [
+    {
+      "source": "home-lab.rackdown",
+      "output": "home-lab.svg"
+    },
+    {
+      "source": "routing.rackdown",
+      "output": "routing.svg"
+    },
+    {
+      "source": "shared-rows.rackdown",
+      "output": "shared-rows.svg"
+    }
+  ]
 }
