@@ -91,17 +91,18 @@ The playground should then be available at <http://127.0.0.1:4173>.
 
 ### Want To Contribute?
 
-Do you see any issues, or suggestions, maybe fixes, please open an issue or submit a pull request. See [Contributing](CONTRIBUTING.md) for contribution expectations.
-Connector routing is something that needs love and attention, so feel free to contribute improvements or suggestions.
-Do I have too much waffling here? To much text perhaps? Just imagine, you could help fix that problem! YES, YOU! See [Contributing](CONTRIBUTING.md) for more fun and excitement!
+Do you see any issues, or suggestions, maybe fixes, please open an issue or submit a pull request. 
+Connector routing is something that needs love and attention, so feel free to contribute improvements or suggestions. 
+Do I have too much waffling here? To much text perhaps? 
+Just imagine, you could help fix that problem! YES, YOU! See [Contributing](CONTRIBUTING.md) for more fun and excitement!
 
 ## Status and documentation
 
 FYI, I'm still trying to figure things out. So, no RackDown packages or releases have been created yet, but building the workspace is fairly straight forward.
 The Obsidian adapter has been tested on desktop; mobile device validation remains outstanding, and is my primary method of testing.
 
-- [Language specification](docs/specification.md)
-- [Architecture and integration](docs/architecture.md)
+- [Library specifications](docs/specification.md)
+- [Architecture and integrations](docs/architecture.md)
 - [Upstream catalogue, licences and generation](docs/upstream-catalogue.md)
 - [Why RackDown exists, and really, should it?](HISTORY.md)
 
