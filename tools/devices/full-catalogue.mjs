@@ -1,0 +1,164 @@
+import { execFileSync } from 'node:child_process';
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { dirname, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
+
+import { parse } from 'yaml';
+
+import { normalizeDevice } from './normalize.mjs';
+
+const toolDirectory = dirname(fileURLToPath(import.meta.url));
+const rackdownRoot = resolve(toolDirectory, '../..');
+export const lockPath = resolve(rackdownRoot, 'upstream/netbox.lock.json');
+export const defaultOutputPath = resolve(
+  rackdownRoot,
+  'packages/rackdown-devices/generated/catalogue-payload.b64',
+);
+
+function compareCodeUnits(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function isRecord(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function collectYamlFiles(root) {
+  const files = [];
+
+  async function visit(directory) {
+    const entries = await readdir(directory, { withFileTypes: true });
+    entries.sort((left, right) => compareCodeUnits(left.name, right.name));
+
+    for (const entry of entries) {
+      const absolute = resolve(directory, entry.name);
+      if (entry.isDirectory()) {
+        await visit(absolute);
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))
+      ) {
+        files.push(absolute);
+      }
+    }
+  }
+
+  await visit(root);
+  return files;
+}
+
+function safeRelative(root, path) {
+  const output = relative(root, path).split(sep).join('/');
+  if (output.startsWith('../') || output === '..') {
+    throw new TypeError(`Path escapes catalogue root: ${path}`);
+  }
+  return output;
+}
+
+async function readDefinitions(sourceRoot, collectionName, normalizer) {
+  const collectionRoot = resolve(sourceRoot, collectionName);
+  const rootStats = await stat(collectionRoot);
+  if (!rootStats.isDirectory()) {
+    throw new TypeError(`${collectionName} is not a directory.`);
+  }
+
+  const paths = await collectYamlFiles(collectionRoot);
+  const definitions = [];
+
+  for (const path of paths) {
+    const source = await readFile(path, 'utf8');
+    const raw = parse(source);
+    if (!isRecord(raw)) {
+      throw new TypeError(
+        `${collectionName}/${safeRelative(collectionRoot, path)} is not an object.`,
+      );
+    }
+
+    const value = normalizer ? normalizer(raw) : raw;
+    const slug = value.slug;
+    if (typeof slug !== 'string' || slug.length === 0) {
+      throw new TypeError(
+        `${collectionName}/${safeRelative(collectionRoot, path)} is missing a slug.`,
+      );
+    }
+
+    definitions.push([slug, value]);
+  }
+
+  definitions.sort(([left], [right]) => compareCodeUnits(left, right));
+  const index = {};
+  for (const [slug, value] of definitions) {
+    if (Object.hasOwn(index, slug)) {
+      throw new TypeError(`Duplicate ${collectionName} slug: ${slug}`);
+    }
+    index[slug] = value;
+  }
+
+  return index;
+}
+
+export async function generateFullCatalogue(sourceRoot, lock) {
+  sourceRoot = resolve(sourceRoot);
+  const head = execFileSync('git', ['-C', sourceRoot, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  }).trim();
+  if (head !== lock.ref) {
+    throw new TypeError(
+      `Catalogue generation requires pinned upstream ${lock.ref}, found ${head}.`,
+    );
+  }
+
+  const status = execFileSync(
+    'git',
+    [
+      '-C',
+      sourceRoot,
+      'status',
+      '--porcelain',
+      '--untracked-files=all',
+      '--ignored',
+    ],
+    { encoding: 'utf8' },
+  ).trim();
+  if (status)
+    throw new TypeError(
+      'Catalogue generation requires a clean upstream checkout (including untracked and ignored files).',
+    );
+
+  const devices = await readDefinitions(
+    sourceRoot,
+    'device-types',
+    normalizeDevice,
+  );
+  const racks = await readDefinitions(sourceRoot, 'rack-types');
+  const payload = {
+    schemaVersion: 1,
+    source: {
+      repository: lock.source,
+      ref: lock.ref,
+    },
+    scope: 'full',
+    devices,
+    racks,
+  };
+  const json = JSON.stringify(payload);
+  const compressed = gzipSync(json, { level: 9, mtime: 0 });
+  // zlib stamps the gzip header's OS byte (offset 9) with the build platform's
+  // identifier (e.g. Unix vs Windows), which otherwise makes byte-for-byte
+  // output depend on which OS ran the generator even though the content is
+  // identical. Force RFC 1952's "unknown" value so it is fixed everywhere.
+  compressed[9] = 0xff;
+  const encoded = `${compressed.toString('base64')}\n`;
+  return encoded;
+}
+
+export async function verifyFullCatalogue(sourceRoot, lock, payloadPath) {
+  const expected = await generateFullCatalogue(sourceRoot, lock);
+  const actual = await readFile(payloadPath, 'utf8');
+  if (actual !== expected) {
+    throw new Error(
+      'Full catalogue payload is stale or differs from deterministic generated bytes. Regenerate from the pinned checkout and review the diff.',
+    );
+  }
+}
