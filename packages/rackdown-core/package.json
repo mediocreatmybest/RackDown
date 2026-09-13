@@ -22,7 +22,7 @@
   "devDependencies": {
     "tsdown": "0.22.14",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "5.0.0"
   },
   "description": "Host-neutral RackDown parser, layout and SVG renderer.",
   "license": "AGPL-3.0-only",
