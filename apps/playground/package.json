@@ -1,0 +1,28 @@
+{
+  "name": "@rackdown/playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs"
+  },
+  "dependencies": {
+    "@rackdown/core": "workspace:*",
+    "@rackdown/devices": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "version": "0.1.0",
+  "description": "Browser demo of the RackDown package APIs.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mediocreatmybest/RackDown.git",
+    "directory": "apps/playground"
+  },
+  "homepage": "https://github.com/mediocreatmybest/RackDown",
+  "bugs": {
+    "url": "https://github.com/mediocreatmybest/RackDown/issues"
+  }
+}

@@ -1,0 +1,4 @@
+rack "Server Room" 12U 19in u1 bottom
+10 switch "Core" as core
+8 server "PVE01" as pve1
+core:banana -- pve1:toaster

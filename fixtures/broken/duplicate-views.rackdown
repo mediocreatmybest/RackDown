@@ -1,0 +1,4 @@
+rack "Comms Rack" 12U views front rear front
+
+12 switch "Core"
+rear 12 pdu "Rear PDU"

@@ -1,0 +1,26 @@
+// Generic devices: no catalogue required.
+// Paste this into the playground and cycle Direct -> Orthogonal -> Lanes -> Perimeter.
+
+rack "Primary Rack" 12U 19in u1 bottom views front rear
+
+12 router "Gateway" as gw
+11 switch "Core" as core
+9 2U server "PVE01" as pve1
+7 2U server "PVE02" as pve2
+5 patch "Patch A" as patch
+rear 4 pdu "PDU A" as pdu
+
+core:1 -- gw:lan
+core:2 -- pve1:nic1
+core:3 -- pve2:nic1
+core:4 -- patch:1
+core:5 -- pdu:1 power
+gw:wan -- [[ISP Handover]]
+
+rack "Garage Rack" 6U 19in u1 bottom
+
+6 switch "Garage Switch" as garage
+4 server "Garage Host" as garage-host
+
+garage:1 -- garage-host:nic1
+core:24 -- garage:24 fibre

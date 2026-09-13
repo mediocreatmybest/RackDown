@@ -1,0 +1,1165 @@
+import type { PointMm } from './layout.js';
+
+const RIGHT_LANE_GUTTER_MM = 6.35;
+const BOTTOM_LANE_GUTTER_MM = 6.35;
+const LANE_SPACING_MM = 4;
+const PERIMETER_GUTTER_MM = 12.7;
+const TOP_DECORATION_CLEARANCE_MM = 7.5;
+const EXIT_STUB_MM = 6.35;
+const ATTACHMENT_SPACING_MM = 2.5;
+const BEND_PENALTY_MM = 6;
+const LANE_USE_PENALTY_MM = 8;
+const SCORE_EPSILON = 0.000001;
+export const CORRIDOR_LANE_CAPACITY = 6;
+export const SHORT_HOP_THRESHOLD_MM = 88.9;
+export const LOCAL_SEAM_OFFSET_MM = 6;
+
+/**
+ * Space the router may occupy around the projected rack subject before any
+ * route is actually drawn.
+ *
+ * Capped corridors wrap through `peekLane()`'s modulo, so they never allocate
+ * past `CORRIDOR_LANE_CAPACITY - 1`. That bounds rack-side and global
+ * top/bottom corridors exactly, which lets the renderer reserve a viewport
+ * floor instead of letting an occupied outer lane change the apparent rack
+ * scale. Uncapped corridors (pair-gap, legacy lanes) can still exceed this;
+ * the renderer unions it with actual route extents so nothing is clipped.
+ *
+ * Kept here, beside the constants it derives from, so a routing-geometry
+ * change cannot silently drift away from the renderer's reserved envelope.
+ */
+export const NORMAL_ROUTING_ENVELOPE_MM: {
+  readonly topMm: number;
+  readonly rightMm: number;
+  readonly bottomMm: number;
+  readonly leftMm: number;
+} = (() => {
+  const lastLaneOffsetMm = (CORRIDOR_LANE_CAPACITY - 1) * LANE_SPACING_MM;
+  const sideMm = PERIMETER_GUTTER_MM + lastLaneOffsetMm;
+  return {
+    topMm: TOP_DECORATION_CLEARANCE_MM + sideMm,
+    rightMm: sideMm,
+    bottomMm: sideMm,
+    leftMm: sideMm,
+  };
+})();
+
+export type SvgConnectionRouting =
+  | 'direct'
+  | 'orthogonal'
+  | 'lanes'
+  | 'perimeter';
+
+export interface SlotBounds {
+  topY: number;
+  bottomY: number;
+  leftX: number;
+  rightX: number;
+}
+
+export interface RoutingEndpoint {
+  anchor: PointMm;
+  rackKey?: string | undefined;
+  slotBounds?: SlotBounds | undefined;
+}
+
+export interface RoutingObstacle {
+  rackKey: string;
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  heightMm: number;
+}
+
+/**
+ * Interior tolerance for local-route geometry, in millimetres.
+ *
+ * Matches `EDGE_EPSILON_MM` in the render-metrics harness so that a route this
+ * module admits can never be one the occlusion measure then counts.
+ */
+const LOCAL_GEOMETRY_EPSILON_MM = 0.01;
+
+/**
+ * Equality tolerance for slot intervals and horizontal slot geometry, in
+ * millimetres.
+ *
+ * Deliberately tighter than `LOCAL_GEOMETRY_EPSILON_MM` and deliberately a
+ * separate constant: this one asks "are these two shared-row slots the same
+ * row?", which ADR 0012 already guarantees exactly, while the geometry epsilon
+ * asks "is this route inside a rectangle?". Merging them would loosen one or
+ * tighten the other for no reason.
+ */
+const SLOT_EQUALITY_EPSILON_MM = 0.001;
+
+export function anchorIsOnVerticalBoundary(
+  anchorX: number,
+  slotBounds: SlotBounds,
+): boolean {
+  // Safety guard, not an equality test: it decides whether the vertical leg
+  // from this anchor rides a slot edge or cuts the device interior. It must not
+  // be looser than the interior tolerance it exists to protect.
+  return (
+    Math.abs(anchorX - slotBounds.leftX) <= LOCAL_GEOMETRY_EPSILON_MM ||
+    Math.abs(anchorX - slotBounds.rightX) <= LOCAL_GEOMETRY_EPSILON_MM
+  );
+}
+
+export function isClassHEligible(
+  from: RoutingEndpoint,
+  to: RoutingEndpoint,
+): boolean {
+  if (!from.rackKey || !to.rackKey || from.rackKey !== to.rackKey) {
+    return false;
+  }
+  if (!from.slotBounds || !to.slotBounds) {
+    return false;
+  }
+
+  const sFrom = from.slotBounds;
+  const sTo = to.slotBounds;
+  const EPSILON = SLOT_EQUALITY_EPSILON_MM;
+
+  if (
+    Math.abs(sFrom.topY - sTo.topY) > EPSILON ||
+    Math.abs(sFrom.bottomY - sTo.bottomY) > EPSILON
+  ) {
+    return false;
+  }
+
+  if (Math.abs(sFrom.leftX - sTo.leftX) < EPSILON) {
+    return false;
+  }
+
+  const nonOverlapping =
+    sFrom.rightX <= sTo.leftX + EPSILON || sTo.rightX <= sFrom.leftX + EPSILON;
+  if (!nonOverlapping) {
+    return false;
+  }
+
+  if (
+    !anchorIsOnVerticalBoundary(from.anchor.xMm, sFrom) ||
+    !anchorIsOnVerticalBoundary(to.anchor.xMm, sTo)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * True when an axis-aligned segment passes through a rectangle's interior.
+ *
+ * Contact with a rectangle *boundary* is legal and deliberately not reported:
+ * the source and destination legs of a Class H route ride the sibling slot's
+ * own vertical edge, which is the whole point of the route shape. Only
+ * penetration of the open interior counts.
+ *
+ * Both the segment and the rectangle are axis-aligned, so overlap is exactly
+ * the conjunction of the two per-axis overlaps — no clipping or sampling
+ * needed, and the segment degenerate in one axis is handled by the same test.
+ */
+function segmentEntersRectInterior(
+  a: PointMm,
+  b: PointMm,
+  rect: RoutingObstacle,
+): boolean {
+  const epsilon = LOCAL_GEOMETRY_EPSILON_MM;
+  const minX = Math.min(a.xMm, b.xMm);
+  const maxX = Math.max(a.xMm, b.xMm);
+  const minY = Math.min(a.yMm, b.yMm);
+  const maxY = Math.max(a.yMm, b.yMm);
+
+  const overlapsX =
+    maxX > rect.xMm + epsilon && minX < rect.xMm + rect.widthMm - epsilon;
+  const overlapsY =
+    maxY > rect.yMm + epsilon && minY < rect.yMm + rect.heightMm - epsilon;
+
+  return overlapsX && overlapsY;
+}
+
+/**
+ * True when no segment of a local candidate route penetrates a device interior.
+ *
+ * Checks the *whole* logical route rather than the seam scanline alone. The
+ * scanline-only predicate this replaces could not see a device that intersects
+ * one of the short vertical transition legs while leaving the seam itself
+ * clear, which a fractional-U device immediately above or below the row does.
+ */
+export function localRouteIsClear(
+  rackKey: string,
+  route: readonly PointMm[],
+  obstacles: readonly RoutingObstacle[],
+): boolean {
+  const relevant = obstacles.filter((obstacle) => obstacle.rackKey === rackKey);
+  if (relevant.length === 0) {
+    return true;
+  }
+
+  for (let index = 1; index < route.length; index += 1) {
+    const a = route[index - 1];
+    const b = route[index];
+    if (a === undefined || b === undefined) {
+      continue;
+    }
+    for (const obstacle of relevant) {
+      if (segmentEntersRectInterior(a, b, obstacle)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * True when every point of a local candidate route is inside or on the boundary
+ * of its own rack rectangle.
+ *
+ * A local route is in-rack presentation geometry, so it must never leave the
+ * rack and come back — that shape is perimeter corridor transit, which #203 R1
+ * forbids, and above a rack it would also cross the reserved title band. The
+ * rack rectangle is convex and every segment is axis-aligned, so testing the
+ * vertices is sufficient for the whole polyline.
+ */
+function routeIsWithinRack(
+  route: readonly PointMm[],
+  rack: RoutingRack,
+): boolean {
+  const epsilon = LOCAL_GEOMETRY_EPSILON_MM;
+  return route.every(
+    (point) =>
+      point.xMm >= rack.xMm - epsilon &&
+      point.xMm <= rack.xMm + rack.widthMm + epsilon &&
+      point.yMm >= rack.yMm - epsilon &&
+      point.yMm <= rack.yMm + rack.heightMm + epsilon,
+  );
+}
+
+export interface RoutingConnection {
+  id: string;
+  from: RoutingEndpoint;
+  to: RoutingEndpoint;
+}
+
+export interface RoutingRack {
+  key: string;
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  heightMm: number;
+}
+
+type HorizontalSide = 'left' | 'right';
+type PerimeterChannel = 'top' | 'bottom';
+
+export type CorridorAxis = 'x' | 'y';
+
+export type RoutingCorridorId =
+  | `rack:${string}:left`
+  | `rack:${string}:right`
+  | 'global:top'
+  | 'global:bottom'
+  | `gap:${string}`;
+
+export interface RoutingCorridor {
+  readonly id: RoutingCorridorId;
+  readonly axis: CorridorAxis;
+  readonly capacity?: number | undefined;
+  allocations: number;
+  coordinate(laneIndex: number, requestBaseMm?: number): number;
+}
+
+export interface CorridorLanePreview {
+  readonly corridor: RoutingCorridor;
+  readonly index: number;
+  readonly coordinateMm: number;
+  readonly pressure: number;
+}
+
+export function peekLane(
+  corridor: RoutingCorridor,
+  requestBaseMm?: number,
+): CorridorLanePreview {
+  const cap = corridor.capacity;
+  const index =
+    cap === undefined || corridor.allocations < cap
+      ? corridor.allocations
+      : corridor.allocations % cap;
+  return {
+    corridor,
+    index,
+    coordinateMm: corridor.coordinate(index, requestBaseMm),
+    pressure: corridor.allocations,
+  };
+}
+
+export function consumeLane(preview: CorridorLanePreview): number {
+  const index = preview.index;
+  preview.corridor.allocations += 1;
+  return index;
+}
+
+function rackCorridorId(
+  rackKey: string,
+  side: HorizontalSide,
+): RoutingCorridorId {
+  return `rack:${rackKey}:${side}`;
+}
+
+function globalCorridorId(channel: PerimeterChannel): RoutingCorridorId {
+  return channel === 'top' ? 'global:top' : 'global:bottom';
+}
+
+function gapCorridorId(pairKey: string): RoutingCorridorId {
+  return `gap:${pairKey}`;
+}
+
+interface Attachment {
+  point: PointMm;
+  stub: PointMm;
+}
+
+interface RouteCandidate {
+  route: PointMm[];
+  score: number;
+}
+
+function samePoint(left: PointMm, right: PointMm): boolean {
+  return left.xMm === right.xMm && left.yMm === right.yMm;
+}
+
+function compactRoute(points: readonly PointMm[]): PointMm[] {
+  const compacted: PointMm[] = [];
+  for (const point of points) {
+    const previous = compacted.at(-1);
+    if (!previous || !samePoint(previous, point)) {
+      compacted.push({ ...point });
+    }
+  }
+  return compacted;
+}
+
+function orthogonalRoute(from: PointMm, to: PointMm): PointMm[] {
+  if (from.xMm === to.xMm || from.yMm === to.yMm) {
+    return compactRoute([from, to]);
+  }
+
+  const middleX = (from.xMm + to.xMm) / 2;
+  return compactRoute([
+    from,
+    { xMm: middleX, yMm: from.yMm },
+    { xMm: middleX, yMm: to.yMm },
+    to,
+  ]);
+}
+
+function directRoute(from: PointMm, to: PointMm): PointMm[] {
+  return compactRoute([from, to]);
+}
+
+/**
+ * Lane offset for pair-gap attempt `index`, in millimetres.
+ *
+ * The sequence is 0, +1, -1, +2, -2, … scaled by `LANE_SPACING_MM`, so
+ * successive attempts fan outwards around the base Y they asked for rather than
+ * walking continuously in one direction. A displaced route therefore stays as
+ * close to its requested channel as the attempts so far allow, instead of the
+ * whole bundle drifting steadily away from the geometry it belongs to.
+ */
+function alternatingOffset(index: number): number {
+  if (index === 0) {
+    return 0;
+  }
+  const distance = Math.ceil(index / 2) * LANE_SPACING_MM;
+  return index % 2 === 1 ? distance : -distance;
+}
+
+function connectionPairKey(left: string, right: string): string {
+  return left < right ? `${left}|${right}` : `${right}|${left}`;
+}
+
+function visualEndpointKey(endpoint: RoutingEndpoint): string | undefined {
+  return endpoint.rackKey === undefined
+    ? undefined
+    : `${endpoint.rackKey}:${endpoint.anchor.xMm}:${endpoint.anchor.yMm}`;
+}
+
+function endpointOccurrenceKey(
+  connectionId: string,
+  endpoint: 'from' | 'to',
+): string {
+  return `${connectionId}:${endpoint}`;
+}
+
+function routeLength(points: readonly PointMm[]): number {
+  let length = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const point = points[index];
+    if (!previous || !point) {
+      continue;
+    }
+    length +=
+      Math.abs(point.xMm - previous.xMm) + Math.abs(point.yMm - previous.yMm);
+  }
+  return length;
+}
+
+function bendCount(points: readonly PointMm[]): number {
+  let bends = 0;
+  let previousDirection: 'horizontal' | 'vertical' | undefined;
+
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const point = points[index];
+    if (!previous || !point) {
+      continue;
+    }
+    const direction =
+      previous.yMm === point.yMm
+        ? 'horizontal'
+        : previous.xMm === point.xMm
+          ? 'vertical'
+          : undefined;
+    if (
+      direction !== undefined &&
+      previousDirection !== undefined &&
+      direction !== previousDirection
+    ) {
+      bends += 1;
+    }
+    if (direction !== undefined) {
+      previousDirection = direction;
+    }
+  }
+
+  return bends;
+}
+
+function routeScore(points: readonly PointMm[], laneUse = 0): number {
+  return (
+    routeLength(points) +
+    bendCount(points) * BEND_PENALTY_MM +
+    laneUse * LANE_USE_PENALTY_MM
+  );
+}
+
+function bestCandidate<T extends RouteCandidate>(candidates: readonly T[]): T {
+  const first = candidates[0];
+  if (!first) {
+    throw new Error('At least one route candidate is required.');
+  }
+
+  let best = first;
+  for (const candidate of candidates.slice(1)) {
+    if (candidate.score < best.score - SCORE_EPSILON) {
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function geometryOrderedConnections(
+  connections: readonly RoutingConnection[],
+): readonly RoutingConnection[] {
+  return connections
+    .map((connection, index) => ({
+      connection,
+      index,
+      meanY: (connection.from.anchor.yMm + connection.to.anchor.yMm) / 2,
+    }))
+    .sort((left, right) => {
+      if (left.meanY !== right.meanY) {
+        return left.meanY - right.meanY;
+      }
+      return left.index - right.index;
+    })
+    .map((entry) => entry.connection);
+}
+
+/** Outer extent of the projected rack subject, in millimetres. */
+interface RoutingSubjectBounds {
+  topY: number;
+  rightX: number;
+  bottomY: number;
+  leftX: number;
+}
+
+/**
+ * Extent of the projected rack subject, seeded at the origin rather than at the
+ * first rack.
+ *
+ * The `0` seed is load-bearing twice over, so it is not the usual "any value
+ * will do" reduce accumulator. It lets an empty rack collection return usable
+ * bounds instead of infinities, and it keeps the projected scene origin part of
+ * the routing subject: `leftX` and `topY` can never exceed 0, and `rightX` and
+ * `bottomY` can never fall below it, whatever the racks themselves do.
+ *
+ * That zero anchor matches the rack-subject basis the renderer uses when
+ * applying `NORMAL_ROUTING_ENVELOPE_MM` (#257). Seeding from the first rack
+ * instead could let the corridors these bounds place and the envelope the
+ * renderer reserves disagree when layouts no longer begin at the origin.
+ */
+function routingSubjectBounds(
+  racks: readonly RoutingRack[],
+): RoutingSubjectBounds {
+  return {
+    topY: racks.reduce(
+      (minimum, rack) =>
+        Math.min(minimum, rack.yMm - TOP_DECORATION_CLEARANCE_MM),
+      0,
+    ),
+    rightX: racks.reduce(
+      (maximum, rack) => Math.max(maximum, rack.xMm + rack.widthMm),
+      0,
+    ),
+    bottomY: racks.reduce(
+      (maximum, rack) => Math.max(maximum, rack.yMm + rack.heightMm),
+      0,
+    ),
+    leftX: racks.reduce((minimum, rack) => Math.min(minimum, rack.xMm), 0),
+  };
+}
+
+/** Side or channel an external target is routed towards. */
+type ExternalRegion = HorizontalSide | PerimeterChannel;
+
+/**
+ * Pick the side or channel an external target leaves by.
+ *
+ * Precedence is deliberate and horizontal-first: a target clearly beyond the
+ * subject on the X axis takes that side even when it also sits above or below
+ * the racks, so an annotation off to the right leaves rightwards rather than
+ * diving under the whole diagram to reach the same place.
+ *
+ * The final case is the one worth stating. A target that falls *inside* the
+ * overall subject bounds has no side of its own to claim, so it is assigned one
+ * by the horizontal midpoint of its own device's rack: left when it sits in
+ * that rack's left half, right otherwise. Splitting on the device rack rather
+ * than on the subject keeps the annotation on the side it already leans towards
+ * instead of pushing every interior target to one edge of the diagram.
+ */
+function classifyExternalRegion(
+  external: PointMm,
+  rack: RoutingRack,
+  subject: RoutingSubjectBounds,
+): ExternalRegion {
+  if (external.xMm > subject.rightX) {
+    return 'right';
+  }
+  if (external.xMm < subject.leftX) {
+    return 'left';
+  }
+  if (external.yMm > subject.bottomY) {
+    return 'bottom';
+  }
+  if (external.yMm < subject.topY) {
+    return 'top';
+  }
+  return external.xMm < rack.xMm + rack.widthMm / 2 ? 'left' : 'right';
+}
+
+/**
+ * Compute deterministic renderer-owned connection routes.
+ *
+ * `lanes` is the original small proof: same-rack connections use successive
+ * right-side lanes, while cross-rack and external routes use bottom lanes.
+ *
+ * `perimeter` treats attachment geometry as approximate presentation rather
+ * than physical port location. Shared semantic endpoints fan slightly, route
+ * candidates stay outside rack bodies where practical, and stable scoring
+ * prefers shorter paths with fewer bends and less-used perimeter corridors.
+ */
+export function routeConnections(
+  connections: readonly RoutingConnection[],
+  racks: readonly RoutingRack[],
+  mode: SvgConnectionRouting,
+  obstacles: readonly RoutingObstacle[] = [],
+): Map<string, PointMm[]> {
+  const routes = new Map<string, PointMm[]>();
+  const rackByKey = new Map(racks.map((rack) => [rack.key, rack]));
+  const rightLaneUse = new Map<string, number>();
+  const corridors = new Map<RoutingCorridorId, RoutingCorridor>();
+  const incidentTotals = new Map<string, number>();
+  const attachmentSlots = new Map<string, number>();
+  const incidentAssigned = new Map<string, number>();
+  const subject = routingSubjectBounds(racks);
+  let bottomLaneIndex = 0;
+
+  // #203 R4: perimeter allocation runs in geometry order so corridor lanes are
+  // handed out top-down regardless of source order. This orders allocator state
+  // only — emission order stays the renderer's business.
+  const allocationConnections =
+    mode === 'perimeter'
+      ? geometryOrderedConnections(connections)
+      : connections;
+
+  for (const connection of connections) {
+    for (const endpoint of [connection.from, connection.to]) {
+      const key = visualEndpointKey(endpoint);
+      if (key !== undefined) {
+        incidentTotals.set(key, (incidentTotals.get(key) ?? 0) + 1);
+      }
+    }
+  }
+
+  for (const connection of allocationConnections) {
+    for (const [name, endpoint] of [
+      ['from', connection.from] as const,
+      ['to', connection.to] as const,
+    ]) {
+      const key = visualEndpointKey(endpoint);
+      if (key === undefined) {
+        continue;
+      }
+      const slot = incidentAssigned.get(key) ?? 0;
+      incidentAssigned.set(key, slot + 1);
+      attachmentSlots.set(endpointOccurrenceKey(connection.id, name), slot);
+    }
+  }
+
+  function attachment(
+    connectionId: string,
+    endpointName: 'from' | 'to',
+    endpoint: RoutingEndpoint,
+    side: HorizontalSide,
+  ): Attachment {
+    const rack =
+      endpoint.rackKey === undefined
+        ? undefined
+        : rackByKey.get(endpoint.rackKey);
+    const key = visualEndpointKey(endpoint);
+    if (!rack || key === undefined) {
+      return {
+        point: { ...endpoint.anchor },
+        stub: { ...endpoint.anchor },
+      };
+    }
+
+    const index =
+      attachmentSlots.get(endpointOccurrenceKey(connectionId, endpointName)) ??
+      0;
+    const total = incidentTotals.get(key) ?? 1;
+    // Occurrence indexes are centred on the shared semantic endpoint. The
+    // `(total - 1) / 2` term shifts the run so the first index sits as far
+    // above the anchor as the last sits below it, which makes N incident
+    // connections fan symmetrically about the anchor instead of all drifting
+    // off it in one direction. A single connection lands exactly on it.
+    const offset = (index - (total - 1) / 2) * ATTACHMENT_SPACING_MM;
+    const point = {
+      xMm: side === 'right' ? rack.xMm + rack.widthMm : rack.xMm,
+      yMm: endpoint.anchor.yMm + offset,
+    };
+    return {
+      point,
+      stub: {
+        xMm: point.xMm + (side === 'right' ? EXIT_STUB_MM : -EXIT_STUB_MM),
+        yMm: point.yMm,
+      },
+    };
+  }
+
+  /** Both ends of one connection attached to the rack faces they leave by. */
+  function attachmentPair(
+    connection: RoutingConnection,
+    fromSide: HorizontalSide,
+    toSide: HorizontalSide,
+  ): { from: Attachment; to: Attachment } {
+    return {
+      from: attachment(connection.id, 'from', connection.from, fromSide),
+      to: attachment(connection.id, 'to', connection.to, toSide),
+    };
+  }
+
+  function rackCorridor(
+    rack: RoutingRack,
+    side: HorizontalSide,
+  ): RoutingCorridor {
+    const id = rackCorridorId(rack.key, side);
+    let corridor = corridors.get(id);
+    if (!corridor) {
+      corridor = {
+        id,
+        axis: 'x',
+        capacity: CORRIDOR_LANE_CAPACITY,
+        allocations: 0,
+        coordinate(laneIndex: number) {
+          return side === 'right'
+            ? rack.xMm +
+                rack.widthMm +
+                PERIMETER_GUTTER_MM +
+                laneIndex * LANE_SPACING_MM
+            : rack.xMm - PERIMETER_GUTTER_MM - laneIndex * LANE_SPACING_MM;
+        },
+      };
+      corridors.set(id, corridor);
+    }
+    return corridor;
+  }
+
+  function globalCorridor(channel: PerimeterChannel): RoutingCorridor {
+    const id = globalCorridorId(channel);
+    let corridor = corridors.get(id);
+    if (!corridor) {
+      corridor = {
+        id,
+        axis: 'y',
+        capacity: CORRIDOR_LANE_CAPACITY,
+        allocations: 0,
+        coordinate(laneIndex: number) {
+          return channel === 'top'
+            ? subject.topY - PERIMETER_GUTTER_MM - laneIndex * LANE_SPACING_MM
+            : subject.bottomY +
+                PERIMETER_GUTTER_MM +
+                laneIndex * LANE_SPACING_MM;
+        },
+      };
+      corridors.set(id, corridor);
+    }
+    return corridor;
+  }
+
+  function gapCorridor(pairKey: string): RoutingCorridor {
+    const id = gapCorridorId(pairKey);
+    let corridor = corridors.get(id);
+    if (!corridor) {
+      corridor = {
+        id,
+        axis: 'y',
+        capacity: undefined,
+        allocations: 0,
+        coordinate(laneIndex: number, requestBaseMm = 0) {
+          return requestBaseMm + alternatingOffset(laneIndex);
+        },
+      };
+      corridors.set(id, corridor);
+    }
+    return corridor;
+  }
+
+  function horizontalPathIsClear(
+    startX: number,
+    endX: number,
+    yMm: number,
+    excludedRackKeys: ReadonlySet<string>,
+  ): boolean {
+    const minimumX = Math.min(startX, endX);
+    const maximumX = Math.max(startX, endX);
+
+    return racks.every((rack) => {
+      if (excludedRackKeys.has(rack.key)) {
+        return true;
+      }
+      const overlapsY = yMm >= rack.yMm && yMm <= rack.yMm + rack.heightMm;
+      const overlapsX =
+        maximumX >= rack.xMm && minimumX <= rack.xMm + rack.widthMm;
+      return !(overlapsX && overlapsY);
+    });
+  }
+
+  function channelCandidates(
+    fromAttachment: Attachment,
+    toAttachment: Attachment,
+  ): Array<
+    RouteCandidate & { preview: CorridorLanePreview; channel: PerimeterChannel }
+  > {
+    return (['top', 'bottom'] as const).map((channel) => {
+      const corridor = globalCorridor(channel);
+      const preview = peekLane(corridor);
+      const laneY = preview.coordinateMm;
+      const route = compactRoute([
+        fromAttachment.point,
+        fromAttachment.stub,
+        { xMm: fromAttachment.stub.xMm, yMm: laneY },
+        { xMm: toAttachment.stub.xMm, yMm: laneY },
+        toAttachment.stub,
+        toAttachment.point,
+      ]);
+      return {
+        preview,
+        channel,
+        route,
+        score: routeScore(route, preview.pressure),
+      };
+    });
+  }
+
+  /**
+   * #203 R5 Class H: a local seam between two devices sharing one rack row.
+   *
+   * Tried before any perimeter strategy, and deliberately allocates nothing —
+   * a route that never leaves its own rack owes no corridor a lane. Returns
+   * `undefined` when the pair is ineligible or neither seam is usable, which
+   * hands the connection to the perimeter strategies untouched.
+   */
+  function classHRoute(connection: RoutingConnection): PointMm[] | undefined {
+    const localRackKey = connection.from.rackKey;
+    const slotBounds = connection.from.slotBounds;
+    if (
+      !isClassHEligible(connection.from, connection.to) ||
+      localRackKey === undefined ||
+      slotBounds === undefined
+    ) {
+      return undefined;
+    }
+    const localRack = rackByKey.get(localRackKey);
+    if (localRack === undefined) {
+      return undefined;
+    }
+
+    const topY = slotBounds.topY;
+    const bottomY = slotBounds.bottomY;
+
+    // Both candidates are built in full and then validated as complete routes.
+    // Validating the seam alone cannot see a device that clips one of the short
+    // vertical transition legs, and cannot see a seam that leaves the rack
+    // entirely on a top or bottom row.
+    const localCandidate = (seam: 'top' | 'bottom'): PointMm[] => {
+      const boundaryY = seam === 'top' ? topY : bottomY;
+      const seamY =
+        seam === 'top'
+          ? boundaryY - LOCAL_SEAM_OFFSET_MM
+          : boundaryY + LOCAL_SEAM_OFFSET_MM;
+      return compactRoute([
+        connection.from.anchor,
+        { xMm: connection.from.anchor.xMm, yMm: boundaryY },
+        { xMm: connection.from.anchor.xMm, yMm: seamY },
+        { xMm: connection.to.anchor.xMm, yMm: seamY },
+        { xMm: connection.to.anchor.xMm, yMm: boundaryY },
+        connection.to.anchor,
+      ]);
+    };
+
+    const seamIsUsable = (route: PointMm[]): boolean =>
+      routeIsWithinRack(route, localRack) &&
+      localRouteIsClear(localRackKey, route, obstacles);
+
+    const topRoute = localCandidate('top');
+    const bottomRoute = localCandidate('bottom');
+    const topIsValid = seamIsUsable(topRoute);
+    const bottomIsValid = seamIsUsable(bottomRoute);
+
+    if (topIsValid && !bottomIsValid) {
+      return topRoute;
+    }
+    if (!topIsValid && bottomIsValid) {
+      return bottomRoute;
+    }
+    if (!topIsValid && !bottomIsValid) {
+      return undefined;
+    }
+
+    // Both seams work: take the shorter pair of transition legs, and prefer the
+    // top seam when they tie.
+    const distTop =
+      Math.abs(connection.from.anchor.yMm - topY) +
+      Math.abs(connection.to.anchor.yMm - topY);
+    const distBottom =
+      Math.abs(connection.from.anchor.yMm - bottomY) +
+      Math.abs(connection.to.anchor.yMm - bottomY);
+    return distTop <= distBottom + SLOT_EQUALITY_EPSILON_MM
+      ? topRoute
+      : bottomRoute;
+  }
+
+  /**
+   * Same-rack perimeter routing: a #203 R5 Class V short hop, otherwise a lane
+   * in one of the rack's own side corridors.
+   */
+  function sameRackPerimeterRoute(
+    connection: RoutingConnection,
+  ): PointMm[] | undefined {
+    const rackKey = connection.from.rackKey;
+    if (rackKey === undefined || connection.to.rackKey !== rackKey) {
+      return undefined;
+    }
+    const rack = rackByKey.get(rackKey);
+    if (!rack) {
+      return undefined;
+    }
+
+    const deltaY = Math.abs(
+      connection.to.anchor.yMm - connection.from.anchor.yMm,
+    );
+
+    // Class V: a short vertical hop runs stub-to-stub up the rack face. It
+    // scores against current corridor pressure so a congested side is still
+    // avoided, but it never reaches the lane itself and so deliberately does
+    // not call consumeLane() — previewing pressure is not occupying a lane.
+    if (deltaY > 1e-3 && deltaY <= SHORT_HOP_THRESHOLD_MM) {
+      const candidates = (['right', 'left'] as const).map((side) => {
+        const preview = peekLane(rackCorridor(rack, side));
+        const { from, to } = attachmentPair(connection, side, side);
+        const route = compactRoute([from.point, from.stub, to.stub, to.point]);
+        return {
+          preview,
+          side,
+          route,
+          score: routeScore(route, preview.pressure),
+        };
+      });
+      return bestCandidate(candidates).route;
+    }
+
+    const candidates = (['right', 'left'] as const).map((side) => {
+      const preview = peekLane(rackCorridor(rack, side));
+      const { from, to } = attachmentPair(connection, side, side);
+      const route = compactRoute([
+        from.point,
+        from.stub,
+        { xMm: preview.coordinateMm, yMm: from.stub.yMm },
+        { xMm: preview.coordinateMm, yMm: to.stub.yMm },
+        to.stub,
+        to.point,
+      ]);
+      return {
+        preview,
+        side,
+        route,
+        score: routeScore(route, preview.pressure),
+      };
+    });
+    // Only the winner's preview is consumed; the rejected side keeps its lane.
+    const best = bestCandidate(candidates);
+    consumeLane(best.preview);
+    return best.route;
+  }
+
+  /**
+   * Cross-rack perimeter routing: the gap between the two racks first, then the
+   * global top/bottom channels when that gap is blocked.
+   */
+  function crossRackPerimeterRoute(
+    connection: RoutingConnection,
+  ): PointMm[] | undefined {
+    const fromRackKey = connection.from.rackKey;
+    const toRackKey = connection.to.rackKey;
+    if (fromRackKey === undefined || toRackKey === undefined) {
+      return undefined;
+    }
+    const fromRack = rackByKey.get(fromRackKey);
+    const toRack = rackByKey.get(toRackKey);
+    if (!fromRack || !toRack) {
+      return undefined;
+    }
+
+    const fromIsLeft = fromRack.xMm <= toRack.xMm;
+    const { from, to } = attachmentPair(
+      connection,
+      fromIsLeft ? 'right' : 'left',
+      fromIsLeft ? 'left' : 'right',
+    );
+
+    const corridor = gapCorridor(connectionPairKey(fromRackKey, toRackKey));
+    const baseY = (from.stub.yMm + to.stub.yMm) / 2;
+    const preview = peekLane(corridor, baseY);
+    // #203 R2: the pair-gap ordinal advances on *attempt*, not on success, so
+    // this preview is consumed before the route is known to be usable. It is
+    // the router's one deliberate exception to winner-only advancement: the
+    // ordinal counts attempts on this rack pair rather than occupied physical
+    // lanes, which is what stops two blocked routes from both retrying the same
+    // base Y. Moving this below the clearance test would silently change
+    // allocation for every later connection sharing the pair.
+    consumeLane(preview);
+    const channelY = preview.coordinateMm;
+    const gapRoute = compactRoute([
+      from.point,
+      from.stub,
+      { xMm: from.stub.xMm, yMm: channelY },
+      { xMm: to.stub.xMm, yMm: channelY },
+      to.stub,
+      to.point,
+    ]);
+    if (
+      horizontalPathIsClear(from.stub.xMm, to.stub.xMm, channelY, new Set())
+    ) {
+      return gapRoute;
+    }
+
+    const best = bestCandidate(channelCandidates(from, to));
+    consumeLane(best.preview);
+    return best.route;
+  }
+
+  /**
+   * External-reference perimeter routing.
+   *
+   * Only meaningful when exactly one endpoint is a device. Deriving the
+   * endpoints from that condition keeps `externalEndpoint` structurally
+   * external: a connection whose endpoints are both devices cannot enter this
+   * branch even if a rack key fails to resolve, and falls through to the safe
+   * fallback route instead.
+   */
+  function externalPerimeterRoute(
+    connection: RoutingConnection,
+  ): PointMm[] | undefined {
+    const fromIsDevice = connection.from.rackKey !== undefined;
+    const toIsDevice = connection.to.rackKey !== undefined;
+    if (fromIsDevice === toIsDevice) {
+      return undefined;
+    }
+
+    const deviceIsFrom = fromIsDevice;
+    const deviceEndpoint = deviceIsFrom ? connection.from : connection.to;
+    const externalEndpoint = deviceIsFrom ? connection.to : connection.from;
+    const deviceRackKey = deviceEndpoint.rackKey;
+    const rack =
+      deviceRackKey === undefined ? undefined : rackByKey.get(deviceRackKey);
+    if (!rack || deviceRackKey === undefined) {
+      return undefined;
+    }
+
+    const external = externalEndpoint.anchor;
+    const endpointName = deviceIsFrom ? 'from' : 'to';
+    // Every candidate below is built device-first, so the whole strategy can
+    // ignore direction and re-orient once at the end.
+    const oriented = (route: PointMm[]): PointMm[] =>
+      deviceIsFrom ? route : [...route].reverse();
+
+    const region = classifyExternalRegion(external, rack, subject);
+
+    if (region === 'right' || region === 'left') {
+      const deviceAttachment = attachment(
+        connection.id,
+        endpointName,
+        deviceEndpoint,
+        region,
+      );
+      const excluded = new Set([deviceRackKey]);
+      if (
+        horizontalPathIsClear(
+          deviceAttachment.stub.xMm,
+          external.xMm,
+          deviceAttachment.stub.yMm,
+          excluded,
+        )
+      ) {
+        // A clear straight run reaches the target without a corridor, so none
+        // is previewed and none is allocated.
+        return oriented(
+          compactRoute([
+            deviceAttachment.point,
+            deviceAttachment.stub,
+            { xMm: external.xMm, yMm: deviceAttachment.stub.yMm },
+            external,
+          ]),
+        );
+      }
+
+      const externalAttachment: Attachment = {
+        point: { ...external },
+        stub: { ...external },
+      };
+      const best = bestCandidate(
+        channelCandidates(deviceAttachment, externalAttachment),
+      );
+      consumeLane(best.preview);
+      return oriented(best.route);
+    }
+
+    // One global channel lane is previewed up front and shared by both side
+    // candidates, so the only open choice is which rack face to leave from and
+    // exactly one lane is consumed however that choice lands.
+    const preview = peekLane(globalCorridor(region));
+    const laneY = preview.coordinateMm;
+    const candidates = (['right', 'left'] as const).map((side) => {
+      const deviceAttachment = attachment(
+        connection.id,
+        endpointName,
+        deviceEndpoint,
+        side,
+      );
+      const route = compactRoute([
+        deviceAttachment.point,
+        deviceAttachment.stub,
+        { xMm: deviceAttachment.stub.xMm, yMm: laneY },
+        { xMm: external.xMm, yMm: laneY },
+        external,
+      ]);
+      return {
+        route,
+        score: routeScore(route, preview.pressure),
+      };
+    });
+    const best = bestCandidate(candidates);
+    consumeLane(preview);
+    return oriented(best.route);
+  }
+
+  /**
+   * Perimeter strategies in priority order.
+   *
+   * The order is the policy: a local in-rack seam beats a rack-side corridor,
+   * which beats a rack-pair gap, which beats an external run, and an orthogonal
+   * route catches anything none of them can place. Each strategy returns
+   * `undefined` without touching allocator state when it does not apply, so
+   * `??` both selects the strategy and guarantees only the winning one
+   * allocates.
+   */
+  function routePerimeterConnection(connection: RoutingConnection): PointMm[] {
+    return (
+      classHRoute(connection) ??
+      sameRackPerimeterRoute(connection) ??
+      crossRackPerimeterRoute(connection) ??
+      externalPerimeterRoute(connection) ??
+      orthogonalRoute(connection.from.anchor, connection.to.anchor)
+    );
+  }
+
+  /**
+   * `lanes`: the original small proof. Same-rack connections take successive
+   * right-side lanes; everything else takes the next shared bottom lane.
+   */
+  function routeLegacyLanesConnection(
+    connection: RoutingConnection,
+  ): PointMm[] {
+    const from = connection.from.anchor;
+    const to = connection.to.anchor;
+    const rackKey = connection.from.rackKey;
+
+    if (rackKey !== undefined && connection.to.rackKey === rackKey) {
+      const rack = rackByKey.get(rackKey);
+      if (rack) {
+        const laneIndex = rightLaneUse.get(rackKey) ?? 0;
+        rightLaneUse.set(rackKey, laneIndex + 1);
+        const laneX =
+          rack.xMm +
+          rack.widthMm +
+          RIGHT_LANE_GUTTER_MM +
+          laneIndex * LANE_SPACING_MM;
+        return compactRoute([
+          from,
+          { xMm: laneX, yMm: from.yMm },
+          { xMm: laneX, yMm: to.yMm },
+          to,
+        ]);
+      }
+    }
+
+    const laneY =
+      subject.bottomY +
+      BOTTOM_LANE_GUTTER_MM +
+      bottomLaneIndex * LANE_SPACING_MM;
+    bottomLaneIndex += 1;
+    return compactRoute([
+      from,
+      { xMm: from.xMm, yMm: laneY },
+      { xMm: to.xMm, yMm: laneY },
+      to,
+    ]);
+  }
+
+  for (const connection of allocationConnections) {
+    const route =
+      mode === 'direct'
+        ? directRoute(connection.from.anchor, connection.to.anchor)
+        : mode === 'orthogonal'
+          ? orthogonalRoute(connection.from.anchor, connection.to.anchor)
+          : mode === 'perimeter'
+            ? routePerimeterConnection(connection)
+            : routeLegacyLanesConnection(connection);
+    routes.set(connection.id, route);
+  }
+
+  return routes;
+}

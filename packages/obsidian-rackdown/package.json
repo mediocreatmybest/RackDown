@@ -1,0 +1,36 @@
+{
+  "name": "obsidian-rackdown",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rackdown/core": "workspace:*",
+    "@rackdown/devices": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.13",
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  },
+  "description": "Obsidian adapter for RackDown rack diagrams.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mediocreatmybest/RackDown.git",
+    "directory": "packages/obsidian-rackdown"
+  },
+  "homepage": "https://github.com/mediocreatmybest/RackDown",
+  "bugs": {
+    "url": "https://github.com/mediocreatmybest/RackDown/issues"
+  },
+  "files": [
+    "dist"
+  ]
+}

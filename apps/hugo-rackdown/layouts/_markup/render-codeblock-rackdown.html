@@ -1,0 +1,11 @@
+{{- $normalized := replace .Inner "\r\n" "\n" -}}
+{{- $normalized = replace $normalized "\r" "\n" -}}
+{{- $hash := crypto.SHA256 $normalized -}}
+{{- $assetPath := printf "rackdown-generated/%s.svg" $hash -}}
+{{- with resources.Get $assetPath -}}
+<div class="rackdown-diagram">
+{{ .Content | safeHTML }}
+</div>
+{{- else -}}
+  {{- errorf "RackDown generated SVG is missing for %s (hash: %s). Run the RackDown Hugo preparation step before Hugo." $.Page.Path $hash -}}
+{{- end -}}

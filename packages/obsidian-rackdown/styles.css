@@ -1,0 +1,61 @@
+.rackdown-block {
+  --rackdown-text: var(--text-normal);
+  --rackdown-rack-fill: var(--background-secondary);
+  --rackdown-rack-stroke: var(--text-muted);
+  --rackdown-u-line: var(--background-modifier-border);
+  --rackdown-device-fill: var(--background-secondary);
+  --rackdown-device-stroke: var(--text-muted);
+  --rackdown-blank-fill: var(--background-modifier-border);
+  --rackdown-blank-stroke: var(--text-muted);
+  --rackdown-shelf-fill: var(--background-primary);
+  --rackdown-shelf-stroke: var(--text-faint);
+  --rackdown-connection-stroke: var(--text-muted);
+  --rackdown-external-fill: var(--background-primary);
+  --rackdown-external-stroke: var(--text-muted);
+}
+
+.rackdown-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.rackdown-host-link {
+  cursor: pointer;
+}
+
+.rackdown-external-link:hover .rackdown-external-box,
+.rackdown-external-link:focus-visible .rackdown-external-box {
+  stroke: var(--link-color, var(--text-accent));
+}
+
+.rackdown-external-link:hover .rackdown-external-label,
+.rackdown-external-link:focus-visible .rackdown-external-label {
+  fill: var(--link-color, var(--text-accent));
+}
+
+.rackdown-device-link:hover .rackdown-device,
+.rackdown-device-link:focus-visible .rackdown-device {
+  stroke: var(--link-color, var(--text-accent));
+}
+
+.rackdown-device-link:hover .rackdown-device-label,
+.rackdown-device-link:focus-visible .rackdown-device-label {
+  fill: var(--link-color, var(--text-accent));
+}
+
+.rackdown-diagnostics {
+  margin-top: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+}
+
+.rackdown-diagnostics ul {
+  margin: 0;
+  padding-inline-start: var(--size-4-5);
+}
+
+.rackdown-diagnostic-hint {
+  margin-inline-start: var(--size-4-2);
+}

@@ -1,0 +1,6 @@
+rack "Rear Service Rack" 8U 19in u1 bottom views rear
+
+rear 7 patch "Rear Patch" as rear-patch
+rear 5 2U pdu "Rear PDU" as rear-pdu
+
+rear-patch:1 -- rear-pdu:in power

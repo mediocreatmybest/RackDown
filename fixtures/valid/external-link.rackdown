@@ -1,0 +1,3 @@
+rack "Server Room" 12U 19in u1 bottom
+10 patch "Fibre Patch 1" as fibre
+fibre:12 -- [[Garage Rack]]

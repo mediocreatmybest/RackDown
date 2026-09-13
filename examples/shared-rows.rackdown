@@ -1,0 +1,16 @@
+// Matching start and height share the row in source order.
+rack "Shared Equipment" 8U 19in u1 bottom views front rear
+
+8 switch "Core" as core
+5 2U device "Compute A" as compute-a
+5 2U device "Compute B" as compute-b
+5 2U device "Compute C" as compute-c
+rear 2 pdu "Power A" as power-a
+rear 2 pdu "Power B" as power-b
+
+core:1 -- compute-a:network
+core:2 -- compute-b:network
+core:3 -- compute-c:network
+core:4 -- [[Upstream Rack]]
+power-a:1 -- compute-a:power
+power-b:1 -- compute-b:power

@@ -1,0 +1,19 @@
+{
+  "devices": [
+    {
+      "path": "device-types/Dell/PowerEdge-R740.yaml",
+      "slug": "dell-poweredge-r740",
+      "blob": "1ff954702152ba3768f0c6d5d796e80145f62c32"
+    },
+    {
+      "path": "device-types/Ubiquiti/UniFi-Dream-Machine-Pro.yaml",
+      "slug": "ubiquiti-unifi-dream-machine-pro",
+      "blob": "d583bcbb503dbbbca2a77608e5138f65b61b1926"
+    },
+    {
+      "path": "device-types/Ubiquiti/USW-Pro-HD-24-PoE.yaml",
+      "slug": "ubiquiti-unifi-switch-pro-hd-24-poe",
+      "blob": "cc8fb60c307c0b29d0defec2b5c7bfa940705069"
+    }
+  ]
+}

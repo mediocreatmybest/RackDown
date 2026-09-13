@@ -1,0 +1,18 @@
+// Uses the curated catalogue; still renders without enrichment.
+rack "Home Lab" 24U 19in u1 bottom views front rear
+
+18 ubiquiti-unifi-dream-machine-pro "Gateway" as gw
+16 ubiquiti-unifi-switch-pro-hd-24-poe "Core Switch" as core
+14 patch "Fibre Patch" as fibre
+10 dell-poweredge-r740 "Server A" as server-a
+8 dell-poweredge-r740 "Server B" as server-b
+rear 4 pdu "Power" as power
+1 blank
+
+core:"SFP+ 25" -- gw:port.11 fibre
+core:"Port 1" -- server-a:iDRAC9
+core:"Port 2" -- server-b:iDRAC9
+core:"Port 3" -- server-a:"Expansion NIC 1" adhoc
+core:"SFP+ 26" -- fibre:1 fibre
+fibre:12 -- [[Remote Rack]]
+gw:port.9 -- [[ISP Handover]]

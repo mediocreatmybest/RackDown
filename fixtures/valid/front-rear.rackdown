@@ -1,0 +1,11 @@
+rack "Comms Rack" 12U 19in u1 bottom views front rear
+
+12 router "Gateway" as gateway
+11 switch "Core PoE" as core
+9 2U server "PVE01" as pve1
+rear 4 pdu "PDU A" as pdu-a
+
+core:24 -- gateway:lan fibre
+core:1 -- pve1:nic1
+pdu-a:1 -- pve1:power1 power
+gateway:wan -- [[ISP Handover]]

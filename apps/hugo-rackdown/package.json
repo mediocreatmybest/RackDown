@@ -1,0 +1,10 @@
+{
+  "name": "@rackdown/hugo-proof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test scripts/prepare-rackdown.test.mjs",
+    "prepare:rackdown": "node scripts/prepare-rackdown.mjs"
+  }
+}

@@ -1,0 +1,14 @@
+# Keep RackDown text stable across Windows, WSL, editors, and Git clients.
+# Repository attributes take precedence over local core.autocrlf settings.
+* text=auto eol=lf
+
+# Common binary assets must never receive text conversion.
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.pdf binary
+*.png binary
+*.webp binary
+*.woff binary
+*.woff2 binary

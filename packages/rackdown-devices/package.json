@@ -1,0 +1,40 @@
+{
+  "name": "@rackdown/devices",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "generated",
+    "index.mjs",
+    "index.d.ts",
+    "full-catalogue.mjs",
+    "full-catalogue.d.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    },
+    "./device-index.json": "./generated/device-index.json",
+    "./full-catalogue": {
+      "types": "./full-catalogue.d.ts",
+      "import": "./full-catalogue.mjs"
+    },
+    "./full-catalogue.b64": "./generated/catalogue-payload.b64"
+  },
+  "scripts": {
+    "test": "node --test discovery.test.mjs full-catalogue.test.mjs"
+  },
+  "description": "Optional RackDown device catalogues and discovery.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mediocreatmybest/RackDown.git",
+    "directory": "packages/rackdown-devices"
+  },
+  "homepage": "https://github.com/mediocreatmybest/RackDown",
+  "bugs": {
+    "url": "https://github.com/mediocreatmybest/RackDown/issues"
+  },
+  "types": "./index.d.ts"
+}

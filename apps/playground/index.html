@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="RackDown browser playground for editing rack text and previewing SVG output."
+    />
+    <title>RackDown Playground</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">RackDown</p>
+        <h1>Playground</h1>
+        <p class="tagline">Write down your rack. RackDown draws it.</p>
+      </div>
+      <div class="topbar-actions">
+        <span id="status" class="status" aria-live="polite"></span>
+        <button id="external-placement" type="button">
+          Externals: Bottom
+        </button>
+        <button id="connection-routing" type="button">Routing: Direct</button>
+        <button id="connection-colours" type="button">Cables: Auto colour</button>
+        <button id="connection-pattern" type="button">Pattern: Natural</button>
+        <button id="reset-example" type="button">Reset example</button>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <div class="workspace">
+        <section class="panel editor-panel" aria-labelledby="source-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Input</p>
+              <h2 id="source-heading">Source</h2>
+            </div>
+            <span class="panel-note">Updates live</span>
+          </div>
+          <textarea
+            id="source"
+            aria-label="RackDown source"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          ></textarea>
+        </section>
+
+        <section class="panel preview-panel" aria-labelledby="preview-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Output</p>
+              <h2 id="preview-heading">Preview</h2>
+            </div>
+            <span class="panel-note">Deterministic SVG</span>
+          </div>
+          <div id="preview" class="preview" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section class="panel diagnostics-panel" aria-labelledby="diagnostics-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Feedback</p>
+            <h2 id="diagnostics-heading">Diagnostics</h2>
+          </div>
+          <span class="panel-note">Warnings do not block rendering</span>
+        </div>
+        <div id="diagnostics-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

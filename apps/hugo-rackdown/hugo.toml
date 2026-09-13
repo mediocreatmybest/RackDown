@@ -1,0 +1,3 @@
+baseURL = 'https://example.org/'
+title = 'RackDown Hugo Proof'
+disableKinds = ['taxonomy', 'term', 'RSS', 'sitemap', 'robotsTXT']

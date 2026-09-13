@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.os }} / Node 24
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check
+        run: pnpm check
+
+      - name: Build
+        run: pnpm build
+
+  examples:
+    name: Example CLI dogfood
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI and required packages
+        run: pnpm --filter @rackdown/cli... build
+
+      - name: Check and render every canonical example, verify generated SVGs
+        run: pnpm examples:ci
+
+  obsidian-plugin:
+    name: Obsidian plugin artifact
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build core package
+        run: pnpm --filter @rackdown/core build
+
+      - name: Build Obsidian plugin
+        run: pnpm --filter obsidian-rackdown build
+
+      - name: Verify plugin distribution
+        run: >-
+          node -e "const fs=require('node:fs'); const actual=fs.readdirSync('packages/obsidian-rackdown/dist').sort(); const expected=['main.js','manifest.json','styles.css']; if (JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error('Unexpected plugin files: '+actual.join(', '));"
+
+      - name: Stage install folder
+        run: >-
+          node -e "const fs=require('node:fs'); const source='packages/obsidian-rackdown/dist'; const target='artifacts/rackdown'; fs.rmSync('artifacts',{recursive:true,force:true}); fs.mkdirSync(target,{recursive:true}); for (const file of ['main.js','manifest.json','styles.css']) fs.copyFileSync(source+'/'+file,target+'/'+file);"
+
+      - name: Upload installable Obsidian plugin
+        uses: actions/upload-artifact@v7
+        with:
+          name: rackdown-obsidian-plugin
+          path: artifacts
+          if-no-files-found: error
+          retention-days: 14

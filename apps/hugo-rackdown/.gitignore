@@ -1,0 +1,4 @@
+/assets/rackdown-generated/
+/public/
+/resources/_gen/
+.hugo_build.lock

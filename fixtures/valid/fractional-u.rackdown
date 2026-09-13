@@ -1,0 +1,3 @@
+rack "Tiny Rack" 6U 10in u1 bottom
+5.5 0.5U device "Small Device"
+5 0.5U device "Other Device"

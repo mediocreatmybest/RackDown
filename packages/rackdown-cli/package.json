@@ -1,0 +1,38 @@
+{
+  "name": "@rackdown/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "rackdown": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rackdown/core": "workspace:*",
+    "@rackdown/devices": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.13",
+    "tsdown": "0.22.14",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  },
+  "description": "Command-line interface for RackDown diagram rendering and checking.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mediocreatmybest/RackDown.git",
+    "directory": "packages/rackdown-cli"
+  },
+  "homepage": "https://github.com/mediocreatmybest/RackDown",
+  "bugs": {
+    "url": "https://github.com/mediocreatmybest/RackDown/issues"
+  }
+}

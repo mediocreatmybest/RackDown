@@ -1,0 +1,43 @@
+{
+  "name": "rackdown-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "dev": "pnpm --filter @rackdown/core build && pnpm --filter @rackdown/playground dev",
+    "devices:generate": "node tools/devices/generate-index.mjs",
+    "devices:verify-full": "node tools/devices/verify-full-catalogue.mjs",
+    "examples:check": "node tools/examples/index.mjs check",
+    "examples:ci": "node tools/examples/index.mjs ci",
+    "examples:generate": "node tools/examples/index.mjs generate",
+    "examples:render": "node tools/examples/index.mjs render",
+    "examples:verify": "node tools/examples/index.mjs verify",
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "metrics": "node tools/render-metrics/index.mjs",
+    "release:rehearse": "pnpm check && pnpm build && pnpm examples:ci && pnpm release:stage",
+    "release:stage": "node tools/release/stage.mjs",
+    "test": "pnpm test:devices && pnpm -r --if-present test",
+    "test:devices": "node --test tools/devices/normalize.test.mjs tools/devices/generate.test.mjs tools/devices/full-catalogue.test.mjs && node tools/devices/verify-snapshot.mjs && node tools/devices/verify-generated.mjs",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.10",
+    "yaml": "2.9.0"
+  },
+  "description": "Text-first rack documentation workspace.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mediocreatmybest/RackDown.git"
+  },
+  "homepage": "https://github.com/mediocreatmybest/RackDown",
+  "bugs": {
+    "url": "https://github.com/mediocreatmybest/RackDown/issues"
+  }
+}

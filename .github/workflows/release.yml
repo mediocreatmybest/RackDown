@@ -1,0 +1,86 @@
+# Release rehearsal for RackDown.
+#
+# This workflow never publishes anything. It proves that a future tagged
+# release (v0.1.0-alpha.1 and later) can produce the intended artefacts from a
+# fresh checkout, and uploads the staged result for inspection.
+#
+# Actual publication is deliberately not implemented here. When it is added it
+# must be gated on BOTH of the following so it can never run from a fork or
+# from mediocreatmybest/scratchpad:
+#
+#   if: github.repository == 'mediocreatmybest/RackDown'
+#       && startsWith(github.ref, 'refs/tags/v')
+
+name: Release rehearsal
+
+on:
+  workflow_dispatch:
+    inputs:
+      verify-catalogue-reproducibility:
+        description: >-
+          Also re-derive the full catalogue from the pinned upstream commit.
+          Requires network access; the pin is never moved.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rehearse:
+    name: ${{ matrix.os }} / release rehearsal
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Release validation suite
+        run: pnpm check
+
+      - name: Build workspace packages
+        run: pnpm build
+
+      - name: Verify examples through the CLI
+        run: pnpm examples:ci
+
+      - name: Check out pinned upstream revision
+        if: inputs.verify-catalogue-reproducibility
+        run: node tools/devices/checkout-pinned-upstream.mjs upstream-checkout
+
+      - name: Verify full catalogue against pinned upstream
+        if: inputs.verify-catalogue-reproducibility
+        run: pnpm devices:verify-full -- upstream-checkout
+
+      - name: Stage release artefacts
+        run: pnpm release:stage
+
+      - name: Upload staged release artefacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: rackdown-release-staging-${{ matrix.os }}
+          path: release-staging
+          if-no-files-found: error
+          retention-days: 14
