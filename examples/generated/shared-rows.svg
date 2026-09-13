@@ -1,6 +1,6 @@
-<svg id="rackdown-1sqeqg0-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 460.25" data-external-placement="bottom" data-connection-routing="direct" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1sqeqg0-title" aria-describedby="rackdown-1sqeqg0-desc">
-  <title id="rackdown-1sqeqg0-title">Shared Equipment rack diagram</title>
-  <desc id="rackdown-1sqeqg0-desc">1 rack, 6 devices, 6 connections.</desc>
+<svg id="rackdown-1sglwcv-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 460.25" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1sglwcv-title" aria-describedby="rackdown-1sglwcv-desc">
+  <title id="rackdown-1sglwcv-title">Shared Equipment rack diagram</title>
+  <desc id="rackdown-1sglwcv-desc">1 rack, 6 devices, 6 connections.</desc>
   <style>
   .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
@@ -32,7 +32,7 @@
   .rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }
   }
   </style>
-  <g id="rackdown-1sqeqg0-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
+  <g id="rackdown-1sglwcv-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
     <rect class="rackdown-rack" x="0" y="0" width="482.6" height="355.6" />
     <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">Shared Equipment · Front</text>
     <text class="rackdown-u-label" data-u="8" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">8</text>
@@ -51,7 +51,7 @@
     <line class="rackdown-u-line" x1="0" y1="311.15" x2="482.6" y2="311.15" />
     <text class="rackdown-u-label" data-u="1" x="-3.5" y="333.375" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
-  <g id="rackdown-1sqeqg0-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
+  <g id="rackdown-1sglwcv-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
     <rect class="rackdown-rack" x="508" y="0" width="482.6" height="355.6" />
     <text class="rackdown-rack-title" x="749.3" y="-7.5" text-anchor="middle">Shared Equipment · Rear</text>
     <text class="rackdown-u-label" data-u="8" x="504.5" y="22.225" text-anchor="end" dominant-baseline="middle">8</text>
@@ -70,73 +70,73 @@
     <line class="rackdown-u-line" x1="508" y1="311.15" x2="990.6" y2="311.15" />
     <text class="rackdown-u-label" data-u="1" x="504.5" y="333.375" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
-  <line id="rackdown-1sqeqg0-connection-1" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-11" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" x1="482.6" y1="22.225" x2="160.867" y2="133.35">
+  <path id="rackdown-1sglwcv-connection-1" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-11" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 482.6,18.475 L 488.95,18.475 L 492.3,18.475 Q 495.3,18.475 495.3,21.475 L 495.3,129.1 Q 495.3,132.1 492.3,132.1 L 488.95,132.1 L 482.6,132.1">
     <title>core:1 → compute-a:network</title>
-  </line>
-  <line id="rackdown-1sqeqg0-connection-2" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-12" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#56b4e9" x1="482.6" y1="22.225" x2="321.733" y2="133.35">
+  </path>
+  <path id="rackdown-1sglwcv-connection-2" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-12" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#56b4e9" d="M 0,20.975 L -6.35,20.975 L -9.7,20.975 Q -12.7,20.975 -12.7,23.975 L -12.7,129.1 Q -12.7,132.1 -9.7,132.1 L -6.35,132.1 L 0,132.1">
     <title>core:2 → compute-b:network</title>
-  </line>
-  <line id="rackdown-1sqeqg0-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-13" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#0072b2" x1="482.6" y1="22.225" x2="482.6" y2="133.35">
+  </path>
+  <path id="rackdown-1sglwcv-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-13" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#0072b2" d="M 482.6,23.475 L 488.95,23.475 L 496.3,23.475 Q 499.3,23.475 499.3,26.475 L 499.3,130.35 Q 499.3,133.35 496.3,133.35 L 488.95,133.35 L 482.6,133.35">
     <title>core:3 → compute-c:network</title>
-  </line>
-  <line id="rackdown-1sqeqg0-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-14" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" x1="482.6" y1="22.225" x2="495.3" y2="368.3">
+  </path>
+  <path id="rackdown-1sglwcv-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-14" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,25.975 L 485.95,25.975 Q 488.95,25.975 488.95,28.975 L 488.95,365.3 Q 488.95,368.3 491.95,368.3 L 495.3,368.3">
     <title>core:4 → Upstream Rack</title>
-  </line>
-  <line id="rackdown-1sqeqg0-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" x1="749.3" y1="288.925" x2="160.867" y2="133.35">
+  </path>
+  <path id="rackdown-1sglwcv-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 508,288.925 L 504.65,288.925 Q 501.65,288.925 501.65,285.925 L 501.65,214.763 Q 501.65,211.763 498.65,211.763 L 491.95,211.763 Q 488.95,211.763 488.95,208.763 L 488.95,137.6 Q 488.95,134.6 485.95,134.6 L 482.6,134.6">
     <title>power-a:1 → compute-a:power</title>
-  </line>
-  <line id="rackdown-1sqeqg0-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" x1="990.6" y1="288.925" x2="321.733" y2="133.35">
+  </path>
+  <path id="rackdown-1sglwcv-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 508,288.925 L 504.65,288.925 Q 501.65,288.925 501.65,285.925 L 501.65,218.763 Q 501.65,215.763 498.65,215.763 L 491.95,215.763 Q 488.95,215.763 488.95,212.763 L 488.95,137.6 Q 488.95,134.6 485.95,134.6 L 482.6,134.6">
     <title>power-b:1 → compute-b:power</title>
-  </line>
-  <g id="rackdown-1sqeqg0-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="switch" data-position-u="8" data-u-height="1" data-mount-face="front" data-alias="core">
-    <clipPath id="rackdown-1sqeqg0-device-1-clip">
+  </path>
+  <g id="rackdown-1sglwcv-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="switch" data-position-u="8" data-u-height="1" data-mount-face="front" data-alias="core">
+    <clipPath id="rackdown-1sglwcv-device-1-clip">
       <rect x="0" y="0" width="482.6" height="44.45" />
     </clipPath>
     <title>Core</title>
     <rect class="rackdown-device" x="0" y="0" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-1-clip)" x="241.3" y="22.225" text-anchor="middle" dominant-baseline="middle">Core</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-1-clip)" x="241.3" y="22.225" text-anchor="middle" dominant-baseline="middle">Core</text>
   </g>
-  <g id="rackdown-1sqeqg0-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-a">
-    <clipPath id="rackdown-1sqeqg0-device-2-clip">
+  <g id="rackdown-1sglwcv-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-a">
+    <clipPath id="rackdown-1sglwcv-device-2-clip">
       <rect x="0" y="88.9" width="160.867" height="88.9" />
     </clipPath>
     <title>Compute A</title>
     <rect class="rackdown-device" x="0" y="88.9" width="160.867" height="88.9" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-2-clip)" x="80.433" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute A</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-2-clip)" x="80.433" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute A</text>
   </g>
-  <g id="rackdown-1sqeqg0-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-b">
-    <clipPath id="rackdown-1sqeqg0-device-3-clip">
+  <g id="rackdown-1sglwcv-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-b">
+    <clipPath id="rackdown-1sglwcv-device-3-clip">
       <rect x="160.867" y="88.9" width="160.867" height="88.9" />
     </clipPath>
     <title>Compute B</title>
     <rect class="rackdown-device" x="160.867" y="88.9" width="160.867" height="88.9" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-3-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute B</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-3-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute B</text>
   </g>
-  <g id="rackdown-1sqeqg0-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-c">
-    <clipPath id="rackdown-1sqeqg0-device-4-clip">
+  <g id="rackdown-1sglwcv-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="device" data-position-u="5" data-u-height="2" data-mount-face="front" data-alias="compute-c">
+    <clipPath id="rackdown-1sglwcv-device-4-clip">
       <rect x="321.733" y="88.9" width="160.867" height="88.9" />
     </clipPath>
     <title>Compute C</title>
     <rect class="rackdown-device" x="321.733" y="88.9" width="160.867" height="88.9" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-4-clip)" x="402.167" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute C</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-4-clip)" x="402.167" y="133.35" text-anchor="middle" dominant-baseline="middle">Compute C</text>
   </g>
-  <g id="rackdown-1sqeqg0-device-5" class="rackdown-device-group rackdown-device-rear" data-device-id="device-8" data-device-type="pdu" data-position-u="2" data-u-height="1" data-mount-face="rear" data-alias="power-a">
-    <clipPath id="rackdown-1sqeqg0-device-5-clip">
+  <g id="rackdown-1sglwcv-device-5" class="rackdown-device-group rackdown-device-rear" data-device-id="device-8" data-device-type="pdu" data-position-u="2" data-u-height="1" data-mount-face="rear" data-alias="power-a">
+    <clipPath id="rackdown-1sglwcv-device-5-clip">
       <rect x="508" y="266.7" width="241.3" height="44.45" />
     </clipPath>
     <title>Power A</title>
     <rect class="rackdown-device" x="508" y="266.7" width="241.3" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-5-clip)" x="628.65" y="288.925" text-anchor="middle" dominant-baseline="middle">Power A</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-5-clip)" x="628.65" y="288.925" text-anchor="middle" dominant-baseline="middle">Power A</text>
   </g>
-  <g id="rackdown-1sqeqg0-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="2" data-u-height="1" data-mount-face="rear" data-alias="power-b">
-    <clipPath id="rackdown-1sqeqg0-device-6-clip">
+  <g id="rackdown-1sglwcv-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="2" data-u-height="1" data-mount-face="rear" data-alias="power-b">
+    <clipPath id="rackdown-1sglwcv-device-6-clip">
       <rect x="749.3" y="266.7" width="241.3" height="44.45" />
     </clipPath>
     <title>Power B</title>
     <rect class="rackdown-device" x="749.3" y="266.7" width="241.3" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1sqeqg0-device-6-clip)" x="869.95" y="288.925" text-anchor="middle" dominant-baseline="middle">Power B</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1sglwcv-device-6-clip)" x="869.95" y="288.925" text-anchor="middle" dominant-baseline="middle">Power B</text>
   </g>
-  <g id="rackdown-1sqeqg0-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Upstream Rack" data-link-style="wiki" data-placement="bottom" data-target="Upstream Rack">
+  <g id="rackdown-1sglwcv-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Upstream Rack" data-link-style="wiki" data-placement="bottom" data-target="Upstream Rack">
     <title>Upstream Rack</title>
     <rect class="rackdown-external-box" x="457.2" y="368.3" width="76.2" height="16" rx="3" ry="3" />
     <text class="rackdown-external-label" x="495.3" y="376.3" text-anchor="middle" dominant-baseline="middle">Upstream Rack</text>

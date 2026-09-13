@@ -1,7 +1,7 @@
 {
   "$schema-note": "Canonical examples are every *.rackdown file in this directory; they are discovered automatically and checked/rendered by CI. The list below declares which renders are additionally committed as SVG under generatedDirectory.",
   "generatedDirectory": "generated",
-  "defaultRenderOptions": ["--sizing", "responsive"],
+  "defaultRenderOptions": ["--sizing", "responsive", "--routing", "perimeter"],
   "generated": [
     {
       "source": "home-lab.rackdown",

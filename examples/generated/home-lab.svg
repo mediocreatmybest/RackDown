@@ -1,6 +1,6 @@
-<svg id="rackdown-1ex9yw3-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 1171.45" data-external-placement="bottom" data-connection-routing="direct" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1ex9yw3-title" aria-describedby="rackdown-1ex9yw3-desc">
-  <title id="rackdown-1ex9yw3-title">Home Lab rack diagram</title>
-  <desc id="rackdown-1ex9yw3-desc">1 rack, 7 devices, 7 connections.</desc>
+<svg id="rackdown-1ar26o4-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 1171.45" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1ar26o4-title" aria-describedby="rackdown-1ar26o4-desc">
+  <title id="rackdown-1ar26o4-title">Home Lab rack diagram</title>
+  <desc id="rackdown-1ar26o4-desc">1 rack, 7 devices, 7 connections.</desc>
   <style>
   .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
@@ -32,7 +32,7 @@
   .rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }
   }
   </style>
-  <g id="rackdown-1ex9yw3-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
+  <g id="rackdown-1ar26o4-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
     <rect class="rackdown-rack" x="0" y="0" width="482.6" height="1066.8" />
     <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">Home Lab · Front</text>
     <text class="rackdown-u-label" data-u="24" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
@@ -83,7 +83,7 @@
     <line class="rackdown-u-line" x1="0" y1="1022.35" x2="482.6" y2="1022.35" />
     <text class="rackdown-u-label" data-u="1" x="-3.5" y="1044.575" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
-  <g id="rackdown-1ex9yw3-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
+  <g id="rackdown-1ar26o4-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
     <rect class="rackdown-rack" x="508" y="0" width="482.6" height="1066.8" />
     <text class="rackdown-rack-title" x="749.3" y="-7.5" text-anchor="middle">Home Lab · Rear</text>
     <text class="rackdown-u-label" data-u="24" x="504.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
@@ -134,88 +134,88 @@
     <line class="rackdown-u-line" x1="508" y1="1022.35" x2="990.6" y2="1022.35" />
     <text class="rackdown-u-label" data-u="1" x="504.5" y="1044.575" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
-  <line id="rackdown-1ex9yw3-connection-1" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-12" data-routing="direct" data-media="fibre" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#56b4e9" x1="482.6" y1="377.825" x2="482.6" y2="288.925">
+  <path id="rackdown-1ar26o4-connection-1" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-12" data-routing="perimeter" data-media="fibre" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#56b4e9" d="M 482.6,372.825 L 485.95,372.825 Q 488.95,372.825 488.95,369.825 L 488.95,290.675 Q 488.95,287.675 485.95,287.675 L 482.6,287.675">
     <title>core:SFP+ 25 → gw:port.11 (fibre)</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-2" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-13" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#0072b2" x1="482.6" y1="377.825" x2="482.6" y2="622.3">
+  </path>
+  <path id="rackdown-1ar26o4-connection-2" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-13" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#0072b2" d="M 482.6,377.825 L 488.95,377.825 L 492.3,377.825 Q 495.3,377.825 495.3,380.825 L 495.3,618.05 Q 495.3,621.05 492.3,621.05 L 488.95,621.05 L 482.6,621.05">
     <title>core:Port 1 → server-a:iDRAC9</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-3" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-14" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" x1="482.6" y1="377.825" x2="482.6" y2="711.2">
+  </path>
+  <path id="rackdown-1ar26o4-connection-3" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-14" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" d="M 482.6,382.825 L 488.95,382.825 L 496.3,382.825 Q 499.3,382.825 499.3,385.825 L 499.3,708.2 Q 499.3,711.2 496.3,711.2 L 488.95,711.2 L 482.6,711.2">
     <title>core:Port 2 → server-b:iDRAC9</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" x1="482.6" y1="377.825" x2="482.6" y2="622.3">
+  </path>
+  <path id="rackdown-1ar26o4-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 0,380.325 L -6.35,380.325 L -9.7,380.325 Q -12.7,380.325 -12.7,383.325 L -12.7,620.55 Q -12.7,623.55 -9.7,623.55 L -6.35,623.55 L 0,623.55">
     <title>core:Port 3 → server-a:Expansion NIC 1</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="direct" data-media="fibre" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" x1="482.6" y1="377.825" x2="482.6" y2="466.725">
+  </path>
+  <path id="rackdown-1ar26o4-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="perimeter" data-media="fibre" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 482.6,375.325 L 485.95,375.325 Q 488.95,375.325 488.95,378.325 L 488.95,462.475 Q 488.95,465.475 485.95,465.475 L 482.6,465.475">
     <title>core:SFP+ 26 → fibre:1 (fibre)</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="direct" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" x1="482.6" y1="466.725" x2="495.3" y2="1079.5">
+  </path>
+  <path id="rackdown-1ar26o4-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 482.6,467.975 L 485.95,467.975 Q 488.95,467.975 488.95,470.975 L 488.95,1080.5 Q 488.95,1083.5 491.95,1083.5 L 493.3,1083.5 Q 495.3,1083.5 495.3,1081.5 L 495.3,1079.5">
     <title>fibre:12 → Remote Rack</title>
-  </line>
-  <line id="rackdown-1ex9yw3-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-routing="direct" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" x1="482.6" y1="288.925" x2="415.1" y2="1079.5">
+  </path>
+  <path id="rackdown-1ar26o4-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" d="M 482.6,290.175 L 485.95,290.175 Q 488.95,290.175 488.95,293.175 L 488.95,1076.5 Q 488.95,1079.5 485.95,1079.5 L 415.1,1079.5">
     <title>gw:port.9 → ISP Handover</title>
-  </line>
-  <g id="rackdown-1ex9yw3-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="ubiquiti-unifi-dream-machine-pro" data-position-u="18" data-u-height="1" data-mount-face="front" data-alias="gw">
-    <clipPath id="rackdown-1ex9yw3-device-1-clip">
+  </path>
+  <g id="rackdown-1ar26o4-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="ubiquiti-unifi-dream-machine-pro" data-position-u="18" data-u-height="1" data-mount-face="front" data-alias="gw">
+    <clipPath id="rackdown-1ar26o4-device-1-clip">
       <rect x="0" y="266.7" width="482.6" height="44.45" />
     </clipPath>
     <title>Gateway</title>
     <rect class="rackdown-device" x="0" y="266.7" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-1-clip)" x="241.3" y="288.925" text-anchor="middle" dominant-baseline="middle">Gateway</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-1-clip)" x="241.3" y="288.925" text-anchor="middle" dominant-baseline="middle">Gateway</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="ubiquiti-unifi-switch-pro-hd-24-poe" data-position-u="16" data-u-height="1" data-mount-face="front" data-alias="core">
-    <clipPath id="rackdown-1ex9yw3-device-2-clip">
+  <g id="rackdown-1ar26o4-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="ubiquiti-unifi-switch-pro-hd-24-poe" data-position-u="16" data-u-height="1" data-mount-face="front" data-alias="core">
+    <clipPath id="rackdown-1ar26o4-device-2-clip">
       <rect x="0" y="355.6" width="482.6" height="44.45" />
     </clipPath>
     <title>Core Switch</title>
     <rect class="rackdown-device" x="0" y="355.6" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-2-clip)" x="241.3" y="377.825" text-anchor="middle" dominant-baseline="middle">Core Switch</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-2-clip)" x="241.3" y="377.825" text-anchor="middle" dominant-baseline="middle">Core Switch</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="patch" data-position-u="14" data-u-height="1" data-mount-face="front" data-alias="fibre">
-    <clipPath id="rackdown-1ex9yw3-device-3-clip">
+  <g id="rackdown-1ar26o4-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="patch" data-position-u="14" data-u-height="1" data-mount-face="front" data-alias="fibre">
+    <clipPath id="rackdown-1ar26o4-device-3-clip">
       <rect x="0" y="444.5" width="482.6" height="44.45" />
     </clipPath>
     <title>Fibre Patch</title>
     <rect class="rackdown-device" x="0" y="444.5" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-3-clip)" x="241.3" y="466.725" text-anchor="middle" dominant-baseline="middle">Fibre Patch</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-3-clip)" x="241.3" y="466.725" text-anchor="middle" dominant-baseline="middle">Fibre Patch</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="dell-poweredge-r740" data-position-u="10" data-u-height="2" data-mount-face="front" data-alias="server-a">
-    <clipPath id="rackdown-1ex9yw3-device-4-clip">
+  <g id="rackdown-1ar26o4-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="dell-poweredge-r740" data-position-u="10" data-u-height="2" data-mount-face="front" data-alias="server-a">
+    <clipPath id="rackdown-1ar26o4-device-4-clip">
       <rect x="0" y="577.85" width="482.6" height="88.9" />
     </clipPath>
     <title>Server A</title>
     <rect class="rackdown-device" x="0" y="577.85" width="482.6" height="88.9" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-4-clip)" x="241.3" y="622.3" text-anchor="middle" dominant-baseline="middle">Server A</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-4-clip)" x="241.3" y="622.3" text-anchor="middle" dominant-baseline="middle">Server A</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-5" class="rackdown-device-group rackdown-device-front" data-device-id="device-8" data-device-type="dell-poweredge-r740" data-position-u="8" data-u-height="2" data-mount-face="front" data-alias="server-b">
-    <clipPath id="rackdown-1ex9yw3-device-5-clip">
+  <g id="rackdown-1ar26o4-device-5" class="rackdown-device-group rackdown-device-front" data-device-id="device-8" data-device-type="dell-poweredge-r740" data-position-u="8" data-u-height="2" data-mount-face="front" data-alias="server-b">
+    <clipPath id="rackdown-1ar26o4-device-5-clip">
       <rect x="0" y="666.75" width="482.6" height="88.9" />
     </clipPath>
     <title>Server B</title>
     <rect class="rackdown-device" x="0" y="666.75" width="482.6" height="88.9" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-5-clip)" x="241.3" y="711.2" text-anchor="middle" dominant-baseline="middle">Server B</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-5-clip)" x="241.3" y="711.2" text-anchor="middle" dominant-baseline="middle">Server B</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="4" data-u-height="1" data-mount-face="rear" data-alias="power">
-    <clipPath id="rackdown-1ex9yw3-device-6-clip">
+  <g id="rackdown-1ar26o4-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="4" data-u-height="1" data-mount-face="rear" data-alias="power">
+    <clipPath id="rackdown-1ar26o4-device-6-clip">
       <rect x="508" y="889" width="482.6" height="44.45" />
     </clipPath>
     <title>Power</title>
     <rect class="rackdown-device" x="508" y="889" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-1ex9yw3-device-6-clip)" x="749.3" y="911.225" text-anchor="middle" dominant-baseline="middle">Power</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-1ar26o4-device-6-clip)" x="749.3" y="911.225" text-anchor="middle" dominant-baseline="middle">Power</text>
   </g>
-  <g id="rackdown-1ex9yw3-device-7" class="rackdown-device-group rackdown-blank-group rackdown-device-front" data-device-id="device-10" data-device-type="blank" data-position-u="1" data-u-height="1" data-mount-face="front" data-item-role="blank">
-    <clipPath id="rackdown-1ex9yw3-device-7-clip">
+  <g id="rackdown-1ar26o4-device-7" class="rackdown-device-group rackdown-blank-group rackdown-device-front" data-device-id="device-10" data-device-type="blank" data-position-u="1" data-u-height="1" data-mount-face="front" data-item-role="blank">
+    <clipPath id="rackdown-1ar26o4-device-7-clip">
       <rect x="0" y="1022.35" width="482.6" height="44.45" />
     </clipPath>
     <title>blank</title>
     <rect class="rackdown-device rackdown-blank" x="0" y="1022.35" width="482.6" height="44.45" />
   </g>
-  <g id="rackdown-1ex9yw3-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Remote Rack" data-link-style="wiki" data-placement="bottom" data-target="Remote Rack">
+  <g id="rackdown-1ar26o4-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Remote Rack" data-link-style="wiki" data-placement="bottom" data-target="Remote Rack">
     <title>Remote Rack</title>
     <rect class="rackdown-external-box" x="457.2" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
     <text class="rackdown-external-label" x="495.3" y="1087.5" text-anchor="middle" dominant-baseline="middle">Remote Rack</text>
   </g>
-  <g id="rackdown-1ex9yw3-external-2" class="rackdown-external-group" data-external-id="external-2" data-label="ISP Handover" data-link-style="wiki" data-placement="bottom" data-target="ISP Handover">
+  <g id="rackdown-1ar26o4-external-2" class="rackdown-external-group" data-external-id="external-2" data-label="ISP Handover" data-link-style="wiki" data-placement="bottom" data-target="ISP Handover">
     <title>ISP Handover</title>
     <rect class="rackdown-external-box" x="377" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
     <text class="rackdown-external-label" x="415.1" y="1087.5" text-anchor="middle" dominant-baseline="middle">ISP Handover</text>
