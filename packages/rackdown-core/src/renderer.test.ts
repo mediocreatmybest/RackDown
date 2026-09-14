@@ -271,7 +271,7 @@ describe('toSvg', () => {
     expect(svg).toContain('data-placement="bottom"');
     expect(svg).toContain('data-target="ISP Handover"');
     expect(svg).toContain('<title>ISP Handover</title>');
-    expect(svg).toContain('>ISP Handover</text>');
+    expect(svg).toContain('>ISP Hando…</text>');
   });
 
   describe('connection titles', () => {
@@ -1039,7 +1039,7 @@ describe('toSvg', () => {
       );
     });
 
-    it('shares --rackdown-label-size across label selectors while keeping each default', () => {
+    it('shares --rackdown-label-size across device labels and empty text', () => {
       const light = lightSchemeSection(styleOnly());
 
       expect(light).toContain(
@@ -1048,9 +1048,7 @@ describe('toSvg', () => {
       expect(light).toContain(
         '.rackdown-device-label-compact { font-size: var(--rackdown-label-size, 9px); }',
       );
-      expect(light).toContain(
-        '.rackdown-external-label { font-size: var(--rackdown-label-size, 10px);',
-      );
+      expect(light).not.toContain('.rackdown-external-label { font-size:');
       expect(light).toContain(
         '.rackdown-empty { font-size: var(--rackdown-label-size, 10px); }',
       );

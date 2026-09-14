@@ -1,4 +1,5 @@
 import type { RackFace } from './document.js';
+import { externalDisplayLabel } from './external-labels.js';
 import type {
   LayoutConnection,
   LayoutConnectionEndpoint,
@@ -34,7 +35,6 @@ const EXTERNAL_WIDTH_MM = 76.2;
 const EXTERNAL_HEIGHT_MM = 16;
 const EXTERNAL_HORIZONTAL_GAP_MM = 4;
 const EXTERNAL_VERTICAL_GAP_MM = 4;
-const EXTERNAL_LABEL_MAX_CHARS = 24;
 const EMPTY_WIDTH_MM = 120;
 const EMPTY_HEIGHT_MM = 40;
 const TITLE_OFFSET_MM = 7.5;
@@ -176,13 +176,6 @@ function formatNumber(value: number): string {
   }
   const rounded = Math.round(value * 1000) / 1000;
   return Object.is(rounded, -0) ? '0' : String(rounded);
-}
-
-function compactExternalLabel(value: string): string {
-  if (value.length <= EXTERNAL_LABEL_MAX_CHARS) {
-    return value;
-  }
-  return `${value.slice(0, EXTERNAL_LABEL_MAX_CHARS - 1).trimEnd()}…`;
 }
 
 /**
@@ -628,7 +621,7 @@ function buildRenderScene(
     }
 
     const index = projectedExternals.length;
-    const displayLabel = compactExternalLabel(external.label);
+    const displayLabel = externalDisplayLabel(external.label);
     let xMm: number;
     let yMm: number;
     let anchor: PointMm;
@@ -1221,7 +1214,8 @@ function renderExternal(external: ProjectedExternal, id: string): string[] {
     `<g id="${id}" class="rackdown-external-group" data-external-id="${escapeXml(external.id)}" data-label="${escapeXml(external.label)}" data-link-style="${linkStyle}" data-placement="${external.placement}"${targetAttr}>`,
     `  <title>${escapeXml(external.label)}</title>`,
     `  <rect class="rackdown-external-box" x="${formatNumber(external.xMm)}" y="${formatNumber(external.yMm)}" width="${formatNumber(external.widthMm)}" height="${formatNumber(external.heightMm)}" rx="3" ry="3" />`,
-    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + external.widthMm / 2)}" y="${formatNumber(external.yMm + external.heightMm / 2)}" text-anchor="middle" dominant-baseline="middle">${escapeXml(external.displayLabel)}</text>`,
+    `  <defs><clipPath id="${id}-label-clip" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(external.xMm + 4)}" y="${formatNumber(external.yMm + 1)}" width="68.2" height="14" /></clipPath></defs>`,
+    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + 38.1)}" y="${formatNumber(external.yMm + 12)}" text-anchor="middle" clip-path="url(#${id}-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>${escapeXml(external.displayLabel)}</text>`,
     '</g>',
   ];
 }
@@ -1246,7 +1240,6 @@ const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc
 :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
 :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
 .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-.rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
 .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }`;
 
 /**
