@@ -73,6 +73,22 @@ pnpm --filter @rackdown/hugo-proof prepare:rackdown
 hugo --source apps/hugo-rackdown
 ```
 
+## Obsidian presentation controls
+
+In Obsidian's RackDown plugin settings, choose routing (Perimeter, Direct,
+Orthogonal or Lanes), external placement (Bottom or Right), connection colour
+(Auto or Monochrome), and theme (Auto, Light or Dark). Defaults are Perimeter,
+Bottom, Auto colour and Auto theme. Auto theme follows Obsidian. Settings are
+saved across plugin reloads. Reading View updates when a setting changes;
+existing Live Preview blocks pick up changes on their next normal render.
+
+Diagrams automatically use responsive sizing to fit the note pane. Hover or
+keyboard-focus a connection to emphasise it. Its context menu offers **Hide
+connection**, also available through Shift+F10 or the Context Menu key when
+focused. A hidden-route count and **Show all** button restore hidden routes.
+Hiding is temporary, local to that rendered block, and resets on rerender; it
+never changes the note or saved settings.
+
 ## Development and Getting started
 
 To test the development setup:

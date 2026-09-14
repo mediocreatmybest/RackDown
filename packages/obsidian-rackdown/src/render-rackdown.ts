@@ -6,6 +6,10 @@ import {
   type SvgRenderOptions,
   toSvg,
 } from '@rackdown/core';
+import {
+  type RackDownPluginSettings,
+  resolveObsidianRenderOptions,
+} from './settings.js';
 
 export interface RackDownRenderedDevice {
   id: string;
@@ -22,11 +26,12 @@ export function renderRackDown(
   source: string,
   options?: SvgRenderOptions,
   devices: DeviceIndex = {},
+  settings?: RackDownPluginSettings,
 ): RackDownRenderResult {
   const layout = resolve(parse(source), devices);
 
   return {
-    svg: toSvg(layout, { connectionRouting: 'perimeter', ...options }),
+    svg: toSvg(layout, resolveObsidianRenderOptions(options, settings)),
     diagnostics: layout.diagnostics,
     devices: layout.devices.map(({ id, label }) => ({ id, label })),
   };
