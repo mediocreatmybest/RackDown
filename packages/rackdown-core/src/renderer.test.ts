@@ -4,6 +4,7 @@ import type { PointMm, RackLayout } from './layout.js';
 import { parse } from './parser.js';
 import { roundedRoutePath, toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
+import * as routingModule from './routing.js';
 
 interface ViewBoxMetrics {
   x: number;
@@ -2007,6 +2008,57 @@ describe('routing envelope viewport stability (#257)', () => {
 
     expect(expanded.height).toBeGreaterThan(inside.height);
     expectPointsInsideViewport(svg);
+  });
+
+  it.each(['pixels', 'physical', 'responsive'] as const)(
+    'measures uncapped nonexternal routes before placing callouts (%s)',
+    (sizing) => {
+      const source = `${rackPairSource(160)}\na -- external "Power"`;
+      const routeSpy = vi.spyOn(routingModule, 'routeConnections');
+      const svg = toSvg(resolve(parse(source)), {
+        connectionRouting: 'perimeter',
+        namespace: 'measured',
+        sizing,
+      });
+      const calls = routeSpy.mock.results.map(
+        (result) => result.value as Map<string, PointMm[]>,
+      );
+      routeSpy.mockRestore();
+      expect(calls).toHaveLength(2);
+      const initial = calls[0];
+      const final = calls[1];
+      if (!initial || !final)
+        throw new Error('Expected exactly two route passes');
+      const nonExternal = [...initial.entries()].slice(0, 160);
+      const maxY = Math.max(
+        ...nonExternal.flatMap(([, points]) =>
+          points.map((point) => point.yMm),
+        ),
+      );
+      expect(maxY).toBeGreaterThan(6 * 44.45 + SIDE_ENVELOPE_MM);
+      expect(externalRects(svg)[0]?.y).toBeCloseTo(maxY + 10, 3);
+      // A reused allocator would advance the uncapped pair ordinal a second time.
+      for (const [id, route] of nonExternal)
+        expect(final.get(id)).toEqual(route);
+      expectPointsInsideViewport(svg);
+      expectRectsInsideViewport(svg);
+      const viewport = viewBoxMetrics(svg);
+      expect(viewport.y + viewport.height).toBeCloseTo(
+        maxY + 10 + 16 + PADDING_MM,
+        3,
+      );
+    },
+  );
+
+  it('uses the normal routing envelope plus 10mm as the ordinary callout floor', () => {
+    const svg = toSvg(
+      resolve(parse('rack "R" 4U\n4 switch "S" as s\ns -- external "Power"')),
+      { connectionRouting: 'perimeter' },
+    );
+    expect(externalRects(svg)[0]?.y).toBeCloseTo(
+      4 * 44.45 + SIDE_ENVELOPE_MM + 10,
+      3,
+    );
   });
 
   it('reserves no envelope for a rack diagram with no connections', () => {

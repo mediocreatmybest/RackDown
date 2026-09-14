@@ -1,3 +1,4 @@
+import { packBottomExternals } from './bottom-externals.js';
 import type { RackFace } from './document.js';
 import { externalDisplayLabel } from './external-labels.js';
 import type {
@@ -124,6 +125,7 @@ interface ProjectedExternal extends LayoutExternal, RectMm {
   anchor: PointMm;
   displayLabel: string;
   placement: SvgExternalPlacement;
+  packedBottom?: boolean;
 }
 
 type ProjectedConnectionEndpoint =
@@ -481,6 +483,7 @@ function rectExtents(rects: readonly RectMm[]): Extents | undefined {
 function buildRenderScene(
   layout: RackLayout,
   placement: SvgExternalPlacement,
+  routing: SvgConnectionRouting,
 ): RenderScene {
   const projectedRacks: ProjectedRack[] = [];
   const projectionByKey = new Map<string, PointMm>();
@@ -613,6 +616,76 @@ function buildRenderScene(
   const subjectRightX = subjectExtents?.maxX ?? 0;
   const subjectBottomY = subjectExtents?.maxY ?? 0;
 
+  const canPackBottom =
+    routing === 'perimeter' &&
+    placement === 'bottom' &&
+    projectedRacks.length > 0 &&
+    visibleConnections.every(
+      (connection) =>
+        connection.from.kind === 'device' || connection.to.kind === 'device',
+    ) &&
+    projectedRacks.every(
+      (rack) =>
+        [rack.xMm, rack.yMm, rack.widthMm, rack.heightMm].every(
+          Number.isFinite,
+        ) &&
+        rack.widthMm > 0 &&
+        rack.heightMm > 0,
+    ) &&
+    projectedDevices.every((device) => {
+      const rack = projectedRacks.find(
+        (r) => r.id === device.rackId && r.face === device.mountFace,
+      );
+      return (
+        rack !== undefined &&
+        [device.xMm, device.yMm, device.widthMm, device.heightMm].every(
+          Number.isFinite,
+        ) &&
+        device.widthMm > 0 &&
+        device.heightMm > 0 &&
+        device.xMm >= rack.xMm - 0.01 &&
+        device.yMm >= rack.yMm - 0.01 &&
+        device.xMm + device.widthMm <= rack.xMm + rack.widthMm + 0.01 &&
+        device.yMm + device.heightMm <= rack.yMm + rack.heightMm + 0.01
+      );
+    });
+  const sourceCentres = new Map<string, number[]>();
+  const projectedDeviceById = new Map(
+    projectedDevices.map((device) => [device.id, device]),
+  );
+  for (const connection of visibleConnections) {
+    const deviceEndpoint =
+      connection.from.kind === 'device'
+        ? connection.from
+        : connection.to.kind === 'device'
+          ? connection.to
+          : undefined;
+    const externalEndpoint =
+      connection.from.kind === 'external'
+        ? connection.from
+        : connection.to.kind === 'external'
+          ? connection.to
+          : undefined;
+    if (!deviceEndpoint || !externalEndpoint) continue;
+    const device = projectedDeviceById.get(deviceEndpoint.deviceId);
+    if (!device) continue;
+    const centres = sourceCentres.get(externalEndpoint.externalId) ?? [];
+    centres.push(device.xMm + device.widthMm / 2);
+    sourceCentres.set(externalEndpoint.externalId, centres);
+  }
+  const packed = canPackBottom
+    ? packBottomExternals(
+        layout.externals
+          .filter((external) => visibleExternalIds.has(external.id))
+          .map((external) => ({
+            external,
+            centres: sourceCentres.get(external.id) ?? [],
+          })),
+        subjectCenterX,
+        Math.max(0, subjectBottomY) + NORMAL_ROUTING_ENVELOPE_MM.bottomMm + 10,
+      )
+    : undefined;
+
   const projectedExternals: ProjectedExternal[] = [];
   const projectedExternalById = new Map<string, ProjectedExternal>();
   for (const external of layout.externals) {
@@ -626,7 +699,12 @@ function buildRenderScene(
     let yMm: number;
     let anchor: PointMm;
 
-    if (placement === 'right') {
+    const packedBox = packed?.get(external.id);
+    if (packedBox) {
+      xMm = packedBox.xMm;
+      yMm = packedBox.yMm;
+      anchor = { xMm: xMm + 38.1, yMm };
+    } else if (placement === 'right') {
       xMm = subjectRightX + EXTERNAL_GAP_MM;
       yMm = index * (EXTERNAL_HEIGHT_MM + EXTERNAL_VERTICAL_GAP_MM);
       anchor = {
@@ -655,6 +733,7 @@ function buildRenderScene(
       anchor,
       displayLabel,
       placement,
+      packedBottom: packedBox !== undefined,
     };
     projectedExternals.push(projected);
     projectedExternalById.set(external.id, projected);
@@ -731,6 +810,7 @@ function routeRenderScene(
     if (endpoint.kind === 'external') {
       return {
         anchor: endpoint.anchor,
+        externalId: endpoint.externalId,
       };
     }
     const device = deviceById.get(endpoint.deviceId);
@@ -771,6 +851,21 @@ function routeRenderScene(
     routingRacks,
     routing,
     routingObstacles,
+    scene.externals
+      .filter((external) => external.packedBottom)
+      .map((external) => ({
+        id: external.id,
+        placement: 'bottom',
+        box: external,
+        target: external.anchor,
+        approachY: external.yMm - 10,
+        protectedApproach: {
+          xMm: external.anchor.xMm - 1.25,
+          yMm: external.yMm - 6,
+          widthMm: 2.5,
+          heightMm: 6,
+        },
+      })),
   );
 
   return {
@@ -784,6 +879,55 @@ function routeRenderScene(
       routing,
     })),
   };
+}
+
+/** One disposable measurement pass; rerouting always gets fresh allocators. */
+function routeWithMeasuredExternalFloor(
+  scene: RenderScene,
+  routing: SvgConnectionRouting,
+): RoutedRenderScene {
+  const initial = routeRenderScene(scene, routing);
+  const packed = scene.externals.filter((external) => external.packedBottom);
+  if (packed.length === 0) return initial;
+  const floor = Math.min(...packed.map((external) => external.yMm));
+  let nonExternalMaxY = Number.NEGATIVE_INFINITY;
+  for (const connection of initial.connections) {
+    if (connection.from.kind !== 'device' || connection.to.kind !== 'device')
+      continue;
+    for (const point of connection.route)
+      nonExternalMaxY = Math.max(nonExternalMaxY, point.yMm);
+  }
+  const raise = Math.max(0, nonExternalMaxY + 10 - floor);
+  if (raise === 0) return initial;
+  const externals = scene.externals.map((external) =>
+    external.packedBottom
+      ? {
+          ...external,
+          yMm: external.yMm + raise,
+          anchor: { ...external.anchor, yMm: external.anchor.yMm + raise },
+        }
+      : external,
+  );
+  const byId = new Map(externals.map((external) => [external.id, external]));
+  const endpoint = (
+    value: ProjectedConnectionEndpoint,
+  ): ProjectedConnectionEndpoint => {
+    if (value.kind !== 'external') return value;
+    const external = byId.get(value.externalId);
+    return external ? { ...value, anchor: { ...external.anchor } } : value;
+  };
+  return routeRenderScene(
+    {
+      ...scene,
+      externals,
+      connections: scene.connections.map((connection) => ({
+        ...connection,
+        from: endpoint(connection.from),
+        to: endpoint(connection.to),
+      })),
+    },
+    routing,
+  );
 }
 
 /**
@@ -1322,7 +1466,10 @@ export function toSvg(
   const sizing = svgSizing(options);
   const style = svgStyle(svgTheme(options));
   const namespace = rendererNamespace(layout, options);
-  const scene = routeRenderScene(buildRenderScene(layout, placement), routing);
+  const scene = routeWithMeasuredExternalFloor(
+    buildRenderScene(layout, placement, routing),
+    routing,
+  );
   const viewport = computeViewport(scene);
   const title =
     layout.racks.length === 1 && layout.racks[0]

@@ -1,4 +1,4 @@
-import type { PointMm } from './layout.js';
+import type { PointMm, RectMm } from './layout.js';
 
 const RIGHT_LANE_GUTTER_MM = 6.35;
 const BOTTOM_LANE_GUTTER_MM = 6.35;
@@ -59,6 +59,7 @@ export interface SlotBounds {
 
 export interface RoutingEndpoint {
   anchor: PointMm;
+  externalId?: string;
   rackKey?: string | undefined;
   slotBounds?: SlotBounds | undefined;
 }
@@ -166,10 +167,10 @@ export function isClassHEligible(
  * the conjunction of the two per-axis overlaps — no clipping or sampling
  * needed, and the segment degenerate in one axis is handled by the same test.
  */
-function segmentEntersRectInterior(
+export function segmentEntersRectInterior(
   a: PointMm,
   b: PointMm,
-  rect: RoutingObstacle,
+  rect: RectMm,
 ): boolean {
   const epsilon = LOCAL_GEOMETRY_EPSILON_MM;
   const minX = Math.min(a.xMm, b.xMm);
@@ -241,6 +242,41 @@ function routeIsWithinRack(
       point.yMm >= rack.yMm - epsilon &&
       point.yMm <= rack.yMm + rack.heightMm + epsilon,
   );
+}
+
+/** Renderer-owned callout presentation, separate from semantic RackLayout. */
+export interface RoutingBottomExternal {
+  id: string;
+  placement: 'bottom';
+  box: RectMm;
+  target: PointMm;
+  protectedApproach: RectMm;
+  approachY: number;
+}
+
+export function bottomExternalRouteIsClear(
+  route: readonly PointMm[],
+  targetId: string,
+  racks: readonly RoutingRack[],
+  devices: readonly RoutingObstacle[],
+  externals: readonly RoutingBottomExternal[],
+): boolean {
+  const rectangles: RectMm[] = [
+    ...racks,
+    ...devices,
+    ...externals.map((external) => external.box),
+    ...externals
+      .filter((external) => external.id !== targetId)
+      .map((external) => external.protectedApproach),
+  ];
+  return route
+    .slice(1)
+    .every((point, index) =>
+      rectangles.every(
+        (rect) =>
+          !segmentEntersRectInterior(route[index] as PointMm, point, rect),
+      ),
+    );
 }
 
 export interface RoutingConnection {
@@ -583,6 +619,7 @@ export function routeConnections(
   racks: readonly RoutingRack[],
   mode: SvgConnectionRouting,
   obstacles: readonly RoutingObstacle[] = [],
+  bottomExternals: readonly RoutingBottomExternal[] = [],
 ): Map<string, PointMm[]> {
   const routes = new Map<string, PointMm[]>();
   const rackByKey = new Map(racks.map((rack) => [rack.key, rack]));
@@ -1080,6 +1117,88 @@ export function routeConnections(
     // ignore direction and re-orient once at the end.
     const oriented = (route: PointMm[]): PointMm[] =>
       deviceIsFrom ? route : [...route].reverse();
+
+    const bottomExternal = bottomExternals.find(
+      (candidate) => candidate.id === externalEndpoint.externalId,
+    );
+    if (bottomExternal) {
+      const preview = peekLane(globalCorridor('bottom'));
+      const laneY = preview.coordinateMm;
+      const allRectangles = [
+        ...racks,
+        ...bottomExternals.map((candidate) => candidate.box),
+      ];
+      const leftTrunk =
+        Math.min(...allRectangles.map((rect) => rect.xMm)) - EXIT_STUB_MM;
+      const rightTrunk =
+        Math.max(...allRectangles.map((rect) => rect.xMm + rect.widthMm)) +
+        EXIT_STUB_MM;
+      const candidates: Array<RouteCandidate & { usesLane: boolean }> = [];
+      for (const side of ['right', 'left'] as const) {
+        const source = attachment(
+          connection.id,
+          endpointName,
+          deviceEndpoint,
+          side,
+        );
+        const trunk = side === 'right' ? rightTrunk : leftTrunk;
+        const approach = bottomExternal.approachY;
+        const target = bottomExternal.target;
+        const paths = [
+          [
+            source.point,
+            source.stub,
+            { xMm: source.stub.xMm, yMm: laneY },
+            { xMm: target.xMm, yMm: laneY },
+            target,
+          ],
+          [
+            source.point,
+            source.stub,
+            { xMm: source.stub.xMm, yMm: laneY },
+            { xMm: trunk, yMm: laneY },
+            { xMm: trunk, yMm: approach },
+            { xMm: target.xMm, yMm: approach },
+            target,
+          ],
+          [
+            source.point,
+            source.stub,
+            { xMm: trunk, yMm: source.point.yMm },
+            { xMm: trunk, yMm: approach },
+            { xMm: target.xMm, yMm: approach },
+            target,
+          ],
+        ];
+        for (const [index, path] of paths.entries()) {
+          const route = compactRoute(path);
+          if (
+            !bottomExternalRouteIsClear(
+              route,
+              bottomExternal.id,
+              racks,
+              obstacles,
+              bottomExternals,
+            )
+          )
+            continue;
+          const usesLane = index < 2;
+          candidates.push({
+            route,
+            usesLane,
+            score: routeScore(route, usesLane ? preview.pressure : 0),
+          });
+        }
+      }
+      if (candidates.length === 0) {
+        throw new Error(
+          `No accepted bottom external route for ${connection.id} (${bottomExternal.id})`,
+        );
+      }
+      const best = bestCandidate(candidates);
+      if (best.usesLane) consumeLane(preview);
+      return oriented(best.route);
+    }
 
     const region = classifyExternalRegion(external, rack, subject);
 
