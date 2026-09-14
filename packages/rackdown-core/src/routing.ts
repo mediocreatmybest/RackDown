@@ -646,9 +646,33 @@ export function routeConnections(
     // connections fan symmetrically about the anchor instead of all drifting
     // off it in one direction. A single connection lands exactly on it.
     const offset = (index - (total - 1) / 2) * ATTACHMENT_SPACING_MM;
+    let attachmentY = endpoint.anchor.yMm + offset;
+    const slot = endpoint.slotBounds;
+    if (
+      total > 1 &&
+      slot !== undefined &&
+      Number.isFinite(slot.topY) &&
+      Number.isFinite(slot.bottomY) &&
+      slot.bottomY > slot.topY
+    ) {
+      const half = ((total - 1) * ATTACHMENT_SPACING_MM) / 2;
+      if (
+        endpoint.anchor.yMm - half < slot.topY ||
+        endpoint.anchor.yMm + half > slot.bottomY
+      ) {
+        // Compress only overflowing fans; ordinary attachments keep their
+        // existing calculation. Use the full slot without an inset.
+        const spacing = Math.min(
+          ATTACHMENT_SPACING_MM,
+          (slot.bottomY - slot.topY) / (total - 1),
+        );
+        attachmentY =
+          (slot.topY + slot.bottomY) / 2 + (index - (total - 1) / 2) * spacing;
+      }
+    }
     const point = {
       xMm: side === 'right' ? rack.xMm + rack.widthMm : rack.xMm,
-      yMm: endpoint.anchor.yMm + offset,
+      yMm: attachmentY,
     };
     return {
       point,
