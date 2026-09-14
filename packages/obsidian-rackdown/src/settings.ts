@@ -9,6 +9,7 @@ export interface RackDownPluginSettings {
   routing: SvgConnectionRouting;
   externalPlacement: SvgExternalPlacement;
   connectionColourMode: ConnectionColourMode;
+  connectionThickness: number;
   theme: 'auto' | 'light' | 'dark';
 }
 
@@ -16,8 +17,21 @@ export const DEFAULT_SETTINGS: Readonly<RackDownPluginSettings> = {
   routing: 'perimeter',
   externalPlacement: 'bottom',
   connectionColourMode: 'auto',
+  connectionThickness: 2,
   theme: 'auto',
 };
+
+export const CONNECTION_THICKNESS = { min: 1, max: 4, step: 0.25 } as const;
+
+/** Keep finite fractions unchanged; the slider alone advances in quarter steps. */
+function normalizeConnectionThickness(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(
+        CONNECTION_THICKNESS.max,
+        Math.max(CONNECTION_THICKNESS.min, value),
+      )
+    : DEFAULT_SETTINGS.connectionThickness;
+}
 
 export const ROUTING_CHOICES = {
   perimeter: 'Perimeter',
@@ -75,6 +89,9 @@ export function normalizeSettings(data: unknown): RackDownPluginSettings {
       DEFAULT_SETTINGS.connectionColourMode,
     ),
     theme: supportedValue(saved.theme, THEME_CHOICES, DEFAULT_SETTINGS.theme),
+    connectionThickness: normalizeConnectionThickness(
+      saved.connectionThickness,
+    ),
   };
 }
 
@@ -85,6 +102,10 @@ export function resolveObsidianRenderOptions(
 ): SvgRenderOptions {
   return {
     ...options,
+    connectionStyle: {
+      ...options.connectionStyle,
+      width: options.connectionStyle?.width ?? settings.connectionThickness,
+    },
     connectionRouting: options.connectionRouting ?? settings.routing,
     externalPlacement: options.externalPlacement ?? settings.externalPlacement,
     connectionColourMode:

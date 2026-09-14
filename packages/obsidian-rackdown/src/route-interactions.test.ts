@@ -1,22 +1,39 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RackDownHostLinks } from './host-links.js';
 import { fire, TestElement, TestMenu } from './host-test-support.js';
+import type RackDownPlugin from './main.js';
+import { renderRackDown } from './render-rackdown.js';
 import { RackDownRouteInteractions } from './route-interactions.js';
+import { normalizeSettings } from './settings.js';
 
 vi.mock('obsidian', async () => {
   const { TestMenu, TestRenderChild } = await import('./host-test-support.js');
   return {
     MarkdownRenderChild: TestRenderChild,
     Menu: TestMenu,
+    Keymap: { isModEvent: () => false },
   };
 });
 
-function block() {
+function block(width = 2, tag = 'path') {
   const container = new TestElement();
   const diagram = container.append(new TestElement());
   const svg = diagram.append(new TestElement('svg'));
   const routes = ['one', 'two'].map((id) => {
-    const route = svg.append(new TestElement('path', 'rackdown-connection'));
+    const route = svg.append(new TestElement(tag, 'rackdown-connection'));
     route.setAttribute('data-connection-id', id);
+    route.setAttribute('id', `svg-${id}`);
+    route.setAttribute('stroke-width', String(width));
+    if (tag === 'path') route.setAttribute('d', 'M10,20 L60,20');
+    else
+      for (const [key, value] of Object.entries({
+        x1: '10',
+        y1: '20',
+        x2: '60',
+        y2: '20',
+      }))
+        route.setAttribute(key, value);
     route.setAttribute('stroke', '#123456');
     route.setAttribute('stroke-dasharray', '3 2');
     route.createEl('title', { text: `Core to ${id}` });
@@ -32,6 +49,124 @@ function block() {
 
 describe('block route interactions', () => {
   beforeEach(() => vi.stubGlobal('Element', TestElement));
+
+  it.each([1, 2, 3, 4, 1.75, 8])(
+    'derives emphasis from resolved width %s',
+    (width) => {
+      const { routes } = block(width);
+      for (const route of routes) {
+        expect(
+          route.style.getPropertyValue('--rackdown-connection-hover-width'),
+        ).toBe(`${width + 1}px`);
+        expect(
+          Number.parseFloat(
+            route.style.getPropertyValue('--rackdown-connection-hover-width'),
+          ),
+        ).toBeGreaterThan(width);
+        expect(route.getAttribute('stroke-width')).toBe(String(width));
+      }
+    },
+  );
+
+  it('uses the renderer-resolved explicit width instead of the global thickness', () => {
+    const svg = renderRackDown(
+      'rack "Lab" 12U\n10 switch "Core" as core\ncore:1 -- [[Remote]]',
+      { connectionStyle: { width: 3.75 } },
+      {},
+      normalizeSettings({ connectionThickness: 1 }),
+    ).svg;
+    const width = Number(
+      svg.match(/data-connection-id="[^"]+"[^>]*stroke-width="([^"]+)"/)?.[1],
+    );
+    expect(width).toBe(3.75);
+    expect(
+      block(width).routes[0]?.style.getPropertyValue(
+        '--rackdown-connection-hover-width',
+      ),
+    ).toBe('4.75px');
+  });
+
+  it('wires the derived variable to hover, focus and the adjacent hit target in host CSS', () => {
+    const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+    expect(css).toContain('.rackdown-connection:hover,');
+    expect(css).toContain('.rackdown-connection:focus-visible,');
+    expect(css).toContain(
+      '.rackdown-connection-hit:hover + .rackdown-connection',
+    );
+    expect(css).toContain(
+      'stroke-width: var(--rackdown-connection-hover-width);',
+    );
+    expect(css).toContain('stroke-width: 10px;');
+    expect(css).toContain('pointer-events: stroke;');
+    expect(css).toContain('vector-effect: non-scaling-stroke;');
+    expect(css).not.toContain('--rackdown-connection-width: 2.5');
+  });
+
+  it.each(['path', 'line'])(
+    'adds an unfocusable local hit shape with the same %s geometry and semantic id',
+    (tag) => {
+      const { svg, diagram, routes } = block(1, tag);
+      const hits = diagram.querySelectorAll('.rackdown-connection-hit');
+      expect(hits).toHaveLength(2);
+      for (const [index, hit] of hits.entries()) {
+        const route = routes[index] as TestElement;
+        expect(hit.tag).toBe(tag);
+        expect(hit.getAttribute('data-connection-id')).toBe(
+          route.getAttribute('data-connection-id'),
+        );
+        expect(hit.getAttribute('id')).toBeNull();
+        expect(hit.getAttribute('tabindex')).toBe('-1');
+        expect(hit.getAttribute('aria-hidden')).toBe('true');
+        expect(hit.querySelector('title')).toBeUndefined();
+        for (const key of tag === 'path' ? ['d'] : ['x1', 'y1', 'x2', 'y2']) {
+          expect(hit.getAttribute(key)).toBe(route.getAttribute(key));
+        }
+        expect(svg.children[svg.children.indexOf(route) - 1]).toBe(hit);
+      }
+    },
+  );
+
+  it('hides and restores both representations from the hit target without navigating links', () => {
+    const { container, diagram, routes } = block();
+    const other = block();
+    const hit = diagram.querySelector(
+      '.rackdown-connection-hit',
+    ) as TestElement;
+    const openLinkText = vi.fn();
+    const links = new RackDownHostLinks(
+      container.asHtml(),
+      { app: { workspace: { openLinkText } } } as unknown as RackDownPlugin,
+      'Lab.md',
+    );
+    links.onload();
+    for (const type of ['click', 'auxclick', 'keydown']) {
+      expect(
+        fire(container, type, hit, { key: 'Enter' }).defaultPrevented,
+      ).toBe(false);
+    }
+    expect(openLinkText).not.toHaveBeenCalled();
+    const link = diagram.append(new TestElement('g', 'rackdown-host-link'));
+    link.setAttribute('data-rackdown-target', 'Remote');
+    fire(container, 'click', link);
+    expect(openLinkText).toHaveBeenCalledWith('Remote', 'Lab.md', false);
+    expect(fire(other.diagram, 'contextmenu', hit).defaultPrevented).toBe(
+      false,
+    );
+    expect(fire(diagram, 'contextmenu', hit).defaultPrevented).toBe(true);
+    TestMenu.latest.action?.();
+    expect(hit.classes.has('rackdown-connection-hidden')).toBe(true);
+    expect(routes[0]?.classes.has('rackdown-connection-hidden')).toBe(true);
+    expect(other.routes[0]?.classes.has('rackdown-connection-hidden')).toBe(
+      false,
+    );
+    expect(fire(diagram, 'contextmenu', hit).defaultPrevented).toBe(false);
+    const reset = container.querySelector('button') as TestElement;
+    fire(reset, 'click', reset);
+    expect(hit.classes.has('rackdown-connection-hidden')).toBe(false);
+    expect(routes[0]?.classes.has('rackdown-connection-hidden')).toBe(false);
+    expect(routes[0]?.focus).toHaveBeenCalled();
+    links.unload();
+  });
 
   it('makes connections focusable using their existing title and preserves visual meaning', () => {
     const { svg, routes, container } = block();
@@ -124,6 +259,13 @@ describe('block route interactions', () => {
     fire(diagram, 'contextmenu', routes[0] as TestElement);
     TestMenu.latest.action?.();
     controller.unload();
+    expect(diagram.querySelectorAll('.rackdown-connection-hit')).toHaveLength(
+      0,
+    );
+    expect(
+      routes[0]?.style.getPropertyValue('--rackdown-connection-hover-width'),
+    ).toBe('');
+    expect(routes[0]?.getAttribute('tabindex')).toBeNull();
     expect(TestMenu.latest.hide).toHaveBeenCalled();
     expect(container.querySelector('.rackdown-hidden-routes')).toBeUndefined();
     expect(routes[0]?.classes.has('rackdown-connection-hidden')).toBe(false);

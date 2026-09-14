@@ -38,6 +38,7 @@ describe('settings normalization', () => {
     ['theme', null],
   ])('falls back independently for invalid %s=%s', (key, value) => {
     const valid = {
+      ...DEFAULT_SETTINGS,
       routing: 'direct',
       externalPlacement: 'right',
       connectionColourMode: 'monochrome',
@@ -47,6 +48,29 @@ describe('settings normalization', () => {
       ...valid,
       [key as string]: DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS],
     });
+  });
+
+  it.each([
+    [undefined, 2],
+    [null, 2],
+    ['3', 2],
+    [false, 2],
+    [{}, 2],
+    [[], 2],
+    [Number.NaN, 2],
+    [Number.POSITIVE_INFINITY, 2],
+    [Number.NEGATIVE_INFINITY, 2],
+    [-1, 1],
+    [0, 1],
+    [1, 1],
+    [4, 4],
+    [5, 4],
+    [2.75, 2.75],
+    [2.13, 2.13],
+  ])('normalizes thickness %s to %s', (connectionThickness, expected) => {
+    expect(normalizeSettings({ connectionThickness }).connectionThickness).toBe(
+      expected,
+    );
   });
 
   it('exposes all supported routing methods and only three host themes', () => {
@@ -70,9 +94,56 @@ describe('Obsidian render option resolution', () => {
       connectionRouting: 'perimeter',
       externalPlacement: 'bottom',
       connectionColourMode: 'auto',
+      connectionStyle: { width: 2 },
       theme: 'auto',
       sizing: 'responsive',
     });
+  });
+
+  it('forwards thickness without flattening explicit connection styles', () => {
+    const settings = normalizeSettings({ connectionThickness: 3 });
+    const options: SvgRenderOptions = {
+      namespace: 'width-check',
+      connectionStyle: { color: '#123456', opacity: 0.6, pattern: 'dotted' },
+    };
+    const resolved = resolveObsidianRenderOptions(options, settings);
+    expect(resolved.connectionStyle).toEqual({
+      ...options.connectionStyle,
+      width: 3,
+    });
+    expect(options.connectionStyle).not.toHaveProperty('width');
+    const first = renderRackDown(SOURCE, options, {}, settings).svg;
+    const id = first.match(/data-connection-id="([^"]+)"/)?.[1] as string;
+    expect(
+      first
+        .match(/<(?:path|line) [^>]*data-connection-id="[^"]+"[^>]*>/g)
+        ?.every((path) => path.includes('stroke-width="3"')),
+    ).toBe(true);
+
+    const explicit: SvgRenderOptions = {
+      ...options,
+      connectionStyle: { ...options.connectionStyle, width: 1.5 },
+      connectionStyles: { [id]: { width: 3.75, pattern: 'dashed' } },
+      theme: 'light',
+    };
+    expect(resolveObsidianRenderOptions(explicit, settings)).toMatchObject(
+      explicit,
+    );
+    expect(
+      resolveObsidianRenderOptions(explicit, settings).connectionStyles,
+    ).toBe(explicit.connectionStyles);
+    const svg = renderRackDown(SOURCE, explicit, {}, settings).svg;
+    const paths =
+      svg.match(/<(?:path|line) [^>]*data-connection-id="[^"]+"[^>]*>/g) ?? [];
+    expect(
+      paths.find((path) => path.includes(`data-connection-id="${id}"`)),
+    ).toContain('stroke-width="3.75"');
+    expect(
+      paths.find((path) => !path.includes(`data-connection-id="${id}"`)),
+    ).toContain('stroke-width="1.5"');
+    expect(svg).toContain('stroke="#123456"');
+    expect(svg).toContain('stroke-opacity="0.6"');
+    expect(first).not.toContain('rackdown-connection-hit');
   });
 
   it.each(['direct', 'orthogonal', 'lanes', 'perimeter'] as const)(

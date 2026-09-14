@@ -21,19 +21,30 @@
   max-width: 100%;
 }
 
-.rackdown-diagram .rackdown-connection:hover,
-.rackdown-diagram .rackdown-connection:focus-visible {
-  --rackdown-connection-width: 2.5;
-  opacity: 1;
-  stroke-opacity: 1;
+.rackdown-diagram .rackdown-connection-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10px;
+  stroke-dasharray: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: stroke;
 }
 
 .rackdown-diagram:has(
     .rackdown-connection:hover,
+    .rackdown-connection-hit:hover,
     .rackdown-connection:focus-visible
   )
-  .rackdown-connection:not(:hover, :focus-visible) {
+  :where(.rackdown-connection) {
   opacity: 0.3;
+}
+
+.rackdown-diagram .rackdown-connection:hover,
+.rackdown-diagram .rackdown-connection:focus-visible,
+.rackdown-diagram .rackdown-connection-hit:hover + .rackdown-connection {
+  stroke-width: var(--rackdown-connection-hover-width);
+  opacity: 1;
+  stroke-opacity: 1;
 }
 
 .rackdown-diagram .rackdown-connection-hidden {

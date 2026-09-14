@@ -122,7 +122,7 @@ export default class RackDownPlugin extends Plugin {
 
   async updateSetting(
     key: keyof RackDownPluginSettings,
-    value: string,
+    value: string | number,
   ): Promise<void> {
     this.settings = normalizeSettings({ ...this.settings, [key]: value });
     await this.saveData(this.settings);

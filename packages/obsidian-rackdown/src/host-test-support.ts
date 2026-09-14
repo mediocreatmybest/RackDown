@@ -10,6 +10,13 @@ export class TestElement extends EventTarget {
     contains: (name: string) => this.classes.has(name),
   };
   readonly children: TestElement[] = [];
+  readonly style = {
+    properties: new Map<string, string>(),
+    setProperty: (key: string, value: string) =>
+      this.style.properties.set(key, value),
+    getPropertyValue: (key: string) => this.style.properties.get(key) ?? '',
+    removeProperty: (key: string) => this.style.properties.delete(key),
+  };
   parentElement: TestElement | undefined;
   textContent = '';
   innerHTML = '';
@@ -29,7 +36,27 @@ export class TestElement extends EventTarget {
     return this instanceof type;
   }
   setAttribute(key: string, value: string): void {
+    if (key === 'class') {
+      this.classes.clear();
+      for (const name of value.split(' ')) this.classes.add(name);
+    }
     this.attributes.set(key, value);
+  }
+  removeAttribute(key: string): void {
+    this.attributes.delete(key);
+  }
+  cloneNode(): TestElement {
+    const clone = new TestElement(this.tag, [...this.classes].join(' '));
+    for (const [key, value] of this.attributes) clone.setAttribute(key, value);
+    return clone;
+  }
+  before(child: TestElement): void {
+    child.parentElement = this.parentElement;
+    this.parentElement?.children.splice(
+      this.parentElement.children.indexOf(this),
+      0,
+      child,
+    );
   }
   getAttribute(key: string): string | null {
     return this.attributes.get(key) ?? null;

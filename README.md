@@ -77,14 +77,22 @@ hugo --source apps/hugo-rackdown
 
 In Obsidian's RackDown plugin settings, choose routing (Perimeter, Direct,
 Orthogonal or Lanes), external placement (Bottom or Right), connection colour
-(Auto or Monochrome), and theme (Auto, Light or Dark). Defaults are Perimeter,
-Bottom, Auto colour and Auto theme. Auto theme follows Obsidian. Settings are
-saved across plugin reloads. Reading View updates when a setting changes;
+(Auto or Monochrome), connection thickness, and theme (Auto, Light or Dark).
+Defaults are Perimeter, Bottom, Auto colour, thickness 2 and Auto theme.
+Thickness ranges from 1 to 4, with slider steps of 0.25. Saved finite numbers
+are clamped to that range without rounding; missing, non-number or non-finite
+values fall back to 2. Explicit renderer widths override this host default,
+and per-connection widths retain highest priority. Auto theme follows Obsidian.
+Settings are saved across plugin reloads. Reading View updates when a setting changes;
 existing Live Preview blocks pick up changes on their next normal render.
 
 Diagrams automatically use responsive sizing to fit the note pane. Hover or
-keyboard-focus a connection to emphasise it. Its context menu offers **Hide
-connection**, also available through Shift+F10 or the Context Menu key when
+keyboard-focus a connection to emphasise it: its resolved visible width grows
+by 1 CSS pixel, including explicit per-connection widths, without an upper cap.
+A transparent 10 CSS pixel hit target follows each route in Obsidian only,
+making thin lines easier to point at without widening their visible stroke.
+Its context menu offers **Hide connection**, also available through Shift+F10
+or the Context Menu key when
 focused. A hidden-route count and **Show all** button restore hidden routes.
 Hiding is temporary, local to that rendered block, and resets on rerender; it
 never changes the note or saved settings.

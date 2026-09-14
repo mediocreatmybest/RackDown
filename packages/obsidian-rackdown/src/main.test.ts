@@ -96,10 +96,12 @@ describe('Obsidian settings lifecycle', () => {
     await instance.updateSetting('externalPlacement', 'right');
     await instance.updateSetting('connectionColourMode', 'monochrome');
     await instance.updateSetting('theme', 'dark');
+    await instance.updateSetting('connectionThickness', 2.75);
     expect(host.saveData).toHaveBeenLastCalledWith({
       routing: 'direct',
       externalPlacement: 'right',
       connectionColourMode: 'monochrome',
+      connectionThickness: 2.75,
       theme: 'dark',
     });
     expect(first.previewMode.rerender).toHaveBeenCalledWith(true);
@@ -125,9 +127,15 @@ describe('Obsidian settings lifecycle', () => {
     );
     await instance.updateSetting('routing', 'orthogonal');
     await instance.updateSetting('theme', 'light');
+    await instance.updateSetting('connectionThickness', 4);
     const subsequent = new TestElement();
-    await processor?.('rack "Lab" 12U', subsequent.asHtml(), context);
+    await processor?.(
+      'rack "Lab" 12U\n10 switch "Core" as core\ncore:1 -- [[Remote]]',
+      subsequent.asHtml(),
+      context,
+    );
     const svg = subsequent.querySelector('.rackdown-diagram')?.innerHTML;
+    expect(svg).toContain('stroke-width="4"');
     expect(svg).toContain('data-connection-routing="orthogonal"');
     expect(svg).toContain('obsidian-Notes-Lab-md-0');
     expect(

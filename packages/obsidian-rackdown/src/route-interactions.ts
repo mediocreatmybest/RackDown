@@ -7,6 +7,7 @@ const HIDDEN_CLASS = 'rackdown-connection-hidden';
 export class RackDownRouteInteractions extends MarkdownRenderChild {
   private readonly hidden = new Set<string>();
   private connections: SVGElement[] = [];
+  private readonly hitTargets = new Map<SVGElement, SVGElement>();
   private status: HTMLElement | undefined;
   private count: HTMLElement | undefined;
   private reset: HTMLButtonElement | undefined;
@@ -26,6 +27,23 @@ export class RackDownRouteInteractions extends MarkdownRenderChild {
     // An atomic image role would conceal the interactive SVG descendants.
     this.diagram.querySelector('svg')?.setAttribute('role', 'group');
     for (const connection of this.connections) {
+      // Clone only the shape, keeping the hit area below the visible route and
+      // the renderer's later device/link layers. Never duplicate an SVG id.
+      const hit = connection.cloneNode(false) as SVGElement;
+      hit.removeAttribute('id');
+      hit.setAttribute('class', 'rackdown-connection-hit');
+      hit.setAttribute('aria-hidden', 'true');
+      hit.setAttribute('tabindex', '-1');
+      connection.before(hit);
+      this.hitTargets.set(hit, connection);
+
+      // The renderer has already resolved global and per-connection widths.
+      // Add one CSS pixel, without a cap that could thin an explicit wide route.
+      const width = Number(connection.getAttribute('stroke-width'));
+      connection.style.setProperty(
+        '--rackdown-connection-hover-width',
+        `${width + 1}px`,
+      );
       connection.setAttribute('tabindex', '0');
       connection.setAttribute('role', 'img');
       const title = connection.querySelector('title')?.textContent?.trim();
@@ -66,7 +84,9 @@ export class RackDownRouteInteractions extends MarkdownRenderChild {
 
   private connectionFrom(target: Node | null): SVGElement | undefined {
     if (!target?.instanceOf(Element)) return undefined;
-    const connection = target.closest(CONNECTION_SELECTOR);
+    const connection =
+      this.hitTargets.get(target as SVGElement) ??
+      target.closest(CONNECTION_SELECTOR);
     return this.connections.find(
       (candidate) =>
         candidate === connection && !candidate.classList.contains(HIDDEN_CLASS),
@@ -92,6 +112,11 @@ export class RackDownRouteInteractions extends MarkdownRenderChild {
     for (const route of this.connections) {
       if (route.getAttribute('data-connection-id') === id) {
         route.classList.add(HIDDEN_CLASS);
+      }
+    }
+    for (const [hit, route] of this.hitTargets) {
+      if (route.getAttribute('data-connection-id') === id) {
+        hit.classList.add(HIDDEN_CLASS);
       }
     }
     if (!this.status) {
@@ -120,6 +145,8 @@ export class RackDownRouteInteractions extends MarkdownRenderChild {
     for (const connection of this.connections) {
       connection.classList.remove(HIDDEN_CLASS);
     }
+    for (const hit of this.hitTargets.keys())
+      hit.classList.remove(HIDDEN_CLASS);
     this.hidden.clear();
     if (restoreFocus) firstHidden?.focus();
     if (this.status) this.status.hidden = true;
@@ -129,5 +156,15 @@ export class RackDownRouteInteractions extends MarkdownRenderChild {
     this.menu?.hide();
     this.showAll(false);
     this.status?.remove();
+    for (const hit of this.hitTargets.keys()) hit.remove();
+    this.hitTargets.clear();
+    for (const connection of this.connections) {
+      connection.style.removeProperty('--rackdown-connection-hover-width');
+      connection.removeAttribute('tabindex');
+      connection.removeAttribute('role');
+      connection.removeAttribute('aria-label');
+    }
+    this.diagram.querySelector('svg')?.setAttribute('role', 'img');
+    this.connections = [];
   }
 }
