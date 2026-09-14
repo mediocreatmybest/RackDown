@@ -33,6 +33,7 @@ The unit tests for the measures themselves run with the rest of the tools:
 
 ```bash
 node --test tools/render-metrics/metrics.test.mjs
+node --test tools/render-metrics/presentation.test.mjs
 ```
 
 ## What is measured
@@ -47,6 +48,10 @@ brittle. Lower is better for every measure except `connections`.
 | `crossings` | Segment intersections between distinct routes | Readability. Self-intersection within one route is not counted |
 | `occludedMm` | Route length drawn underneath a device body | **The strongest readability signal.** A crossing is legible; a cable that vanishes under a server and reappears elsewhere is not |
 | `foreignRackTransitMm` | Route length inside a rack body that neither endpoint belongs to | Guard rail — see the note below |
+| `externalBoxInteriorRoutes` | Routes entering any external box, including their own target | Complete-path callout clearance |
+| `foreignExternalStemRoutes` | Routes entering another external's final 2.5 × 6 mm bottom approach | Protects the association between a callout and its connections |
+| `localDeviceInteriorRoutes` | Same-row, same-projection device connections entering device interiors | Detects unsafe local attachment geometry |
+| `externalRows` | Populated bottom callout rows | Pins bounded overflow packing; additional rows are expected for dense scenes |
 | `totalLengthMm` | Sum of all route lengths | Catches "fixes" that remove crossings by going the long way round |
 | `bends` | Direction changes across all routes | Visual noise. Collinear joins are not bends |
 | `viewportWidthMm` / `viewportHeightMm` | Diagram extent | Catches unbounded corridor growth (issue #202 defect B) |
@@ -108,8 +113,10 @@ that caused it, so the diff shows the effect.
 
 ## Corpus
 
-The three `examples/` documents plus every `fixtures/valid/` document, each
-rendered in all four routing modes — 40 results.
+The three canonical examples and the valid fixtures listed in `CORPUS`, each
+rendered in all four routing modes — 48 results. The garage fixture pins C3
+attachments and two projected power callouts; the dense fixture pins 18
+externals in six rows.
 
 Several fixtures have no connections at all. Those rows are near-empty by design:
 they pin rack and device geometry, so a layout change that silently moved racks
@@ -143,3 +150,51 @@ verdict.
 `check` runs before `build`, and this harness needs the built core. Run it after
 `pnpm build`, or wire it into CI as a separate step. Left out of the default gate
 deliberately rather than by oversight.
+
+## Presentation geometry review
+
+Generate eight focused SVGs and a review page after building core:
+
+```bash
+node tools/render-metrics/presentation.mjs /tmp/rackdown-presentation-review
+node --test tools/render-metrics/metrics.test.mjs tools/render-metrics/presentation.test.mjs
+```
+
+The cases cover two siblings, three C3 connections, bottom overflow, garage
+power callouts, six and eighteen crowded externals, wide labels and Unicode.
+The tests inspect complete logical routes, target boundaries, collision counts
+and final extents. They do not measure font ink.
+
+### Intentional perimeter baseline changes
+
+Only these five original corpus rows change geometry. Every change is confined
+to bottom-perimeter external routes; the other 35 original rows retain their
+existing metrics. Direct, orthogonal, lanes and right-placement geometry also
+remain unchanged when compared with the preceding implementation.
+
+| Document | Total length | Bends | Viewport height | Reason |
+| --- | --- | --- | --- | --- |
+| `examples/home-lab.rackdown` | 2601 → 2988 | 15 → 16 | 1171 → 1197 | Two callouts pack near their front-device centre. One route uses the clear left exterior approach; the other gains a final top-centre leg. |
+| `examples/routing.rackdown` | 3095 → 3367 | 20 → 21 | 943 → 969 | The callout moves from the combined projection centre to its source projection centre and gains a final vertical leg. |
+| `examples/shared-rows.rackdown` | 1133 → 1405 | 16 → 17 | 460 → 486 | The external moves to its source projection centre and gains a final vertical leg. Existing device-device routes are unchanged. |
+| `fixtures/valid/external-link.rackdown` | 689 → 719 | 2 → 3 | 638 → 664 | X is unchanged; the measured floor raises the box 30 mm and adds the final vertical leg. |
+| `fixtures/valid/front-rear.rackdown` | 938 → 1209 | 10 → 11 | 638 → 664 | The external moves to its front source projection centre and gains a final vertical leg. |
+
+The ordinary box floor increases by 30 mm. The viewport grows by 26 mm because
+the previous routing envelope already extended 4 mm beyond the box. These
+whole-millimetre results match the accepted reference values exactly.
+
+### Browser acceptance follow-up
+
+The workspace has no installed Chromium/Playwright test dependency. A permanent
+browser runner is deferred to avoid adding a browser installation and CI job
+for this change. Core generation remains independent of browser and font
+measurement. Native SVG review can verify route presentation, but cannot stand
+in for Chromium label acceptance or Obsidian desktop/mobile review.
+
+The future `external-labels.browser.mjs` runner should load the generated SVGs,
+measure each label's **unclipped** `getBBox()` against its 68.2 × 14 mm inner
+rectangle, and repeat with clip guards enabled and removed. It must fail on
+overflow before clipping and must exercise wide ASCII, NFC/decomposed text,
+CJK, Arabic/Hebrew, flags and ZWJ emoji. Measurements must never feed back into
+core generation or change its fixed deterministic width budget.

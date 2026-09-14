@@ -6,16 +6,112 @@ import {
   computeMetrics,
   crossingCount,
   extractDeviceRects,
+  extractExternalRects,
   extractRackRects,
   extractRoutes,
   extractViewport,
   lengthInsideRects,
   parseRoutePath,
+  routeEntersRect,
   routeLength,
   segmentsCross,
 } from './metrics.mjs';
 
 const square = [{ x: 0, y: 0, w: 10, h: 10 }];
+
+test('external extraction ignores namespaced clipping rectangles', () => {
+  const svg =
+    '<g id="n-external-1" class="rackdown-external-group" data-external-id="e" data-label="Power" data-placement="bottom"><title>Power</title><rect class="rackdown-external-box" x="10" y="100" width="76.2" height="16" /><defs><clipPath id="n-clip"><rect x="14" y="101" width="68.2" height="14" /></clipPath></defs></g>';
+  assert.deepEqual(extractExternalRects(svg), [
+    { id: 'e', placement: 'bottom', x: 10, y: 100, w: 76.2, h: 16 },
+  ]);
+});
+
+test('exact interior detection covers complete legs, diagonals and 0.01mm boundary tolerance', () => {
+  const rect = { x: 0, y: 0, w: 10, h: 10 };
+  assert.equal(
+    routeEntersRect(
+      [
+        [-1, 5],
+        [11, 5],
+      ],
+      rect,
+    ),
+    true,
+  );
+  assert.equal(
+    routeEntersRect(
+      [
+        [5, -1],
+        [5, 11],
+      ],
+      rect,
+    ),
+    true,
+  );
+  assert.equal(
+    routeEntersRect(
+      [
+        [-1, -1],
+        [11, 11],
+      ],
+      rect,
+    ),
+    true,
+  );
+  assert.equal(
+    routeEntersRect(
+      [
+        [-1, 0],
+        [11, 0],
+      ],
+      rect,
+    ),
+    false,
+  );
+  assert.equal(
+    routeEntersRect(
+      [
+        [0.009, -1],
+        [0.009, 11],
+      ],
+      rect,
+    ),
+    false,
+  );
+  assert.equal(
+    routeEntersRect(
+      [
+        [0.011, -1],
+        [0.011, 11],
+      ],
+      rect,
+    ),
+    true,
+  );
+});
+
+test('external metrics count own-box entry and foreign stems, allowing shared semantic stems', () => {
+  const group = (id, x) =>
+    `<g class="rackdown-external-group" data-external-id="${id}" data-placement="bottom"><title>Power</title><rect class="rackdown-external-box" x="${x}" y="100" width="76.2" height="16" /></g>`;
+  const svg = `<svg viewBox="0 0 300 200"><path data-connection-id="c" d="M 38.1,90 L 38.1,110 L 138.1,110 L 138.1,95 L 200,95" />${group('own', 0)}${group('foreign', 100)}</svg>`;
+  const layout = {
+    connections: [
+      {
+        id: 'c',
+        from: { kind: 'external', externalId: 'own' },
+        to: { kind: 'external', externalId: 'own' },
+      },
+    ],
+  };
+  const metrics = computeMetrics(layout, svg);
+  assert.equal(metrics.externalBoxInteriorRoutes, 1);
+  assert.equal(metrics.foreignExternalStemRoutes, 1);
+  assert.equal(metrics.externalRows, 1);
+  const shared = svg.replace(/d="M [^"]+"/, 'd="M 38.1,90 L 38.1,100"');
+  assert.equal(computeMetrics(layout, shared).externalBoxInteriorRoutes, 0);
+  assert.equal(computeMetrics(layout, shared).foreignExternalStemRoutes, 0);
+});
 
 test('routeLength sums segments', () => {
   assert.equal(

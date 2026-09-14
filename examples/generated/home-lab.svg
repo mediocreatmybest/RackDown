@@ -1,4 +1,4 @@
-<svg id="rackdown-1ar26o4-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 1171.45" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1ar26o4-title" aria-describedby="rackdown-1ar26o4-desc">
+<svg id="rackdown-1ar26o4-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 1197.45" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1ar26o4-title" aria-describedby="rackdown-1ar26o4-desc">
   <title id="rackdown-1ar26o4-title">Home Lab rack diagram</title>
   <desc id="rackdown-1ar26o4-desc">1 rack, 7 devices, 7 connections.</desc>
   <style>
@@ -18,7 +18,6 @@
   :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
   :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
   .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-  .rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
   .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
   @media (prefers-color-scheme: dark) {
   .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
@@ -149,10 +148,10 @@
   <path id="rackdown-1ar26o4-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-16" data-routing="perimeter" data-media="fibre" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 482.6,375.325 L 485.95,375.325 Q 488.95,375.325 488.95,378.325 L 488.95,462.475 Q 488.95,465.475 485.95,465.475 L 482.6,465.475">
     <title>core:SFP+ 26 → fibre:1 (fibre)</title>
   </path>
-  <path id="rackdown-1ar26o4-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 482.6,467.975 L 485.95,467.975 Q 488.95,467.975 488.95,470.975 L 488.95,1080.5 Q 488.95,1083.5 491.95,1083.5 L 493.3,1083.5 Q 495.3,1083.5 495.3,1081.5 L 495.3,1079.5">
+  <path id="rackdown-1ar26o4-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 0,467.975 L -3.35,467.975 Q -6.35,467.975 -6.35,470.975 L -6.35,1096.5 Q -6.35,1099.5 -3.35,1099.5 L 158.1,1099.5 Q 161.1,1099.5 161.1,1102.5 L 161.1,1109.5">
     <title>fibre:12 → Remote Rack</title>
   </path>
-  <path id="rackdown-1ar26o4-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" d="M 482.6,290.175 L 485.95,290.175 Q 488.95,290.175 488.95,293.175 L 488.95,1076.5 Q 488.95,1079.5 485.95,1079.5 L 415.1,1079.5">
+  <path id="rackdown-1ar26o4-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" d="M 482.6,290.175 L 485.95,290.175 Q 488.95,290.175 488.95,293.175 L 488.95,1076.5 Q 488.95,1079.5 485.95,1079.5 L 244.3,1079.5 Q 241.3,1079.5 241.3,1082.5 L 241.3,1109.5">
     <title>gw:port.9 → ISP Handover</title>
   </path>
   <g id="rackdown-1ar26o4-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="ubiquiti-unifi-dream-machine-pro" data-position-u="18" data-u-height="1" data-mount-face="front" data-alias="gw">
@@ -212,12 +211,14 @@
   </g>
   <g id="rackdown-1ar26o4-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Remote Rack" data-link-style="wiki" data-placement="bottom" data-target="Remote Rack">
     <title>Remote Rack</title>
-    <rect class="rackdown-external-box" x="457.2" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
-    <text class="rackdown-external-label" x="495.3" y="1087.5" text-anchor="middle" dominant-baseline="middle">Remote Rack</text>
+    <rect class="rackdown-external-box" x="123" y="1109.5" width="76.2" height="16" rx="3" ry="3" />
+    <defs><clipPath id="rackdown-1ar26o4-external-1-label-clip" clipPathUnits="userSpaceOnUse"><rect x="127" y="1110.5" width="68.2" height="14" /></clipPath></defs>
+    <text class="rackdown-external-label" x="161.1" y="1121.5" text-anchor="middle" clip-path="url(#rackdown-1ar26o4-external-1-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>Remote Ra…</text>
   </g>
   <g id="rackdown-1ar26o4-external-2" class="rackdown-external-group" data-external-id="external-2" data-label="ISP Handover" data-link-style="wiki" data-placement="bottom" data-target="ISP Handover">
     <title>ISP Handover</title>
-    <rect class="rackdown-external-box" x="377" y="1079.5" width="76.2" height="16" rx="3" ry="3" />
-    <text class="rackdown-external-label" x="415.1" y="1087.5" text-anchor="middle" dominant-baseline="middle">ISP Handover</text>
+    <rect class="rackdown-external-box" x="203.2" y="1109.5" width="76.2" height="16" rx="3" ry="3" />
+    <defs><clipPath id="rackdown-1ar26o4-external-2-label-clip" clipPathUnits="userSpaceOnUse"><rect x="207.2" y="1110.5" width="68.2" height="14" /></clipPath></defs>
+    <text class="rackdown-external-label" x="241.3" y="1121.5" text-anchor="middle" clip-path="url(#rackdown-1ar26o4-external-2-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>ISP Hando…</text>
   </g>
 </svg>

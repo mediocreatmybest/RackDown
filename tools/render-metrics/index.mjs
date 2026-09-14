@@ -36,12 +36,18 @@ const CORPUS = [
   'fixtures/valid/fractional-u.rackdown',
   'fixtures/valid/u1-top.rackdown',
   'fixtures/valid/unicode.rackdown',
+  'fixtures/valid/perimeter-garage.rackdown',
+  'fixtures/valid/perimeter-dense.rackdown',
 ];
 
 const METRIC_COLUMNS = [
   ['connections', 5],
   ['crossings', 10],
   ['occludedMm', 11],
+  ['externalBoxInteriorRoutes', 10],
+  ['foreignExternalStemRoutes', 10],
+  ['localDeviceInteriorRoutes', 10],
+  ['externalRows', 6],
   ['foreignRackTransitMm', 14],
   ['totalLengthMm', 12],
   ['bends', 6],
@@ -139,6 +145,10 @@ function shortDocument(path) {
 function shortName(name) {
   return name
     .replace(/Mm$/, '')
+    .replace('externalBoxInteriorRoutes', 'extBox')
+    .replace('foreignExternalStemRoutes', 'extStem')
+    .replace('localDeviceInteriorRoutes', 'localDev')
+    .replace('externalRows', 'rows')
     .replace('foreignRackTransit', 'inForeign')
     .replace('viewportWidth', 'vpW')
     .replace('viewportHeight', 'vpH')

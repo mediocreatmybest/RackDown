@@ -1,0 +1,10 @@
+rack "Garage" 8U 19in views front rear
+6 device "Mini PC 01" as pc1
+6 device "Mini PC 02" as pc2
+2 2U ups "UPS" as ups
+rear 4 pdu "PDU" as pdu
+
+pc1 -- pc2
+pdu -- ups
+ups -- external "Garage GPO"
+pdu -- external "IEC power reference"
