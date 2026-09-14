@@ -118,6 +118,15 @@ export function isClassHEligible(
   const sFrom = from.slotBounds;
   const sTo = to.slotBounds;
   const EPSILON = SLOT_EQUALITY_EPSILON_MM;
+  if (
+    [sFrom, sTo].some(
+      (slot) =>
+        !Object.values(slot).every(Number.isFinite) ||
+        slot.rightX <= slot.leftX ||
+        slot.bottomY <= slot.topY,
+    )
+  )
+    return false;
 
   if (
     Math.abs(sFrom.topY - sTo.topY) > EPSILON ||
@@ -149,10 +158,9 @@ export function isClassHEligible(
 /**
  * True when an axis-aligned segment passes through a rectangle's interior.
  *
- * Contact with a rectangle *boundary* is legal and deliberately not reported:
- * the source and destination legs of a Class H route ride the sibling slot's
- * own vertical edge, which is the whole point of the route shape. Only
- * penetration of the open interior counts.
+ * Contact with a rectangle boundary is legal. Local presentation attachments
+ * and external targets terminate on boundaries; only penetration of the open
+ * interior counts.
  *
  * Both the segment and the rectangle are axis-aligned, so overlap is exactly
  * the conjunction of the two per-axis overlaps — no clipping or sampling
@@ -585,6 +593,41 @@ export function routeConnections(
   const incidentAssigned = new Map<string, number>();
   const subject = routingSubjectBounds(racks);
   let bottomLaneIndex = 0;
+  // Presentation occupancy is per projected slot and side, independent of ports.
+  const localSlots: Array<{
+    rackKey: string;
+    bounds: SlotBounds;
+    top: Set<number>;
+    bottom: Set<number>;
+  }> = [];
+  const localRows: Array<{
+    rackKey: string;
+    topY: number;
+    bottomY: number;
+    top: Array<Array<[number, number]>>;
+    bottom: Array<Array<[number, number]>>;
+  }> = [];
+  const near = (a: number, b: number) =>
+    Math.abs(a - b) <= SLOT_EQUALITY_EPSILON_MM;
+  function localSlot(rackKey: string, bounds: SlotBounds) {
+    let state = localSlots.find(
+      (slot) =>
+        slot.rackKey === rackKey &&
+        near(slot.bounds.leftX, bounds.leftX) &&
+        near(slot.bounds.rightX, bounds.rightX) &&
+        near(slot.bounds.topY, bounds.topY) &&
+        near(slot.bounds.bottomY, bounds.bottomY),
+    );
+    if (!state) {
+      state = {
+        rackKey,
+        bounds,
+        top: new Set<number>(),
+        bottom: new Set<number>(),
+      };
+    }
+    return state;
+  }
 
   // #203 R4: perimeter allocation runs in geometry order so corridor lanes are
   // handed out top-down regardless of source order. This orders allocator state
@@ -808,82 +851,80 @@ export function routeConnections(
     });
   }
 
-  /**
-   * #203 R5 Class H: a local seam between two devices sharing one rack row.
-   *
-   * Tried before any perimeter strategy, and deliberately allocates nothing —
-   * a route that never leaves its own rack owes no corridor a lane. Returns
-   * `undefined` when the pair is ineligible or neither seam is usable, which
-   * hands the connection to the perimeter strategies untouched.
-   */
+  /** C3 local presentation: top first, then bottom, then existing perimeter. */
   function classHRoute(connection: RoutingConnection): PointMm[] | undefined {
-    const localRackKey = connection.from.rackKey;
-    const slotBounds = connection.from.slotBounds;
-    if (
-      !isClassHEligible(connection.from, connection.to) ||
-      localRackKey === undefined ||
-      slotBounds === undefined
-    ) {
-      return undefined;
+    if (!isClassHEligible(connection.from, connection.to)) return undefined;
+    const rackKey = connection.from.rackKey as string;
+    const rack = rackByKey.get(rackKey);
+    if (!rack) return undefined;
+    const from = connection.from.slotBounds as SlotBounds;
+    const to = connection.to.slotBounds as SlotBounds;
+    const reversed = from.leftX > to.leftX;
+    const [left, right] = reversed ? [to, from] : [from, to];
+    const leftState = localSlot(rackKey, left);
+    const rightState = localSlot(rackKey, right);
+    let row = localRows.find(
+      (candidate) =>
+        candidate.rackKey === rackKey &&
+        near(candidate.topY, left.topY) &&
+        near(candidate.bottomY, left.bottomY),
+    );
+    if (!row) {
+      row = {
+        rackKey,
+        topY: left.topY,
+        bottomY: left.bottomY,
+        top: [[], [], []],
+        bottom: [[], [], []],
+      };
     }
-    const localRack = rackByKey.get(localRackKey);
-    if (localRack === undefined) {
-      return undefined;
+    const offsets = [0, -2.5, 2.5];
+    for (const side of ['top', 'bottom'] as const) {
+      for (const [li, lo] of offsets.entries()) {
+        const lx = (left.leftX + left.rightX) / 2 + lo;
+        if (leftState[side].has(li) || lx < left.leftX || lx > left.rightX)
+          continue;
+        for (const [ri, ro] of offsets.entries()) {
+          const rx = (right.leftX + right.rightX) / 2 + ro;
+          if (rightState[side].has(ri) || rx < right.leftX || rx > right.rightX)
+            continue;
+          for (const [track, distance] of [6, 10, 14].entries()) {
+            const intervals = row[side][track] as Array<[number, number]>;
+            if (
+              intervals.some(
+                ([start, end]) => !(rx + 2.5 <= start || lx >= end + 2.5),
+              )
+            )
+              continue;
+            const seam =
+              side === 'top'
+                ? Math.min(left.topY, right.topY) - distance
+                : Math.max(left.bottomY, right.bottomY) + distance;
+            const route = compactRoute([
+              { xMm: lx, yMm: side === 'top' ? left.topY : left.bottomY },
+              { xMm: lx, yMm: seam },
+              { xMm: rx, yMm: seam },
+              { xMm: rx, yMm: side === 'top' ? right.topY : right.bottomY },
+            ]);
+            if (
+              !routeIsWithinRack(route, rack) ||
+              !localRouteIsClear(rackKey, route, obstacles)
+            )
+              continue;
+            // Even approximate identity representatives are committed only on
+            // acceptance: a rejected row must not seed later equality groups.
+            if (!localSlots.includes(leftState)) localSlots.push(leftState);
+            if (!localSlots.includes(rightState)) localSlots.push(rightState);
+            if (!localRows.includes(row)) localRows.push(row);
+            leftState[side].add(li);
+            rightState[side].add(ri);
+            intervals.push([lx, rx]);
+            return reversed ? route.reverse() : route;
+          }
+        }
+      }
     }
-
-    const topY = slotBounds.topY;
-    const bottomY = slotBounds.bottomY;
-
-    // Both candidates are built in full and then validated as complete routes.
-    // Validating the seam alone cannot see a device that clips one of the short
-    // vertical transition legs, and cannot see a seam that leaves the rack
-    // entirely on a top or bottom row.
-    const localCandidate = (seam: 'top' | 'bottom'): PointMm[] => {
-      const boundaryY = seam === 'top' ? topY : bottomY;
-      const seamY =
-        seam === 'top'
-          ? boundaryY - LOCAL_SEAM_OFFSET_MM
-          : boundaryY + LOCAL_SEAM_OFFSET_MM;
-      return compactRoute([
-        connection.from.anchor,
-        { xMm: connection.from.anchor.xMm, yMm: boundaryY },
-        { xMm: connection.from.anchor.xMm, yMm: seamY },
-        { xMm: connection.to.anchor.xMm, yMm: seamY },
-        { xMm: connection.to.anchor.xMm, yMm: boundaryY },
-        connection.to.anchor,
-      ]);
-    };
-
-    const seamIsUsable = (route: PointMm[]): boolean =>
-      routeIsWithinRack(route, localRack) &&
-      localRouteIsClear(localRackKey, route, obstacles);
-
-    const topRoute = localCandidate('top');
-    const bottomRoute = localCandidate('bottom');
-    const topIsValid = seamIsUsable(topRoute);
-    const bottomIsValid = seamIsUsable(bottomRoute);
-
-    if (topIsValid && !bottomIsValid) {
-      return topRoute;
-    }
-    if (!topIsValid && bottomIsValid) {
-      return bottomRoute;
-    }
-    if (!topIsValid && !bottomIsValid) {
-      return undefined;
-    }
-
-    // Both seams work: take the shorter pair of transition legs, and prefer the
-    // top seam when they tie.
-    const distTop =
-      Math.abs(connection.from.anchor.yMm - topY) +
-      Math.abs(connection.to.anchor.yMm - topY);
-    const distBottom =
-      Math.abs(connection.from.anchor.yMm - bottomY) +
-      Math.abs(connection.to.anchor.yMm - bottomY);
-    return distTop <= distBottom + SLOT_EQUALITY_EPSILON_MM
-      ? topRoute
-      : bottomRoute;
+    return undefined;
   }
 
   /**
