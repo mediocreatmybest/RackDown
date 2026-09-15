@@ -70,6 +70,16 @@ describe('explicit connection category grammar', () => {
     });
   });
 
+  it('allows historical media named category alongside an explicit modifier', () => {
+    const doc = connection('CaTeGoRy adhoc category network');
+    expect(doc.diagnostics).toEqual([]);
+    expect(doc.connections[0]).toMatchObject({
+      media: 'CaTeGoRy',
+      category: 'network',
+      to: { adHoc: true },
+    });
+  });
+
   it.each([
     'power',
     'ethernet',
@@ -101,7 +111,7 @@ describe('explicit connection category grammar', () => {
     ['fibre category', 'category'],
     ['category power category network', 'category network'],
     ['category power category power', 'category power', true],
-    ['category category network', 'category network'],
+    ['fibre category category network', 'category network'],
     ['category power extra', 'extra'],
     ['fibre extra category network', 'extra'],
   ] as const)(

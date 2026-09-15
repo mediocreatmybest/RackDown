@@ -387,6 +387,7 @@ quoted ports and all external reference forms are unchanged.
 | `fibre` | `fibre` | Absent; use endpoint evidence |
 | `category` or `category adhoc` | `category` | Historical one-token media; no annotation |
 | `category=network` | `category=network` | Historical media; no annotation |
+| `category category network` | `category` | `network`; media can itself be named category |
 | `category NETWORK` | Absent | `network` |
 | `FiBrE category network` | `FiBrE` | `network` |
 | `category unclassified` | Absent | Suppresses inference |
