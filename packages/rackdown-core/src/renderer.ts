@@ -192,11 +192,20 @@ function bottomExternalSlot(index: number): number {
   return index % 2 === 1 ? -distance : distance;
 }
 
+function trimEdgeHyphens(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value.charCodeAt(start) === 45) {
+    start += 1;
+  }
+  while (end > start && value.charCodeAt(end - 1) === 45) {
+    end -= 1;
+  }
+  return value.slice(start, end);
+}
+
 function sanitizeNamespace(value: string): string {
-  const safe = value
-    .trim()
-    .replace(/[^A-Za-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  const safe = trimEdgeHyphens(value.trim().replace(/[^A-Za-z0-9_-]+/g, '-'));
   return safe || 'diagram';
 }
 

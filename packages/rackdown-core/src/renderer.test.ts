@@ -463,6 +463,39 @@ describe('toSvg', () => {
     expect(svg).not.toContain('<Main & Backup>');
   });
 
+  it.each([
+    ['hello world', 'hello-world'],
+    [' \tHello_123\r\n ', 'Hello_123'],
+    ['---hello---', 'hello'],
+    ['---hello', 'hello'],
+    ['hello---', 'hello'],
+    ['hello---world', 'hello---world'],
+    ['___hello___', '___hello___'],
+    ['---', 'diagram'],
+    ['   ', 'diagram'],
+    ['', 'diagram'],
+    ['hello/foo', 'hello-foo'],
+    ['hello/!?world', 'hello-world'],
+    ['/hello/', 'hello'],
+    ['/!?', 'diagram'],
+  ])('sanitizes namespace %j to %j', (namespace, expected) => {
+    const layout = resolve(parse(`rack "Rack" 1U\n1 switch "Core"`));
+    const svg = toSvg(layout, { namespace });
+
+    expect(derivedRootId(svg)).toBe(`rackdown-${expected}-root`);
+    expect(svg).toBe(toSvg(layout, { namespace: expected }));
+    expect(svg).toBe(toSvg(layout, { namespace }));
+  });
+
+  it('preserves a large internal hyphen run deterministically', () => {
+    const layout = resolve(parse(`rack "Rack" 1U\n1 switch "Core"`));
+    const namespace = `a${'-'.repeat(50_000)}b`;
+    const svg = toSvg(layout, { namespace });
+
+    expect(derivedRootId(svg)).toBe(`rackdown-${namespace}-root`);
+    expect(svg).toBe(toSvg(layout, { namespace }));
+  });
+
   it('derives a stable namespace when the host does not provide one', () => {
     const layout = resolve(parse(`rack "Rack" 1U\n1 switch "Core"`));
 
