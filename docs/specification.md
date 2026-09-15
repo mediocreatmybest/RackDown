@@ -360,6 +360,77 @@ core:3 -- pve1:DAC10Gbit fibre adhoc
 
 On the source side, only endpoint-local `adhoc` may appear before `--`; media belongs after the destination endpoint.
 
+### Connection category
+
+A connection has one primary category: `power`, `network`, `console` or
+`unclassified`. Categories describe connections, not devices. `all` means an
+unrestricted selection; it is not a category. Media, endpoint facts and visual
+style remain independent.
+
+Add `category <value>` after the optional media token:
+
+```rackdown
+ups:out1 -- pdu:input category power
+pdu:out1 -- server:psu1 IEC-C13 category power
+server:eth0 -- core:1 fibre category network
+server:serial -- console:1 adhoc category console
+server:odd -- core:odd category unclassified
+```
+
+The keyword and category value are case-insensitive; authored media text is
+preserved exactly. Destination-side `adhoc` may appear before, after or between
+these tokens and still applies only to that endpoint. The source-side grammar,
+quoted ports and all external reference forms are unchanged.
+
+| Destination suffix | Media | Explicit intent / recovery |
+| --- | --- | --- |
+| `fibre` | `fibre` | Absent; use endpoint evidence |
+| `category` or `category adhoc` | `category` | Historical one-token media; no annotation |
+| `category=network` | `category=network` | Historical media; no annotation |
+| `category category network` | Absent | Repeated keyword: warn; unclassified |
+| `category NETWORK` | Absent | `network` |
+| `FiBrE category network` | `FiBrE` | `network` |
+| `category unclassified` | Absent | Suppresses inference |
+| `fibre category` | `fibre` | Warn; unclassified |
+| `category unknown` or `category all` | Absent | Warn; unclassified |
+| `category power category network` | Absent | Duplicate: warn; unclassified, even if values agree |
+| `category power extra` | Absent | Extra text: warn; unclassified |
+
+A lone first `category` must remain media for backward compatibility, so it
+cannot also diagnose a missing value. With an annotation, media must precede
+`category`; media literally named `category` cannot be combined with an explicit
+category annotation. Invalid annotations preserve the connection and other rack content,
+report token-located warnings, and suppress inference. Parsed recovery records
+`category: 'invalid'`; this is never a resolved category.
+
+Resolution uses this order:
+
+1. Explicit valid category, including unclassified, wins. Invalid explicit
+   intent recovers to unclassified.
+2. Inspect only each known resolved endpoint's exact `kind`:
+   `power-port` / `power-outlet` supply power; `interface` supplies network;
+   `console-port` / `console-server-port` supply console.
+3. If both endpoints supply different categories, return unclassified. Otherwise
+   use the category supplied by either or both endpoints. With no evidence,
+   return unclassified.
+
+One known endpoint therefore suffices when the other is unknown, ad-hoc,
+external, a device without a port, or a front/rear pass-through port. Those other
+endpoints supply no evidence; no other cable is traced. Ambiguous port matches
+remain ad-hoc and are never rematched for classification. A known endpoint stays
+known when authored with `adhoc`, following the existing resolver behaviour.
+
+No classification comes from media (including `power`, `ethernet` and `fibre`),
+port shape/type alone, device names/types, aliases, appearance or connection
+direction. Management-only interfaces remain network; PoE capability neither
+proves live power delivery nor adds a second category or connection. Network is
+broader than Ethernet. Category assignment performs no compatibility validation.
+
+`RackLayout` uses `schemaVersion: 2` with a required `LayoutConnection.category`.
+The source `RackDocument` remains at `schemaVersion: 1`. Malformed annotations
+are explained by parser diagnostics; the resolved layout exposes no classification
+reason taxonomy.
+
 ### Connections across rack faces
 
 Front/rear projection does not duplicate connections. There is one semantic connection graph regardless of how many rack faces are rendered.
@@ -473,6 +544,25 @@ See [Upstream catalogue](upstream-catalogue.md) for provenance and normalisation
 ## 12. Rendering and presentation
 
 The current renderer produces deterministic SVG.
+
+`selectConnections(layout, selection)` supplies a host-neutral ordered subset of
+semantic connections. Optional `categories`, `deviceIds` and `connectionIds`
+lists use OR within each list and AND between fields. Absent fields are
+unrestricted, explicitly empty lists match nothing, and unknown values never
+widen to all. Device incidence means either endpoint, one hop only, using exact
+resolved IDs. Unclassified connections require an explicit `unclassified` entry
+in a category-restricted view. Selection does not mutate or trim `RackLayout`.
+
+`toSvg(layout, { connectionSelection: selection })` uses the same selector. It
+calculates the full presentation and routing before omitting unselected
+connection elements. All racks/devices, shared-row widths and the full-scene
+viewport remain. Unused external callouts are omitted, but their reserved space
+and the positions of surviving callouts remain. Colours, explicit styles and
+routes of retained connections are stable across selections in every routing
+mode. Selection contributes to automatic SVG namespaces; explicit host namespaces
+remain host-owned. Filtering is not redaction, equipment removal or interactive
+emphasis. CLI/Hugo filtering options, Obsidian filtering UI and schedules are not
+part of this core capability.
 
 Presentation geometry includes things such as:
 

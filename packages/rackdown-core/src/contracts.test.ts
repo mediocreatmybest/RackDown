@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceDefinition, RackDocument, RackLayout } from './index.js';
+import { parse, resolve } from './index.js';
 
 const exampleDevice = {
   slug: 'example-half-u-device',
@@ -55,7 +56,7 @@ const exampleDocument = {
 } satisfies RackDocument;
 
 const emptyLayout = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   racks: [],
   devices: [],
   connections: [],
@@ -65,6 +66,16 @@ const emptyLayout = {
 } satisfies RackLayout;
 
 describe('foundation contracts', () => {
+  it('resolves document schema 1 to layout schema 2 with required categories', () => {
+    const document = parse(
+      'rack "Rack" 4U\n4 server "A" as a\n2 server "B" as b\na -- b',
+    );
+    const layout = resolve(document);
+    expect(document.schemaVersion).toBe(1);
+    expect(layout.schemaVersion).toBe(2);
+    expect(layout.connections[0]?.category).toBe('unclassified');
+  });
+
   it('supports fractional U values and unconstrained port/media names', () => {
     expect(exampleDevice.uHeight).toBe(0.5);
     expect(exampleDocument.devices[0]?.positionU).toBe(5.5);

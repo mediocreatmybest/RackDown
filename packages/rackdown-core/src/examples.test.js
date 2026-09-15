@@ -103,7 +103,7 @@ describe('public examples CI canary suite', () => {
       const firstLayout = resolve(firstParsed, catalogue);
       const secondLayout = resolve(secondParsed, catalogue);
 
-      expect(firstLayout.schemaVersion).toBe(1);
+      expect(firstLayout.schemaVersion).toBe(2);
       expect(firstLayout.diagnostics).toEqual(secondLayout.diagnostics);
 
       const errors = firstLayout.diagnostics.filter(
@@ -165,7 +165,7 @@ describe('public examples CI canary suite', () => {
     const firstLayout = resolve(parse(DEFAULT_SOURCE), deviceIndex);
     const secondLayout = resolve(parse(DEFAULT_SOURCE), deviceIndex);
 
-    expect(firstLayout.schemaVersion).toBe(1);
+    expect(firstLayout.schemaVersion).toBe(2);
     expect(firstLayout.diagnostics).toEqual([]);
     expect(secondLayout.diagnostics).toEqual([]);
 

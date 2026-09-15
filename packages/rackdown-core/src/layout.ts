@@ -1,3 +1,4 @@
+import type { ConnectionCategory } from './connection-category.js';
 import type { Diagnostic } from './diagnostics.js';
 import type {
   ExternalLinkIntent,
@@ -87,6 +88,8 @@ export interface LayoutConnection {
   from: LayoutConnectionEndpoint;
   to: LayoutConnectionEndpoint;
   media?: string;
+  /** Primary purpose, resolved independently of media and visual appearance. */
+  category: ConnectionCategory;
 }
 
 export interface LayoutExternal {
@@ -101,7 +104,7 @@ export interface LayoutExternal {
  * annotation geometry.
  */
 export interface RackLayout {
-  schemaVersion: 1;
+  schemaVersion: 2;
   racks: LayoutRack[];
   devices: LayoutDevice[];
   connections: LayoutConnection[];

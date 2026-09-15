@@ -28,7 +28,7 @@ for (const group of ['valid', 'broken']) {
         const firstSvg = toSvg(firstLayout, { namespace: 'fixture' });
         const secondSvg = toSvg(secondLayout, { namespace: 'fixture' });
 
-        expect(firstLayout.schemaVersion).toBe(1);
+        expect(firstLayout.schemaVersion).toBe(2);
         expect(firstLayout.diagnostics).toEqual(secondLayout.diagnostics);
         expect(firstSvg).toBe(secondSvg);
         expect(firstSvg).toContain('<svg');

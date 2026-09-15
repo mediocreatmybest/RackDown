@@ -1,3 +1,4 @@
+import { isConnectionCategory } from './connection-category.js';
 import type { Diagnostic } from './diagnostics.js';
 import type {
   ConnectionEndpointReference,
@@ -29,6 +30,7 @@ interface TrailingToken {
 }
 
 interface EndpointWithMedia {
+  category?: ConnectionStatement['category'];
   endpoint: ConnectionEndpointReference;
   media?: string;
 }
@@ -185,6 +187,7 @@ export function parseConnection(
     from: left.endpoint,
     to: right.endpoint,
     ...(right.media === undefined ? {} : { media: right.media }),
+    ...(right.category === undefined ? {} : { category: right.category }),
     source: sourceSpan(rawLine, line),
   };
 }
@@ -220,6 +223,8 @@ function parseEndpointWithTrailing(
     });
   }
 
+  let category: ConnectionStatement['category'];
+  const content: TrailingToken[] = [];
   for (const token of trailing) {
     if (token.text.toLowerCase() === 'adhoc') {
       if (endpoint.kind === 'device' && endpoint.port !== undefined) {
@@ -236,7 +241,43 @@ function parseEndpointWithTrailing(
       continue;
     }
 
-    if (allowMedia && media === undefined) {
+    content.push(token);
+  }
+
+  for (let index = 0; index < content.length; index += 1) {
+    const token = content[index];
+    if (!token) continue;
+    // A lone first `category` remains historical free-form media.
+    if (
+      allowMedia &&
+      token.text.toLowerCase() === 'category' &&
+      (media !== undefined ||
+        category !== undefined ||
+        content[index + 1] !== undefined)
+    ) {
+      const value = content[index + 1];
+      const normalized = value?.text.toLowerCase();
+      const duplicate = category !== undefined;
+      if (duplicate || !isConnectionCategory(normalized)) {
+        category = 'invalid';
+        diagnostics.push({
+          severity: 'warn',
+          line,
+          column:
+            duplicate || value === undefined ? token.column : value.column,
+          message: duplicate
+            ? 'Duplicate connection category; preserving connection as unclassified.'
+            : 'Missing or unknown connection category; preserving connection as unclassified.',
+        });
+      } else {
+        category = normalized;
+      }
+      // Leave a repeated keyword for the duplicate/missing-value diagnostic.
+      if (value !== undefined && normalized !== 'category') index += 1;
+      continue;
+    }
+
+    if (allowMedia && media === undefined && category === undefined) {
       media = token.text;
       continue;
     }
@@ -244,6 +285,7 @@ function parseEndpointWithTrailing(
     unsupported.push(token);
   }
 
+  if (category !== undefined && unsupported.length > 0) category = 'invalid';
   const firstUnsupported = unsupported[0];
   if (firstUnsupported !== undefined) {
     const unsupportedText = unsupported.map((token) => token.text).join(' ');
@@ -255,13 +297,16 @@ function parseEndpointWithTrailing(
         ? `Ignoring unsupported connection text: ${unsupportedText}`
         : `Unexpected text after the source endpoint: ${unsupportedText}`,
       hint: allowMedia
-        ? 'Connection media is a single optional token; `adhoc` may appear beside a device port.'
+        ? category === undefined
+          ? 'Connection media is a single optional token; `adhoc` may appear beside a device port.'
+          : 'Use `[media] category <power|network|console|unclassified>`; extra text leaves this connection unclassified.'
         : 'Only `adhoc` may follow a source device port before the `--` operator.',
     });
   }
 
   return {
     endpoint,
+    ...(category === undefined ? {} : { category }),
     ...(media === undefined ? {} : { media }),
   };
 }

@@ -27,6 +27,56 @@ orthogonal, lanes or perimeter routing. Styling and routing are programmatic
 options, not source syntax. A stable namespace separates SVG IDs when a host
 embeds several diagrams. Hosts own navigation and lifecycle behaviour.
 
+## Connection selection
+
+`resolve` assigns each `LayoutConnection` a required `category`.
+An explicit source modifier such as `fibre category network` wins over endpoint
+evidence. `category unclassified` suppresses inference. Media is preserved and
+never used to infer category. See the [category rules](../../docs/specification.md#connection-category).
+
+```ts
+import { parse, resolve, selectConnections, toSvg } from '@rackdown/core';
+
+const layout = resolve(parse(source), deviceIndex); // Complete rack remains authoritative.
+const selection = { categories: ['power'] } as const;
+const connections = selectConnections(layout, selection);
+const svg = toSvg(layout, {
+  namespace: 'rack-power',
+  connectionSelection: selection,
+});
+// A later schedule consumer can use `connections` without invoking SVG.
+```
+
+`ConnectionSelection` has optional readonly `categories`, `deviceIds` and
+`connectionIds` lists. An absent restriction is unrestricted; an empty list
+matches nothing. Entries within a list combine with OR; specified fields combine
+with AND. Device IDs mean either endpoint, one hop only. Results keep original
+connection objects and source order, without duplicates caused by repeated
+requested values. Unknown requested values never broaden the selection.
+
+Use exact resolved IDs. A host can find a device by its exact authored `alias`
+in `layout.devices`, then supply that device's `id`; do not pass aliases as IDs.
+Generated IDs are not persistent identities across source edits.
+
+The renderer calculates routes, callout positions and viewport from the complete
+layout, then omits unselected connections and unused external callouts. All racks
+and devices remain; retained routes, colours and styles stay fixed. Empty views
+are valid SVGs. Connection elements expose `data-category` alongside their semantic
+`data-connection-id`. Filtered accessible descriptions distinguish the visible
+connection count from selected/excluded semantic totals and the number
+unclassified in the full document. These counts do not verify cabling completeness.
+
+Equivalent selections produce identical automatic namespaces; different selected
+sets contribute to different namespaces. Hosts embedding repeated copies should
+still provide a distinct explicit namespace for each SVG instance. Filtering is
+a focused presentation, not privacy redaction or host interaction. Hosts can use
+the same selector for emphasis without trimming the layout.
+
+`RackLayout` uses `schemaVersion: 2` because each resolved connection now requires
+`category`. TypeScript callers constructing `LayoutConnection` objects must supply
+it; re-resolving source produces the current layout contract. `RackDocument`
+remains at `schemaVersion: 1`. No layout migration machinery is provided.
+
 ## Optional connection hover emphasis
 
 Connections expose `.rackdown-connection` alongside `data-connection-id`,
