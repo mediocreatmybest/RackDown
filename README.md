@@ -118,6 +118,12 @@ and per-connection widths retain highest priority. Auto theme follows Obsidian.
 Settings are saved across plugin reloads. Reading View updates when a setting changes;
 existing Live Preview blocks pick up changes on their next normal render.
 
+Each rendered block with connections also has a compact selector for **All**,
+**Network**, **Power**, **Console** and **Unclassified** views. **All** is the
+default. The selection is temporary and local to that block; it is not written
+to settings or source. Focused views keep rack and device placement unchanged.
+Changing category resets any connections hidden through the route context menu.
+
 Diagrams automatically use responsive sizing to fit the note pane. Hover or
 keyboard-focus a connection to emphasise it: its resolved visible width grows
 by 1 CSS pixel, including explicit per-connection widths, without an upper cap.

@@ -1,7 +1,69 @@
 import { Keymap, MarkdownRenderChild } from 'obsidian';
+import { classifyHostNavigation } from './host-navigation.js';
 import type RackDownPlugin from './main.js';
+import { parseObsidianWikiLink } from './obsidian-wikilink.js';
+import type { RackDownRenderedDevice } from './render-rackdown.js';
 
 const HOST_LINK_SELECTOR = '.rackdown-host-link[data-rackdown-target]';
+
+function decorateHostLink(
+  element: Element,
+  target: string,
+  display: string,
+  action: 'internal' | 'external-url' = 'internal',
+): void {
+  element.classList.add('rackdown-host-link');
+  element.setAttribute('data-rackdown-target', target);
+  element.setAttribute('data-rackdown-action', action);
+  element.setAttribute('role', 'link');
+  element.setAttribute('tabindex', '0');
+  element.setAttribute('aria-label', `Open ${display}`);
+}
+
+/** Reapply host-specific link semantics after an SVG view is replaced. */
+export function decorateRackDownHostLinks(
+  diagram: HTMLElement,
+  devices: readonly RackDownRenderedDevice[],
+): number {
+  let count = 0;
+
+  for (const group of diagram.querySelectorAll('.rackdown-external-group')) {
+    const linkStyle = group.getAttribute('data-link-style');
+    const target = group.getAttribute('data-target');
+    const label = group.getAttribute('data-label') ?? target ?? '';
+    const navigation = classifyHostNavigation(linkStyle, target);
+    if (navigation.kind === 'none') continue;
+
+    group.classList.add('rackdown-external-link');
+    decorateHostLink(group, navigation.target, label, navigation.kind);
+    count += 1;
+  }
+
+  const groups = new Map<string, Element>();
+  for (const group of diagram.querySelectorAll(
+    '.rackdown-device-group[data-device-id]',
+  )) {
+    const id = group.getAttribute('data-device-id');
+    if (id) groups.set(id, group);
+  }
+
+  for (const device of devices) {
+    const wikiLink = parseObsidianWikiLink(device.label);
+    const group = groups.get(device.id);
+    if (!wikiLink || !group) continue;
+
+    const title = group.querySelector('title');
+    if (title) title.textContent = wikiLink.display;
+    const label = group.querySelector('.rackdown-device-label');
+    if (label) label.textContent = wikiLink.display;
+
+    group.classList.add('rackdown-device-link');
+    decorateHostLink(group, wikiLink.target, wikiLink.display);
+    count += 1;
+  }
+
+  return count;
+}
 
 function hostLinkElement(
   target: EventTarget | null,

@@ -21,6 +21,31 @@
   max-width: 100%;
 }
 
+.rackdown-connection-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+}
+
+.rackdown-connection-view-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+
+.rackdown-connection-view-select {
+  max-width: 100%;
+  font-size: inherit;
+}
+
+.rackdown-connection-view-status {
+  white-space: nowrap;
+}
+
 .rackdown-diagram .rackdown-connection-hit {
   fill: none;
   stroke: transparent;

@@ -118,10 +118,11 @@ describe('Obsidian settings lifecycle', () => {
     const context = {
       sourcePath: 'Notes/Lab.md',
       getSectionInfo: () => null,
-      addChild: vi.fn(),
+      addChild: (child: { load: () => void }) => child.load(),
     } as unknown as MarkdownPostProcessorContext;
     const initial = new TestElement();
     await processor?.('rack "Lab" 12U', initial.asHtml(), context);
+    expect(initial.querySelector('.rackdown-connection-view')).toBeUndefined();
     expect(initial.querySelector('.rackdown-diagram')?.innerHTML).toContain(
       'data-connection-routing="perimeter"',
     );
@@ -135,6 +136,10 @@ describe('Obsidian settings lifecycle', () => {
       context,
     );
     const svg = subsequent.querySelector('.rackdown-diagram')?.innerHTML;
+    expect(subsequent.querySelector('select')?.value).toBe('all');
+    expect(
+      subsequent.querySelector('.rackdown-connection-view-status')?.textContent,
+    ).toBe('Showing 1 of 1 connections');
     expect(svg).toContain('stroke-width="4"');
     expect(svg).toContain('data-connection-routing="orthogonal"');
     expect(svg).toContain('obsidian-Notes-Lab-md-0');
@@ -143,5 +148,34 @@ describe('Obsidian settings lifecycle', () => {
         .querySelector('.rackdown-block')
         ?.getAttribute('data-rackdown-theme'),
     ).toBe('light');
+  });
+
+  it('keeps one document diagnostic section while changing a block view', async () => {
+    const instance = plugin();
+    await instance.onload();
+    const context = {
+      sourcePath: 'Notes/Lab.md',
+      getSectionInfo: () => ({ lineStart: 12 }),
+      addChild: (child: { load: () => void }) => child.load(),
+    } as unknown as MarkdownPostProcessorContext;
+    const element = new TestElement();
+    await host.processor?.(
+      'rack "Lab" 12U\n10 switch "Core" as core\n' +
+        'core:1 -- [[Remote]] category network\nbanana',
+      element.asHtml(),
+      context,
+    );
+    const diagnostics = element.querySelector('.rackdown-diagnostics');
+    const select = element.querySelector('select');
+    expect(diagnostics).toBeDefined();
+    expect(element.querySelectorAll('.rackdown-diagnostics')).toHaveLength(1);
+    if (!select) throw new Error('Missing connection selector');
+    select.value = 'power';
+    select.dispatchEvent(new Event('change'));
+    select.value = 'network';
+    select.dispatchEvent(new Event('change'));
+    expect(element.querySelectorAll('.rackdown-diagnostics')).toEqual([
+      diagnostics,
+    ]);
   });
 });
