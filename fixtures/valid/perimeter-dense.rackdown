@@ -1,0 +1,21 @@
+rack "Callouts" 6U
+4 switch "Source" as source
+
+source -- external "Outlet 01"
+source -- external "Outlet 02"
+source -- external "Outlet 03"
+source -- external "Outlet 04"
+source -- external "Outlet 05"
+source -- external "Outlet 06"
+source -- external "Outlet 07"
+source -- external "Outlet 08"
+source -- external "Outlet 09"
+source -- external "Outlet 10"
+source -- external "Outlet 11"
+source -- external "Outlet 12"
+source -- external "Outlet 13"
+source -- external "Outlet 14"
+source -- external "Outlet 15"
+source -- external "Outlet 16"
+source -- external "Outlet 17"
+source -- external "Outlet 18"

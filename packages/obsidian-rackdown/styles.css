@@ -1,4 +1,4 @@
-.rackdown-block {
+.rackdown-block[data-rackdown-theme="auto"] {
   --rackdown-text: var(--text-normal);
   --rackdown-rack-fill: var(--background-secondary);
   --rackdown-rack-stroke: var(--text-muted);
@@ -19,6 +19,46 @@
   width: 100%;
   height: auto;
   max-width: 100%;
+}
+
+.rackdown-diagram .rackdown-connection-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10px;
+  stroke-dasharray: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: stroke;
+}
+
+.rackdown-diagram:has(
+    .rackdown-connection:hover,
+    .rackdown-connection-hit:hover,
+    .rackdown-connection:focus-visible
+  )
+  :where(.rackdown-connection) {
+  opacity: 0.3;
+}
+
+.rackdown-diagram .rackdown-connection:hover,
+.rackdown-diagram .rackdown-connection:focus-visible,
+.rackdown-diagram .rackdown-connection-hit:hover + .rackdown-connection {
+  stroke-width: var(--rackdown-connection-hover-width);
+  opacity: 1;
+  stroke-opacity: 1;
+}
+
+.rackdown-diagram .rackdown-connection-hidden {
+  display: none;
+}
+
+.rackdown-hidden-routes {
+  margin-top: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+}
+
+.rackdown-hidden-routes button {
+  font-size: inherit;
 }
 
 .rackdown-host-link {

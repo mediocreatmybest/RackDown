@@ -1,4 +1,4 @@
-<svg id="rackdown-1sglwcv-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 460.25" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1sglwcv-title" aria-describedby="rackdown-1sglwcv-desc">
+<svg id="rackdown-1sglwcv-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 486.25" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1sglwcv-title" aria-describedby="rackdown-1sglwcv-desc">
   <title id="rackdown-1sglwcv-title">Shared Equipment rack diagram</title>
   <desc id="rackdown-1sglwcv-desc">1 rack, 6 devices, 6 connections.</desc>
   <style>
@@ -18,7 +18,6 @@
   :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
   :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
   .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-  .rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
   .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
   @media (prefers-color-scheme: dark) {
   .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
@@ -79,7 +78,7 @@
   <path id="rackdown-1sglwcv-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-13" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#0072b2" d="M 482.6,23.475 L 488.95,23.475 L 496.3,23.475 Q 499.3,23.475 499.3,26.475 L 499.3,130.35 Q 499.3,133.35 496.3,133.35 L 488.95,133.35 L 482.6,133.35">
     <title>core:3 → compute-c:network</title>
   </path>
-  <path id="rackdown-1sglwcv-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-14" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,25.975 L 485.95,25.975 Q 488.95,25.975 488.95,28.975 L 488.95,365.3 Q 488.95,368.3 491.95,368.3 L 495.3,368.3">
+  <path id="rackdown-1sglwcv-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-14" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,25.975 L 485.95,25.975 Q 488.95,25.975 488.95,28.975 L 488.95,365.3 Q 488.95,368.3 485.95,368.3 L 244.3,368.3 Q 241.3,368.3 241.3,371.3 L 241.3,398.3">
     <title>core:4 → Upstream Rack</title>
   </path>
   <path id="rackdown-1sglwcv-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-15" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 508,288.925 L 504.65,288.925 Q 501.65,288.925 501.65,285.925 L 501.65,214.763 Q 501.65,211.763 498.65,211.763 L 491.95,211.763 Q 488.95,211.763 488.95,208.763 L 488.95,137.6 Q 488.95,134.6 485.95,134.6 L 482.6,134.6">
@@ -138,7 +137,8 @@
   </g>
   <g id="rackdown-1sglwcv-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Upstream Rack" data-link-style="wiki" data-placement="bottom" data-target="Upstream Rack">
     <title>Upstream Rack</title>
-    <rect class="rackdown-external-box" x="457.2" y="368.3" width="76.2" height="16" rx="3" ry="3" />
-    <text class="rackdown-external-label" x="495.3" y="376.3" text-anchor="middle" dominant-baseline="middle">Upstream Rack</text>
+    <rect class="rackdown-external-box" x="203.2" y="398.3" width="76.2" height="16" rx="3" ry="3" />
+    <defs><clipPath id="rackdown-1sglwcv-external-1-label-clip" clipPathUnits="userSpaceOnUse"><rect x="207.2" y="399.3" width="68.2" height="14" /></clipPath></defs>
+    <text class="rackdown-external-label" x="241.3" y="410.3" text-anchor="middle" clip-path="url(#rackdown-1sglwcv-external-1-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>Upstream…</text>
   </g>
 </svg>

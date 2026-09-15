@@ -1526,16 +1526,14 @@ describe('connection routing', () => {
       const route = routes.get('h1');
       expect(route).toBeDefined();
       expect(route).toEqual([
-        { xMm: 160.867, yMm: 133.35 },
-        { xMm: 160.867, yMm: 88.9 },
-        { xMm: 160.867, yMm: 82.9 },
-        { xMm: 321.733, yMm: 82.9 },
-        { xMm: 321.733, yMm: 88.9 },
-        { xMm: 321.733, yMm: 133.35 },
+        { xMm: 80.4335, yMm: 88.9 },
+        { xMm: 80.4335, yMm: 82.9 },
+        { xMm: 241.3, yMm: 82.9 },
+        { xMm: 241.3, yMm: 88.9 },
       ]);
     });
 
-    it('2. preserves actual endpoint anchors strictly', () => {
+    it('2. attaches to presentation boundaries while preserving semantic anchors', () => {
       const conn: RoutingConnection = {
         id: 'h-anchor',
         from: {
@@ -1551,8 +1549,10 @@ describe('connection routing', () => {
       };
       const routes = routeConnections([conn], [sharedRack], 'perimeter');
       const route = expectRoute(routes, 'h-anchor');
-      expect(route[0]).toEqual(conn.from.anchor);
-      expect(route.at(-1)).toEqual(conn.to.anchor);
+      expect(route[0]).toEqual({ xMm: 80.4335, yMm: 88.9 });
+      expect(route.at(-1)).toEqual({ xMm: 241.3, yMm: 88.9 });
+      expect(conn.from.anchor).toEqual({ xMm: 160.867, yMm: 133.35 });
+      expect(conn.to.anchor).toEqual({ xMm: 321.733, yMm: 133.35 });
     });
 
     it('3. reverses endpoint direction deterministically', () => {
@@ -1662,20 +1662,16 @@ describe('connection routing', () => {
         'perimeter',
       );
       expect(routes.get('ab')).toEqual([
-        { xMm: 160.867, yMm: 133.35 },
-        { xMm: 160.867, yMm: 88.9 },
-        { xMm: 160.867, yMm: 82.9 },
-        { xMm: 321.733, yMm: 82.9 },
-        { xMm: 321.733, yMm: 88.9 },
-        { xMm: 321.733, yMm: 133.35 },
+        { xMm: 80.4335, yMm: 88.9 },
+        { xMm: 80.4335, yMm: 82.9 },
+        { xMm: 241.3, yMm: 82.9 },
+        { xMm: 241.3, yMm: 88.9 },
       ]);
       expect(routes.get('bc')).toEqual([
-        { xMm: 321.733, yMm: 133.35 },
-        { xMm: 321.733, yMm: 88.9 },
-        { xMm: 321.733, yMm: 82.9 },
-        { xMm: 482.6, yMm: 82.9 },
-        { xMm: 482.6, yMm: 88.9 },
-        { xMm: 482.6, yMm: 133.35 },
+        { xMm: 238.8, yMm: 88.9 },
+        { xMm: 238.8, yMm: 78.9 },
+        { xMm: 402.16650000000004, yMm: 78.9 },
+        { xMm: 402.16650000000004, yMm: 88.9 },
       ]);
     });
 
@@ -1737,8 +1733,18 @@ describe('connection routing', () => {
         [sharedRack],
         'perimeter',
       );
-      expect(routes.get('q12')).toBeDefined();
-      expect(routes.get('q34')).toBeDefined();
+      expect(routes.get('q12')).toEqual([
+        { xMm: 60.325, yMm: 88.9 },
+        { xMm: 60.325, yMm: 82.9 },
+        { xMm: 180.97500000000002, yMm: 82.9 },
+        { xMm: 180.97500000000002, yMm: 88.9 },
+      ]);
+      expect(routes.get('q34')).toEqual([
+        { xMm: 301.625, yMm: 88.9 },
+        { xMm: 301.625, yMm: 82.9 },
+        { xMm: 422.275, yMm: 82.9 },
+        { xMm: 422.275, yMm: 88.9 },
+      ]);
     });
 
     it('7. routes non-adjacent siblings spanning across an intermediate device', () => {
@@ -1757,12 +1763,10 @@ describe('connection routing', () => {
       };
       const routes = routeConnections([connAC], [sharedRack], 'perimeter');
       expect(routes.get('ac')).toEqual([
-        { xMm: 160.867, yMm: 133.35 },
-        { xMm: 160.867, yMm: 88.9 },
-        { xMm: 160.867, yMm: 82.9 },
-        { xMm: 482.6, yMm: 82.9 },
-        { xMm: 482.6, yMm: 88.9 },
-        { xMm: 482.6, yMm: 133.35 },
+        { xMm: 80.4335, yMm: 88.9 },
+        { xMm: 80.4335, yMm: 82.9 },
+        { xMm: 402.16650000000004, yMm: 82.9 },
+        { xMm: 402.16650000000004, yMm: 88.9 },
       ]);
     });
 
@@ -1929,7 +1933,7 @@ describe('connection routing', () => {
         bottomObstacle,
       ]);
       const route = routes.get('h-top-free');
-      expect(route).toContainEqual({ xMm: 160.867, yMm: 82.9 });
+      expect(route).toContainEqual({ xMm: 80.4335, yMm: 82.9 });
     });
 
     it('15. chooses bottom seam when top seam is blocked by an obstacle', () => {
@@ -1958,10 +1962,10 @@ describe('connection routing', () => {
         topObstacle,
       ]);
       const route = routes.get('h-bottom-free');
-      expect(route).toContainEqual({ xMm: 160.867, yMm: 183.8 });
+      expect(route).toContainEqual({ xMm: 80.4335, yMm: 183.8 });
     });
 
-    it('16. chooses seam geometrically closer to endpoint anchors when both clear', () => {
+    it('16. chooses top even when raw endpoint anchors are closer to bottom', () => {
       const connCloserToBottom: RoutingConnection = {
         id: 'h-near-bottom',
         from: {
@@ -1981,7 +1985,7 @@ describe('connection routing', () => {
         'perimeter',
       );
       const route = routes.get('h-near-bottom');
-      expect(route).toContainEqual({ xMm: 160.867, yMm: 183.8 });
+      expect(route).toContainEqual({ xMm: 80.4335, yMm: 82.9 });
     });
 
     it('17. deterministically chooses top on exact top/bottom tie', () => {
@@ -2000,7 +2004,7 @@ describe('connection routing', () => {
       };
       const routes = routeConnections([connMid], [sharedRack], 'perimeter');
       const route = routes.get('h-mid');
-      expect(route).toContainEqual({ xMm: 160.867, yMm: 82.9 });
+      expect(route).toContainEqual({ xMm: 80.4335, yMm: 82.9 });
     });
 
     it('18. falls back to perimeter routing when both top and bottom seams are blocked', () => {
@@ -2181,10 +2185,10 @@ describe('connection routing', () => {
 
       // Top rejected, bottom clear: the bottom seam is taken.
       expect(route).toContainEqual({
-        xMm: 160.867,
+        xMm: 80.4335,
         yMm: siblingA.bottomY + LOCAL_SEAM_OFFSET_MM,
       });
-      expect(route).not.toContainEqual({ xMm: 160.867, yMm: seamY });
+      expect(route).not.toContainEqual({ xMm: 80.4335, yMm: seamY });
       // And no segment of the chosen route enters the thin device.
       expect(localRouteIsClear('rack:1:front', route, [thinAbove])).toBe(true);
     });
@@ -2294,11 +2298,11 @@ describe('connection routing', () => {
       // The outward seam would sit at y = -6, above the rack and inside the
       // reserved title band, so it must not be chosen.
       expect(route).not.toContainEqual({
-        xMm: 241.3,
+        xMm: 120.65,
         yMm: -LOCAL_SEAM_OFFSET_MM,
       });
       expect(route).toContainEqual({
-        xMm: 241.3,
+        xMm: 120.65,
         yMm: topLeft.bottomY + LOCAL_SEAM_OFFSET_MM,
       });
       expect(routeStaysWithinRack(route, topRowRack)).toBe(true);
@@ -2346,11 +2350,11 @@ describe('connection routing', () => {
       }
 
       expect(route).not.toContainEqual({
-        xMm: 241.3,
+        xMm: 120.65,
         yMm: bottomLeft.bottomY + LOCAL_SEAM_OFFSET_MM,
       });
       expect(route).toContainEqual({
-        xMm: 241.3,
+        xMm: 120.65,
         yMm: bottomLeft.topY - LOCAL_SEAM_OFFSET_MM,
       });
       expect(routeStaysWithinRack(route, bottomRowRack)).toBe(true);
@@ -2401,7 +2405,7 @@ describe('connection routing', () => {
       // Perimeter fallback: leaves via the rack-side stub, not a local seam.
       expect(route).toContainEqual({ xMm: 482.6 + 6.35, yMm: 22.225 });
       expect(route).not.toContainEqual({
-        xMm: 241.3,
+        xMm: 120.65,
         yMm: -LOCAL_SEAM_OFFSET_MM,
       });
       expect(route).not.toContainEqual({
@@ -2436,7 +2440,7 @@ describe('connection routing', () => {
   });
 
   describe('R5 shared-row regression & R7 path', () => {
-    it('24. produces exact anchor-preserving logical route, length, bends, and clearance on shared-row proof', () => {
+    it('24. produces exact C3 logical route, length, bends, and clearance on shared-row proof', () => {
       const sharedRack: RoutingRack = {
         key: 'rack:Shared Equipment:front',
         xMm: 0,
@@ -2475,47 +2479,40 @@ describe('connection routing', () => {
       const route = expectRoute(routes, 'c-sibling');
 
       const expectedRoute = [
-        { xMm: 160.867, yMm: 133.35 },
-        { xMm: 160.867, yMm: 88.9 },
-        { xMm: 160.867, yMm: 82.9 },
-        { xMm: 321.733, yMm: 82.9 },
-        { xMm: 321.733, yMm: 88.9 },
-        { xMm: 321.733, yMm: 133.35 },
+        { xMm: 80.4335, yMm: 88.9 },
+        { xMm: 80.4335, yMm: 82.9 },
+        { xMm: 241.3, yMm: 82.9 },
+        { xMm: 241.3, yMm: 88.9 },
       ];
 
       expect(route).toEqual(expectedRoute);
-      // Class H terminates on the raw semantic anchors, because those anchors
-      // already sit on the sibling slot vertical boundaries.
-      expect(route[0]).toEqual(conn.from.anchor);
-      expect(route.at(-1)).toEqual(conn.to.anchor);
+      // C3 presentation endpoints leave the semantic side anchors unchanged.
+      expect(route[0]).toEqual({ xMm: 80.4335, yMm: 88.9 });
+      expect(route.at(-1)).toEqual({ xMm: 241.3, yMm: 88.9 });
+      expect(conn.from.anchor).toEqual({ xMm: 160.867, yMm: 133.35 });
+      expect(conn.to.anchor).toEqual({ xMm: 321.733, yMm: 133.35 });
 
       expect(totalBendCount([route])).toBe(2);
       expect(countCrossings([route])).toBe(0);
 
-      // Route length: 44.45 + 6 + 160.866 + 6 + 44.45 = 261.766 mm (~261.77 mm)
+      // Route length: 6 + 160.8665 + 6 = 172.8665 mm (~172.87 mm)
       const len = routeLength(route);
-      expect(Math.round(len * 100) / 100).toBe(261.77);
+      expect(Math.round(len * 100) / 100).toBe(172.87);
     });
 
     it('25. verifies nominal 3mm radius on Class H 6mm seam offset with roundedRoutePath', () => {
       const logicalRoute = [
-        { xMm: 160.867, yMm: 133.35 },
-        { xMm: 160.867, yMm: 88.9 },
-        { xMm: 160.867, yMm: 82.9 },
-        { xMm: 321.733, yMm: 82.9 },
-        { xMm: 321.733, yMm: 88.9 },
-        { xMm: 321.733, yMm: 133.35 },
+        { xMm: 80.4335, yMm: 88.9 },
+        { xMm: 80.4335, yMm: 82.9 },
+        { xMm: 241.3, yMm: 82.9 },
+        { xMm: 241.3, yMm: 88.9 },
       ];
 
       const pathString = roundedRoutePath(logicalRoute);
 
-      // Verify that the 6mm vertical seam leg permits the full nominal 3mm radius:
-      // In from (160.867, 88.9) to (160.867, 82.9): length is 6mm.
-      // Corner control point is (160.867, 82.9).
-      // Arc starts at Y = 82.9 + 3.0 = 85.9, ends at X = 160.867 + 3.0 = 163.867.
-      // Arc at second corner (321.733, 82.9): starts at X = 321.733 - 3.0 = 318.733, ends at Y = 85.9.
+      // Both 6mm legs admit the full 3mm corner radius at the C3 seam.
       expect(pathString).toBe(
-        'M 160.867,133.35 L 160.867,88.9 L 160.867,85.9 Q 160.867,82.9 163.867,82.9 L 318.733,82.9 Q 321.733,82.9 321.733,85.9 L 321.733,88.9 L 321.733,133.35',
+        'M 80.434,88.9 L 80.434,85.9 Q 80.434,82.9 83.434,82.9 L 238.3,82.9 Q 241.3,82.9 241.3,85.9 L 241.3,88.9',
       );
     });
   });

@@ -195,7 +195,7 @@ describe('bounded perimeter attachment fan-out', () => {
     },
   );
 
-  it('counts local occurrences without moving their raw shared-row anchors', () => {
+  it('uses six C3 locals and two fallbacks while preserving downstream occurrence indices', () => {
     const { layout, endpoints } = render(
       [
         'rack "Shared and local" 12U',
@@ -208,9 +208,15 @@ describe('bounded perimeter attachment fan-out', () => {
     );
     expect(layout.diagnostics).toEqual([]);
     const all = [...endpoints.values()];
-    for (const [from, to] of all.slice(0, 8)) {
-      expect(from).toEqual({ xMm: 241.3, yMm: 111.125 });
-      expect(to).toEqual({ xMm: 482.6, yMm: 111.125 });
+    for (const [index, [from, to]] of all.slice(0, 6).entries()) {
+      const offset = [0, -2.5, 2.5][index % 3] as number;
+      const yMm = index < 3 ? 88.9 : 133.35;
+      expect(from).toEqual({ xMm: 120.65 + offset, yMm });
+      expect(to).toEqual({ xMm: 361.95 + offset, yMm });
+    }
+    for (const [from, to] of all.slice(6, 8)) {
+      expect([0, 482.6]).toContain(from.xMm);
+      expect(to.xMm).toBe(from.xMm);
     }
     // Local routes occupy indices 0..7 in the same 24-occurrence group.
     const perimeter = all.slice(8).map(([from]) => from.yMm);

@@ -154,6 +154,46 @@ export function extractDeviceRectsById(svg) {
   return byId;
 }
 
+/** External identity and placement are semantic; only boxes contribute extents. */
+export function extractExternalRects(svg) {
+  return [
+    ...svg.matchAll(
+      /<g [^>]*class="rackdown-external-group"[^>]*data-external-id="([^"]+)"[^>]*data-placement="([^"]+)"[^>]*>\s*<title>[\s\S]*?<\/title>\s*<rect class="rackdown-external-box" x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/g,
+    ),
+  ].map((match) => ({
+    id: match[1],
+    placement: match[2],
+    x: Number(match[3]),
+    y: Number(match[4]),
+    w: Number(match[5]),
+    h: Number(match[6]),
+  }));
+}
+
+/** Exact open-interior segment test, including direct-mode diagonal segments. */
+export function routeEntersRect(points, rect) {
+  return points.slice(1).some((b, index) => {
+    const a = points[index];
+    let low = 0;
+    let high = 1;
+    for (const [axis, minimum, maximum] of [
+      [0, rect.x + EDGE_EPSILON_MM, rect.x + rect.w - EDGE_EPSILON_MM],
+      [1, rect.y + EDGE_EPSILON_MM, rect.y + rect.h - EDGE_EPSILON_MM],
+    ]) {
+      const delta = b[axis] - a[axis];
+      if (delta === 0) {
+        if (a[axis] <= minimum || a[axis] >= maximum) return false;
+      } else {
+        const first = (minimum - a[axis]) / delta;
+        const last = (maximum - a[axis]) / delta;
+        low = Math.max(low, Math.min(first, last));
+        high = Math.min(high, Math.max(first, last));
+      }
+    }
+    return low < high;
+  });
+}
+
 export function extractViewport(svg) {
   const match = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(svg);
   if (!match) {
@@ -301,6 +341,7 @@ export function computeMetrics(layout, svg) {
   const rackRects = extractRackRects(svg);
   const deviceRectById = extractDeviceRectsById(svg);
   const viewport = extractViewport(svg);
+  const externalRects = extractExternalRects(svg);
 
   const rackKeyByDeviceId = new Map();
   for (const [deviceId, rect] of deviceRectById) {
@@ -321,11 +362,54 @@ export function computeMetrics(layout, svg) {
   let foreignRackTransitMm = 0;
   let totalLengthMm = 0;
   let bends = 0;
+  let externalBoxInteriorRoutes = 0;
+  let foreignExternalStemRoutes = 0;
+  let localDeviceInteriorRoutes = 0;
 
   for (const route of routes) {
     totalLengthMm += routeLength(route.points);
     bends += bendCount(route.points);
     occludedMm += lengthInsideRects(route.points, deviceRects);
+
+    const endpoints = endpointsByConnectionId.get(route.id) ?? [];
+    const ownExternalIds = new Set(
+      endpoints
+        .filter((endpoint) => endpoint.kind === 'external')
+        .map((endpoint) => endpoint.externalId),
+    );
+    if (externalRects.some((rect) => routeEntersRect(route.points, rect)))
+      externalBoxInteriorRoutes++;
+    if (
+      externalRects
+        .filter(
+          (rect) => rect.placement === 'bottom' && !ownExternalIds.has(rect.id),
+        )
+        .some((rect) =>
+          routeEntersRect(route.points, {
+            x: rect.x + rect.w / 2 - 1.25,
+            y: rect.y - 6,
+            w: 2.5,
+            h: 6,
+          }),
+        )
+    )
+      foreignExternalStemRoutes++;
+    const [from, to] = endpoints.map((endpoint) =>
+      endpoint.kind === 'device'
+        ? deviceRectById.get(endpoint.deviceId)
+        : undefined,
+    );
+    if (
+      from &&
+      to &&
+      from !== to &&
+      Math.abs(from.y - to.y) <= 0.001 &&
+      Math.abs(from.h - to.h) <= 0.001 &&
+      rackKeyForDeviceRect(from, rackRects) ===
+        rackKeyForDeviceRect(to, rackRects) &&
+      deviceRects.some((rect) => routeEntersRect(route.points, rect))
+    )
+      localDeviceInteriorRoutes++;
 
     // Racks this route legitimately terminates in; every other rack is foreign.
     const ownRackKeys = new Set();
@@ -345,6 +429,14 @@ export function computeMetrics(layout, svg) {
 
   return {
     connections: routes.length,
+    externalBoxInteriorRoutes,
+    foreignExternalStemRoutes,
+    localDeviceInteriorRoutes,
+    externalRows: new Set(
+      externalRects
+        .filter((rect) => rect.placement === 'bottom')
+        .map((rect) => rect.y),
+    ).size,
     crossings: crossingCount(routes),
     occludedMm: round(occludedMm),
     foreignRackTransitMm: round(foreignRackTransitMm),
@@ -363,6 +455,9 @@ function round(value) {
 /** Metrics where a lower value is better, used by the assert mode's direction check. */
 export const LOWER_IS_BETTER = Object.freeze([
   'crossings',
+  'externalBoxInteriorRoutes',
+  'foreignExternalStemRoutes',
+  'localDeviceInteriorRoutes',
   'occludedMm',
   'foreignRackTransitMm',
   'totalLengthMm',

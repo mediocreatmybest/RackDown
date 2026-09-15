@@ -1,4 +1,4 @@
-import type { PointMm } from './layout.js';
+import type { PointMm, RectMm } from './layout.js';
 
 const RIGHT_LANE_GUTTER_MM = 6.35;
 const BOTTOM_LANE_GUTTER_MM = 6.35;
@@ -13,6 +13,16 @@ const SCORE_EPSILON = 0.000001;
 export const CORRIDOR_LANE_CAPACITY = 6;
 export const SHORT_HOP_THRESHOLD_MM = 88.9;
 export const LOCAL_SEAM_OFFSET_MM = 6;
+
+/**
+ * Nominal corner radius for rounded route elbows, in millimetres.
+ *
+ * Frozen by the R7 proof on #203. The exit stub is 6.35mm and lane spacing is
+ * 4mm, so a 4mm nominal radius would clamp on ordinary stub-adjacent bends and
+ * never actually be nominal; 3mm survives the normal stub while still visibly
+ * softening the corner. Shorter segments clamp automatically.
+ */
+export const CONNECTION_CORNER_RADIUS_MM = 3;
 
 /**
  * Space the router may occupy around the projected rack subject before any
@@ -59,6 +69,7 @@ export interface SlotBounds {
 
 export interface RoutingEndpoint {
   anchor: PointMm;
+  externalId?: string;
   rackKey?: string | undefined;
   slotBounds?: SlotBounds | undefined;
 }
@@ -118,6 +129,15 @@ export function isClassHEligible(
   const sFrom = from.slotBounds;
   const sTo = to.slotBounds;
   const EPSILON = SLOT_EQUALITY_EPSILON_MM;
+  if (
+    [sFrom, sTo].some(
+      (slot) =>
+        !Object.values(slot).every(Number.isFinite) ||
+        slot.rightX <= slot.leftX ||
+        slot.bottomY <= slot.topY,
+    )
+  )
+    return false;
 
   if (
     Math.abs(sFrom.topY - sTo.topY) > EPSILON ||
@@ -149,19 +169,18 @@ export function isClassHEligible(
 /**
  * True when an axis-aligned segment passes through a rectangle's interior.
  *
- * Contact with a rectangle *boundary* is legal and deliberately not reported:
- * the source and destination legs of a Class H route ride the sibling slot's
- * own vertical edge, which is the whole point of the route shape. Only
- * penetration of the open interior counts.
+ * Contact with a rectangle boundary is legal. Local presentation attachments
+ * and external targets terminate on boundaries; only penetration of the open
+ * interior counts.
  *
  * Both the segment and the rectangle are axis-aligned, so overlap is exactly
  * the conjunction of the two per-axis overlaps — no clipping or sampling
  * needed, and the segment degenerate in one axis is handled by the same test.
  */
-function segmentEntersRectInterior(
+export function segmentEntersRectInterior(
   a: PointMm,
   b: PointMm,
-  rect: RoutingObstacle,
+  rect: RectMm,
 ): boolean {
   const epsilon = LOCAL_GEOMETRY_EPSILON_MM;
   const minX = Math.min(a.xMm, b.xMm);
@@ -233,6 +252,124 @@ function routeIsWithinRack(
       point.yMm >= rack.yMm - epsilon &&
       point.yMm <= rack.yMm + rack.heightMm + epsilon,
   );
+}
+
+/** Exact separation of axis-aligned segment centre lines, including endpoints. */
+function localRoutesAreSeparated(
+  route: readonly PointMm[],
+  other: readonly PointMm[],
+): boolean {
+  for (let i = 1; i < route.length; i++) {
+    const a = route[i - 1] as PointMm;
+    const b = route[i] as PointMm;
+    for (let j = 1; j < other.length; j++) {
+      const c = other[j - 1] as PointMm;
+      const d = other[j] as PointMm;
+      const gapX = Math.max(
+        0,
+        Math.max(Math.min(a.xMm, b.xMm), Math.min(c.xMm, d.xMm)) -
+          Math.min(Math.max(a.xMm, b.xMm), Math.max(c.xMm, d.xMm)),
+      );
+      const gapY = Math.max(
+        0,
+        Math.max(Math.min(a.yMm, b.yMm), Math.min(c.yMm, d.yMm)) -
+          Math.min(Math.max(a.yMm, b.yMm), Math.max(c.yMm, d.yMm)),
+      );
+      if (Math.hypot(gapX, gapY) < ATTACHMENT_SPACING_MM - SCORE_EPSILON)
+        return false;
+    }
+  }
+  return true;
+}
+
+/** A rounded elbow stays within its approach/control/departure bounding box. */
+function localVerticalElbowsAreClear(
+  route: readonly PointMm[],
+  obstacles: readonly RectMm[],
+): boolean {
+  for (let i = 1; i < route.length - 1; i++) {
+    const previous = route[i - 1] as PointMm;
+    const corner = route[i] as PointMm;
+    const next = route[i + 1] as PointMm;
+    const incoming = Math.hypot(
+      previous.xMm - corner.xMm,
+      previous.yMm - corner.yMm,
+    );
+    const outgoing = Math.hypot(next.xMm - corner.xMm, next.yMm - corner.yMm);
+    const radius = Math.min(
+      CONNECTION_CORNER_RADIUS_MM,
+      incoming / 2,
+      outgoing / 2,
+    );
+    const approach = {
+      xMm: corner.xMm + ((previous.xMm - corner.xMm) * radius) / incoming,
+      yMm: corner.yMm + ((previous.yMm - corner.yMm) * radius) / incoming,
+    };
+    const departure = {
+      xMm: corner.xMm + ((next.xMm - corner.xMm) * radius) / outgoing,
+      yMm: corner.yMm + ((next.yMm - corner.yMm) * radius) / outgoing,
+    };
+    const left = Math.min(approach.xMm, corner.xMm, departure.xMm);
+    const right = Math.max(approach.xMm, corner.xMm, departure.xMm);
+    const top = Math.min(approach.yMm, corner.yMm, departure.yMm);
+    const bottom = Math.max(approach.yMm, corner.yMm, departure.yMm);
+    if (
+      obstacles.some(
+        (rect) =>
+          Math.min(right, rect.xMm + rect.widthMm) >
+            Math.max(left, rect.xMm) + LOCAL_GEOMETRY_EPSILON_MM &&
+          Math.min(bottom, rect.yMm + rect.heightMm) >
+            Math.max(top, rect.yMm) + LOCAL_GEOMETRY_EPSILON_MM,
+      )
+    )
+      return false;
+  }
+  return true;
+}
+
+function slotRectangle(bounds: SlotBounds, rackKey: string): RoutingObstacle {
+  return {
+    rackKey,
+    xMm: bounds.leftX,
+    yMm: bounds.topY,
+    widthMm: bounds.rightX - bounds.leftX,
+    heightMm: bounds.bottomY - bounds.topY,
+  };
+}
+
+/** Renderer-owned callout presentation, separate from semantic RackLayout. */
+export interface RoutingBottomExternal {
+  id: string;
+  placement: 'bottom';
+  box: RectMm;
+  target: PointMm;
+  protectedApproach: RectMm;
+  approachY: number;
+}
+
+export function bottomExternalRouteIsClear(
+  route: readonly PointMm[],
+  targetId: string,
+  racks: readonly RoutingRack[],
+  devices: readonly RoutingObstacle[],
+  externals: readonly RoutingBottomExternal[],
+): boolean {
+  const rectangles: RectMm[] = [
+    ...racks,
+    ...devices,
+    ...externals.map((external) => external.box),
+    ...externals
+      .filter((external) => external.id !== targetId)
+      .map((external) => external.protectedApproach),
+  ];
+  return route
+    .slice(1)
+    .every((point, index) =>
+      rectangles.every(
+        (rect) =>
+          !segmentEntersRectInterior(route[index] as PointMm, point, rect),
+      ),
+    );
 }
 
 export interface RoutingConnection {
@@ -575,6 +712,7 @@ export function routeConnections(
   racks: readonly RoutingRack[],
   mode: SvgConnectionRouting,
   obstacles: readonly RoutingObstacle[] = [],
+  bottomExternals: readonly RoutingBottomExternal[] = [],
 ): Map<string, PointMm[]> {
   const routes = new Map<string, PointMm[]>();
   const rackByKey = new Map(racks.map((rack) => [rack.key, rack]));
@@ -585,6 +723,44 @@ export function routeConnections(
   const incidentAssigned = new Map<string, number>();
   const subject = routingSubjectBounds(racks);
   let bottomLaneIndex = 0;
+  const classHRoutes = new Map<string, PointMm[]>();
+  // Only accepted H and vertical routes occupy this independent local space.
+  const localVerticalOccupancy = new Map<string, PointMm[][]>();
+  // Presentation occupancy is per projected slot and side, independent of ports.
+  const localSlots: Array<{
+    rackKey: string;
+    bounds: SlotBounds;
+    top: Set<number>;
+    bottom: Set<number>;
+  }> = [];
+  const localRows: Array<{
+    rackKey: string;
+    topY: number;
+    bottomY: number;
+    top: Array<Array<[number, number]>>;
+    bottom: Array<Array<[number, number]>>;
+  }> = [];
+  const near = (a: number, b: number) =>
+    Math.abs(a - b) <= SLOT_EQUALITY_EPSILON_MM;
+  function localSlot(rackKey: string, bounds: SlotBounds) {
+    let state = localSlots.find(
+      (slot) =>
+        slot.rackKey === rackKey &&
+        near(slot.bounds.leftX, bounds.leftX) &&
+        near(slot.bounds.rightX, bounds.rightX) &&
+        near(slot.bounds.topY, bounds.topY) &&
+        near(slot.bounds.bottomY, bounds.bottomY),
+    );
+    if (!state) {
+      state = {
+        rackKey,
+        bounds,
+        top: new Set<number>(),
+        bottom: new Set<number>(),
+      };
+    }
+    return state;
+  }
 
   // #203 R4: perimeter allocation runs in geometry order so corridor lanes are
   // handed out top-down regardless of source order. This orders allocator state
@@ -808,82 +984,163 @@ export function routeConnections(
     });
   }
 
-  /**
-   * #203 R5 Class H: a local seam between two devices sharing one rack row.
-   *
-   * Tried before any perimeter strategy, and deliberately allocates nothing —
-   * a route that never leaves its own rack owes no corridor a lane. Returns
-   * `undefined` when the pair is ineligible or neither seam is usable, which
-   * hands the connection to the perimeter strategies untouched.
-   */
+  /** C3 local presentation: top first, then bottom, then existing perimeter. */
   function classHRoute(connection: RoutingConnection): PointMm[] | undefined {
-    const localRackKey = connection.from.rackKey;
-    const slotBounds = connection.from.slotBounds;
+    if (!isClassHEligible(connection.from, connection.to)) return undefined;
+    const rackKey = connection.from.rackKey as string;
+    const rack = rackByKey.get(rackKey);
+    if (!rack) return undefined;
+    const from = connection.from.slotBounds as SlotBounds;
+    const to = connection.to.slotBounds as SlotBounds;
+    const reversed = from.leftX > to.leftX;
+    const [left, right] = reversed ? [to, from] : [from, to];
+    const leftState = localSlot(rackKey, left);
+    const rightState = localSlot(rackKey, right);
+    let row = localRows.find(
+      (candidate) =>
+        candidate.rackKey === rackKey &&
+        near(candidate.topY, left.topY) &&
+        near(candidate.bottomY, left.bottomY),
+    );
+    if (!row) {
+      row = {
+        rackKey,
+        topY: left.topY,
+        bottomY: left.bottomY,
+        top: [[], [], []],
+        bottom: [[], [], []],
+      };
+    }
+    const offsets = [0, -2.5, 2.5];
+    for (const side of ['top', 'bottom'] as const) {
+      for (const [li, lo] of offsets.entries()) {
+        const lx = (left.leftX + left.rightX) / 2 + lo;
+        if (leftState[side].has(li) || lx < left.leftX || lx > left.rightX)
+          continue;
+        for (const [ri, ro] of offsets.entries()) {
+          const rx = (right.leftX + right.rightX) / 2 + ro;
+          if (rightState[side].has(ri) || rx < right.leftX || rx > right.rightX)
+            continue;
+          for (const [track, distance] of [6, 10, 14].entries()) {
+            const intervals = row[side][track] as Array<[number, number]>;
+            if (
+              intervals.some(
+                ([start, end]) => !(rx + 2.5 <= start || lx >= end + 2.5),
+              )
+            )
+              continue;
+            const seam =
+              side === 'top'
+                ? Math.min(left.topY, right.topY) - distance
+                : Math.max(left.bottomY, right.bottomY) + distance;
+            const route = compactRoute([
+              { xMm: lx, yMm: side === 'top' ? left.topY : left.bottomY },
+              { xMm: lx, yMm: seam },
+              { xMm: rx, yMm: seam },
+              { xMm: rx, yMm: side === 'top' ? right.topY : right.bottomY },
+            ]);
+            if (
+              !routeIsWithinRack(route, rack) ||
+              !localRouteIsClear(rackKey, route, obstacles)
+            )
+              continue;
+            // Even approximate identity representatives are committed only on
+            // acceptance: a rejected row must not seed later equality groups.
+            if (!localSlots.includes(leftState)) localSlots.push(leftState);
+            if (!localSlots.includes(rightState)) localSlots.push(rightState);
+            if (!localRows.includes(row)) localRows.push(row);
+            leftState[side].add(li);
+            rightState[side].add(ri);
+            intervals.push([lx, rx]);
+            return reversed ? route.reverse() : route;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /** Facing-edge presentation for the existing non-consuming Class V range. */
+  function localVerticalRoute(
+    connection: RoutingConnection,
+  ): PointMm[] | undefined {
+    const rackKey = connection.from.rackKey;
+    if (rackKey === undefined || connection.to.rackKey !== rackKey)
+      return undefined;
+    const rack = rackByKey.get(rackKey);
+    const from = connection.from.slotBounds;
+    const to = connection.to.slotBounds;
+    if (!rack || !from || !to) return undefined;
     if (
-      !isClassHEligible(connection.from, connection.to) ||
-      localRackKey === undefined ||
-      slotBounds === undefined
-    ) {
+      [from, to].some(
+        (slot) =>
+          !Object.values(slot).every(Number.isFinite) ||
+          slot.leftX >= slot.rightX ||
+          slot.topY >= slot.bottomY,
+      )
+    )
       return undefined;
-    }
-    const localRack = rackByKey.get(localRackKey);
-    if (localRack === undefined) {
+
+    // Do not intercept lane-consuming long routes: later perimeter allocations
+    // and the precomputed attachment fans must remain exactly as before.
+    const deltaY = Math.abs(
+      connection.from.anchor.yMm - connection.to.anchor.yMm,
+    );
+    if (!(deltaY > 1e-3 && deltaY <= SHORT_HOP_THRESHOLD_MM)) return undefined;
+    const upper = from.bottomY <= to.topY ? from : to;
+    const lower = upper === from ? to : from;
+    if (lower.topY - upper.bottomY <= LOCAL_GEOMETRY_EPSILON_MM)
       return undefined;
+    const left = Math.max(from.leftX, to.leftX);
+    const right = Math.min(from.rightX, to.rightX);
+    if (right - left <= LOCAL_GEOMETRY_EPSILON_MM) return undefined;
+
+    const preferredX = (left + right) / 2;
+    const positions = [0, -ATTACHMENT_SPACING_MM, ATTACHMENT_SPACING_MM]
+      .map((offset) => preferredX + offset)
+      .filter((x) => x >= left && x <= right);
+    const candidates = positions.map((xMm) => [
+      { xMm, yMm: upper.bottomY },
+      { xMm, yMm: lower.topY },
+    ]);
+    const seamY = (upper.bottomY + lower.topY) / 2;
+    const doglegs: PointMm[][] = [];
+    for (const upperX of positions) {
+      for (const lowerX of positions) {
+        if (upperX === lowerX) continue;
+        doglegs.push([
+          { xMm: upperX, yMm: upper.bottomY },
+          { xMm: upperX, yMm: seamY },
+          { xMm: lowerX, yMm: seamY },
+          { xMm: lowerX, yMm: lower.topY },
+        ]);
+      }
     }
-
-    const topY = slotBounds.topY;
-    const bottomY = slotBounds.bottomY;
-
-    // Both candidates are built in full and then validated as complete routes.
-    // Validating the seam alone cannot see a device that clips one of the short
-    // vertical transition legs, and cannot see a seam that leaves the rack
-    // entirely on a top or bottom row.
-    const localCandidate = (seam: 'top' | 'bottom'): PointMm[] => {
-      const boundaryY = seam === 'top' ? topY : bottomY;
-      const seamY =
-        seam === 'top'
-          ? boundaryY - LOCAL_SEAM_OFFSET_MM
-          : boundaryY + LOCAL_SEAM_OFFSET_MM;
-      return compactRoute([
-        connection.from.anchor,
-        { xMm: connection.from.anchor.xMm, yMm: boundaryY },
-        { xMm: connection.from.anchor.xMm, yMm: seamY },
-        { xMm: connection.to.anchor.xMm, yMm: seamY },
-        { xMm: connection.to.anchor.xMm, yMm: boundaryY },
-        connection.to.anchor,
-      ]);
-    };
-
-    const seamIsUsable = (route: PointMm[]): boolean =>
-      routeIsWithinRack(route, localRack) &&
-      localRouteIsClear(localRackKey, route, obstacles);
-
-    const topRoute = localCandidate('top');
-    const bottomRoute = localCandidate('bottom');
-    const topIsValid = seamIsUsable(topRoute);
-    const bottomIsValid = seamIsUsable(bottomRoute);
-
-    if (topIsValid && !bottomIsValid) {
-      return topRoute;
+    // All Z candidates have two bends. Stable length sorting retains upper,
+    // then lower fan order on ties. At most three straights and six Z routes.
+    doglegs.sort((a, b) => routeLength(a) - routeLength(b));
+    candidates.push(...doglegs);
+    const relevantObstacles = [
+      ...obstacles.filter((obstacle) => obstacle.rackKey === rackKey),
+      // Endpoint bodies are required even if an internal caller omitted them.
+      slotRectangle(from, rackKey),
+      slotRectangle(to, rackKey),
+    ];
+    const occupied = localVerticalOccupancy.get(rackKey) ?? [];
+    for (const route of candidates) {
+      if (
+        !routeIsWithinRack(route, rack) ||
+        !localRouteIsClear(rackKey, route, relevantObstacles) ||
+        !localVerticalElbowsAreClear(route, relevantObstacles) ||
+        occupied.some((other) => !localRoutesAreSeparated(route, other))
+      )
+        continue;
+      // Commit only after every check; rejected candidates consume no state.
+      occupied.push(route);
+      localVerticalOccupancy.set(rackKey, occupied);
+      return upper === from ? route : [...route].reverse();
     }
-    if (!topIsValid && bottomIsValid) {
-      return bottomRoute;
-    }
-    if (!topIsValid && !bottomIsValid) {
-      return undefined;
-    }
-
-    // Both seams work: take the shorter pair of transition legs, and prefer the
-    // top seam when they tie.
-    const distTop =
-      Math.abs(connection.from.anchor.yMm - topY) +
-      Math.abs(connection.to.anchor.yMm - topY);
-    const distBottom =
-      Math.abs(connection.from.anchor.yMm - bottomY) +
-      Math.abs(connection.to.anchor.yMm - bottomY);
-    return distTop <= distBottom + SLOT_EQUALITY_EPSILON_MM
-      ? topRoute
-      : bottomRoute;
+    return undefined;
   }
 
   /**
@@ -1040,6 +1297,88 @@ export function routeConnections(
     const oriented = (route: PointMm[]): PointMm[] =>
       deviceIsFrom ? route : [...route].reverse();
 
+    const bottomExternal = bottomExternals.find(
+      (candidate) => candidate.id === externalEndpoint.externalId,
+    );
+    if (bottomExternal) {
+      const preview = peekLane(globalCorridor('bottom'));
+      const laneY = preview.coordinateMm;
+      const allRectangles = [
+        ...racks,
+        ...bottomExternals.map((candidate) => candidate.box),
+      ];
+      const leftTrunk =
+        Math.min(...allRectangles.map((rect) => rect.xMm)) - EXIT_STUB_MM;
+      const rightTrunk =
+        Math.max(...allRectangles.map((rect) => rect.xMm + rect.widthMm)) +
+        EXIT_STUB_MM;
+      const candidates: Array<RouteCandidate & { usesLane: boolean }> = [];
+      for (const side of ['right', 'left'] as const) {
+        const source = attachment(
+          connection.id,
+          endpointName,
+          deviceEndpoint,
+          side,
+        );
+        const trunk = side === 'right' ? rightTrunk : leftTrunk;
+        const approach = bottomExternal.approachY;
+        const target = bottomExternal.target;
+        const paths = [
+          [
+            source.point,
+            source.stub,
+            { xMm: source.stub.xMm, yMm: laneY },
+            { xMm: target.xMm, yMm: laneY },
+            target,
+          ],
+          [
+            source.point,
+            source.stub,
+            { xMm: source.stub.xMm, yMm: laneY },
+            { xMm: trunk, yMm: laneY },
+            { xMm: trunk, yMm: approach },
+            { xMm: target.xMm, yMm: approach },
+            target,
+          ],
+          [
+            source.point,
+            source.stub,
+            { xMm: trunk, yMm: source.point.yMm },
+            { xMm: trunk, yMm: approach },
+            { xMm: target.xMm, yMm: approach },
+            target,
+          ],
+        ];
+        for (const [index, path] of paths.entries()) {
+          const route = compactRoute(path);
+          if (
+            !bottomExternalRouteIsClear(
+              route,
+              bottomExternal.id,
+              racks,
+              obstacles,
+              bottomExternals,
+            )
+          )
+            continue;
+          const usesLane = index < 2;
+          candidates.push({
+            route,
+            usesLane,
+            score: routeScore(route, usesLane ? preview.pressure : 0),
+          });
+        }
+      }
+      if (candidates.length === 0) {
+        throw new Error(
+          `No accepted bottom external route for ${connection.id} (${bottomExternal.id})`,
+        );
+      }
+      const best = bestCandidate(candidates);
+      if (best.usesLane) consumeLane(preview);
+      return oriented(best.route);
+    }
+
     const region = classifyExternalRegion(external, rack, subject);
 
     if (region === 'right' || region === 'left') {
@@ -1113,7 +1452,7 @@ export function routeConnections(
   /**
    * Perimeter strategies in priority order.
    *
-   * The order is the policy: a local in-rack seam beats a rack-side corridor,
+   * The order is the policy: reserved H and local vertical routes beat a rack-side corridor,
    * which beats a rack-pair gap, which beats an external run, and an orthogonal
    * route catches anything none of them can place. Each strategy returns
    * `undefined` without touching allocator state when it does not apply, so
@@ -1122,7 +1461,8 @@ export function routeConnections(
    */
   function routePerimeterConnection(connection: RoutingConnection): PointMm[] {
     return (
-      classHRoute(connection) ??
+      classHRoutes.get(connection.id) ??
+      localVerticalRoute(connection) ??
       sameRackPerimeterRoute(connection) ??
       crossRackPerimeterRoute(connection) ??
       externalPerimeterRoute(connection) ??
@@ -1171,6 +1511,20 @@ export function routeConnections(
       { xMm: to.xMm, yMm: laneY },
       to,
     ]);
+  }
+
+  // Resolve H once in its original order, before vertical routes compete for
+  // nearby space. H's own slots/tracks never see vertical occupancy.
+  if (mode === 'perimeter') {
+    for (const connection of allocationConnections) {
+      const route = classHRoute(connection);
+      const rackKey = connection.from.rackKey;
+      if (!route || rackKey === undefined) continue;
+      classHRoutes.set(connection.id, route);
+      const occupied = localVerticalOccupancy.get(rackKey) ?? [];
+      occupied.push(route);
+      localVerticalOccupancy.set(rackKey, occupied);
+    }
   }
 
   for (const connection of allocationConnections) {

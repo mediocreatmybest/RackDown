@@ -1,4 +1,6 @@
+import { packBottomExternals } from './bottom-externals.js';
 import type { RackFace } from './document.js';
+import { externalDisplayLabel } from './external-labels.js';
 import type {
   LayoutConnection,
   LayoutConnectionEndpoint,
@@ -12,6 +14,7 @@ import type {
   RectMm,
 } from './layout.js';
 import {
+  CONNECTION_CORNER_RADIUS_MM,
   NORMAL_ROUTING_ENVELOPE_MM,
   type RoutingConnection,
   type RoutingObstacle,
@@ -34,20 +37,10 @@ const EXTERNAL_WIDTH_MM = 76.2;
 const EXTERNAL_HEIGHT_MM = 16;
 const EXTERNAL_HORIZONTAL_GAP_MM = 4;
 const EXTERNAL_VERTICAL_GAP_MM = 4;
-const EXTERNAL_LABEL_MAX_CHARS = 24;
 const EMPTY_WIDTH_MM = 120;
 const EMPTY_HEIGHT_MM = 40;
 const TITLE_OFFSET_MM = 7.5;
 const U_LABEL_OFFSET_MM = 3.5;
-/**
- * Nominal corner radius for rounded route elbows, in millimetres.
- *
- * Frozen by the R7 proof on #203. The exit stub is 6.35mm and lane spacing is
- * 4mm, so a 4mm nominal radius would clamp on ordinary stub-adjacent bends and
- * never actually be nominal; 3mm survives the normal stub while still visibly
- * softening the corner. Shorter segments clamp automatically.
- */
-const CONNECTION_CORNER_RADIUS_MM = 3;
 /** Millimetre tolerance for treating a route segment as zero-length or axis-aligned. */
 const ROUTE_GEOMETRY_EPSILON_MM = 1e-9;
 const DEFAULT_CONNECTION_WIDTH = 2;
@@ -124,6 +117,7 @@ interface ProjectedExternal extends LayoutExternal, RectMm {
   anchor: PointMm;
   displayLabel: string;
   placement: SvgExternalPlacement;
+  packedBottom?: boolean;
 }
 
 type ProjectedConnectionEndpoint =
@@ -176,13 +170,6 @@ function formatNumber(value: number): string {
   }
   const rounded = Math.round(value * 1000) / 1000;
   return Object.is(rounded, -0) ? '0' : String(rounded);
-}
-
-function compactExternalLabel(value: string): string {
-  if (value.length <= EXTERNAL_LABEL_MAX_CHARS) {
-    return value;
-  }
-  return `${value.slice(0, EXTERNAL_LABEL_MAX_CHARS - 1).trimEnd()}…`;
 }
 
 /**
@@ -488,6 +475,7 @@ function rectExtents(rects: readonly RectMm[]): Extents | undefined {
 function buildRenderScene(
   layout: RackLayout,
   placement: SvgExternalPlacement,
+  routing: SvgConnectionRouting,
 ): RenderScene {
   const projectedRacks: ProjectedRack[] = [];
   const projectionByKey = new Map<string, PointMm>();
@@ -620,6 +608,76 @@ function buildRenderScene(
   const subjectRightX = subjectExtents?.maxX ?? 0;
   const subjectBottomY = subjectExtents?.maxY ?? 0;
 
+  const canPackBottom =
+    routing === 'perimeter' &&
+    placement === 'bottom' &&
+    projectedRacks.length > 0 &&
+    visibleConnections.every(
+      (connection) =>
+        connection.from.kind === 'device' || connection.to.kind === 'device',
+    ) &&
+    projectedRacks.every(
+      (rack) =>
+        [rack.xMm, rack.yMm, rack.widthMm, rack.heightMm].every(
+          Number.isFinite,
+        ) &&
+        rack.widthMm > 0 &&
+        rack.heightMm > 0,
+    ) &&
+    projectedDevices.every((device) => {
+      const rack = projectedRacks.find(
+        (r) => r.id === device.rackId && r.face === device.mountFace,
+      );
+      return (
+        rack !== undefined &&
+        [device.xMm, device.yMm, device.widthMm, device.heightMm].every(
+          Number.isFinite,
+        ) &&
+        device.widthMm > 0 &&
+        device.heightMm > 0 &&
+        device.xMm >= rack.xMm - 0.01 &&
+        device.yMm >= rack.yMm - 0.01 &&
+        device.xMm + device.widthMm <= rack.xMm + rack.widthMm + 0.01 &&
+        device.yMm + device.heightMm <= rack.yMm + rack.heightMm + 0.01
+      );
+    });
+  const sourceCentres = new Map<string, number[]>();
+  const projectedDeviceById = new Map(
+    projectedDevices.map((device) => [device.id, device]),
+  );
+  for (const connection of visibleConnections) {
+    const deviceEndpoint =
+      connection.from.kind === 'device'
+        ? connection.from
+        : connection.to.kind === 'device'
+          ? connection.to
+          : undefined;
+    const externalEndpoint =
+      connection.from.kind === 'external'
+        ? connection.from
+        : connection.to.kind === 'external'
+          ? connection.to
+          : undefined;
+    if (!deviceEndpoint || !externalEndpoint) continue;
+    const device = projectedDeviceById.get(deviceEndpoint.deviceId);
+    if (!device) continue;
+    const centres = sourceCentres.get(externalEndpoint.externalId) ?? [];
+    centres.push(device.xMm + device.widthMm / 2);
+    sourceCentres.set(externalEndpoint.externalId, centres);
+  }
+  const packed = canPackBottom
+    ? packBottomExternals(
+        layout.externals
+          .filter((external) => visibleExternalIds.has(external.id))
+          .map((external) => ({
+            external,
+            centres: sourceCentres.get(external.id) ?? [],
+          })),
+        subjectCenterX,
+        Math.max(0, subjectBottomY) + NORMAL_ROUTING_ENVELOPE_MM.bottomMm + 10,
+      )
+    : undefined;
+
   const projectedExternals: ProjectedExternal[] = [];
   const projectedExternalById = new Map<string, ProjectedExternal>();
   for (const external of layout.externals) {
@@ -628,12 +686,17 @@ function buildRenderScene(
     }
 
     const index = projectedExternals.length;
-    const displayLabel = compactExternalLabel(external.label);
+    const displayLabel = externalDisplayLabel(external.label);
     let xMm: number;
     let yMm: number;
     let anchor: PointMm;
 
-    if (placement === 'right') {
+    const packedBox = packed?.get(external.id);
+    if (packedBox) {
+      xMm = packedBox.xMm;
+      yMm = packedBox.yMm;
+      anchor = { xMm: xMm + 38.1, yMm };
+    } else if (placement === 'right') {
       xMm = subjectRightX + EXTERNAL_GAP_MM;
       yMm = index * (EXTERNAL_HEIGHT_MM + EXTERNAL_VERTICAL_GAP_MM);
       anchor = {
@@ -662,6 +725,7 @@ function buildRenderScene(
       anchor,
       displayLabel,
       placement,
+      packedBottom: packedBox !== undefined,
     };
     projectedExternals.push(projected);
     projectedExternalById.set(external.id, projected);
@@ -738,6 +802,7 @@ function routeRenderScene(
     if (endpoint.kind === 'external') {
       return {
         anchor: endpoint.anchor,
+        externalId: endpoint.externalId,
       };
     }
     const device = deviceById.get(endpoint.deviceId);
@@ -778,6 +843,21 @@ function routeRenderScene(
     routingRacks,
     routing,
     routingObstacles,
+    scene.externals
+      .filter((external) => external.packedBottom)
+      .map((external) => ({
+        id: external.id,
+        placement: 'bottom',
+        box: external,
+        target: external.anchor,
+        approachY: external.yMm - 10,
+        protectedApproach: {
+          xMm: external.anchor.xMm - 1.25,
+          yMm: external.yMm - 6,
+          widthMm: 2.5,
+          heightMm: 6,
+        },
+      })),
   );
 
   return {
@@ -791,6 +871,55 @@ function routeRenderScene(
       routing,
     })),
   };
+}
+
+/** One disposable measurement pass; rerouting always gets fresh allocators. */
+function routeWithMeasuredExternalFloor(
+  scene: RenderScene,
+  routing: SvgConnectionRouting,
+): RoutedRenderScene {
+  const initial = routeRenderScene(scene, routing);
+  const packed = scene.externals.filter((external) => external.packedBottom);
+  if (packed.length === 0) return initial;
+  const floor = Math.min(...packed.map((external) => external.yMm));
+  let nonExternalMaxY = Number.NEGATIVE_INFINITY;
+  for (const connection of initial.connections) {
+    if (connection.from.kind !== 'device' || connection.to.kind !== 'device')
+      continue;
+    for (const point of connection.route)
+      nonExternalMaxY = Math.max(nonExternalMaxY, point.yMm);
+  }
+  const raise = Math.max(0, nonExternalMaxY + 10 - floor);
+  if (raise === 0) return initial;
+  const externals = scene.externals.map((external) =>
+    external.packedBottom
+      ? {
+          ...external,
+          yMm: external.yMm + raise,
+          anchor: { ...external.anchor, yMm: external.anchor.yMm + raise },
+        }
+      : external,
+  );
+  const byId = new Map(externals.map((external) => [external.id, external]));
+  const endpoint = (
+    value: ProjectedConnectionEndpoint,
+  ): ProjectedConnectionEndpoint => {
+    if (value.kind !== 'external') return value;
+    const external = byId.get(value.externalId);
+    return external ? { ...value, anchor: { ...external.anchor } } : value;
+  };
+  return routeRenderScene(
+    {
+      ...scene,
+      externals,
+      connections: scene.connections.map((connection) => ({
+        ...connection,
+        from: endpoint(connection.from),
+        to: endpoint(connection.to),
+      })),
+    },
+    routing,
+  );
 }
 
 /**
@@ -1221,7 +1350,8 @@ function renderExternal(external: ProjectedExternal, id: string): string[] {
     `<g id="${id}" class="rackdown-external-group" data-external-id="${escapeXml(external.id)}" data-label="${escapeXml(external.label)}" data-link-style="${linkStyle}" data-placement="${external.placement}"${targetAttr}>`,
     `  <title>${escapeXml(external.label)}</title>`,
     `  <rect class="rackdown-external-box" x="${formatNumber(external.xMm)}" y="${formatNumber(external.yMm)}" width="${formatNumber(external.widthMm)}" height="${formatNumber(external.heightMm)}" rx="3" ry="3" />`,
-    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + external.widthMm / 2)}" y="${formatNumber(external.yMm + external.heightMm / 2)}" text-anchor="middle" dominant-baseline="middle">${escapeXml(external.displayLabel)}</text>`,
+    `  <defs><clipPath id="${id}-label-clip" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(external.xMm + 4)}" y="${formatNumber(external.yMm + 1)}" width="68.2" height="14" /></clipPath></defs>`,
+    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + 38.1)}" y="${formatNumber(external.yMm + 12)}" text-anchor="middle" clip-path="url(#${id}-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>${escapeXml(external.displayLabel)}</text>`,
     '</g>',
   ];
 }
@@ -1246,7 +1376,6 @@ const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc
 :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
 :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
 .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-.rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
 .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }`;
 
 /**
@@ -1329,7 +1458,10 @@ export function toSvg(
   const sizing = svgSizing(options);
   const style = svgStyle(svgTheme(options));
   const namespace = rendererNamespace(layout, options);
-  const scene = routeRenderScene(buildRenderScene(layout, placement), routing);
+  const scene = routeWithMeasuredExternalFloor(
+    buildRenderScene(layout, placement, routing),
+    routing,
+  );
   const viewport = computeViewport(scene);
   const title =
     layout.racks.length === 1 && layout.racks[0]

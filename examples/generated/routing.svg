@@ -1,4 +1,4 @@
-<svg id="rackdown-1vp2hgp-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 942.85" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1vp2hgp-title" aria-describedby="rackdown-1vp2hgp-desc">
+<svg id="rackdown-1vp2hgp-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 1087.75 968.85" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-1vp2hgp-title" aria-describedby="rackdown-1vp2hgp-desc">
   <title id="rackdown-1vp2hgp-title">RackDown diagram</title>
   <desc id="rackdown-1vp2hgp-desc">2 racks, 8 devices, 8 connections.</desc>
   <style>
@@ -18,7 +18,6 @@
   :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
   :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
   .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-  .rackdown-external-label { font-size: var(--rackdown-label-size, 10px); font-weight: 600; }
   .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
   @media (prefers-color-scheme: dark) {
   .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
@@ -116,10 +115,10 @@
   <path id="rackdown-1vp2hgp-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-17" data-routing="perimeter" data-media="power" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 482.6,70.425 L 485.95,70.425 Q 488.95,70.425 488.95,73.425 L 488.95,221.125 Q 488.95,224.125 491.95,224.125 L 498.65,224.125 Q 501.65,224.125 501.65,227.125 L 501.65,374.825 Q 501.65,377.825 504.65,377.825 L 508,377.825">
     <title>core:5 → pdu:1 (power)</title>
   </path>
-  <path id="rackdown-1vp2hgp-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-18" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,23.475 L 485.95,23.475 Q 488.95,23.475 488.95,26.475 L 488.95,847.9 Q 488.95,850.9 491.95,850.9 L 495.3,850.9">
+  <path id="rackdown-1vp2hgp-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-18" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,23.475 L 485.95,23.475 Q 488.95,23.475 488.95,26.475 L 488.95,847.9 Q 488.95,850.9 485.95,850.9 L 244.3,850.9 Q 241.3,850.9 241.3,853.9 L 241.3,880.9">
     <title>gw:wan → ISP Handover</title>
   </path>
-  <path id="rackdown-1vp2hgp-connection-7" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-25" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 482.6,594.975 L 485.95,594.975 Q 488.95,594.975 488.95,597.975 L 488.95,679.625 Q 488.95,682.625 485.95,682.625 L 482.6,682.625">
+  <path id="rackdown-1vp2hgp-connection-7" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-25" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 241.3,615.95 L 241.3,660.4">
     <title>garage:1 → garage-host:nic1</title>
   </path>
   <path id="rackdown-1vp2hgp-connection-8" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-26" data-routing="perimeter" data-media="fibre" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#0072b2" d="M 482.6,72.925 L 485.95,72.925 Q 488.95,72.925 488.95,69.925 L 488.95,-17.2 Q 488.95,-20.2 485.95,-20.2 L -3.35,-20.2 Q -6.35,-20.2 -6.35,-17.2 L -6.35,589.475 Q -6.35,592.475 -3.35,592.475 L 0,592.475">
@@ -191,7 +190,8 @@
   </g>
   <g id="rackdown-1vp2hgp-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="ISP Handover" data-link-style="wiki" data-placement="bottom" data-target="ISP Handover">
     <title>ISP Handover</title>
-    <rect class="rackdown-external-box" x="457.2" y="850.9" width="76.2" height="16" rx="3" ry="3" />
-    <text class="rackdown-external-label" x="495.3" y="858.9" text-anchor="middle" dominant-baseline="middle">ISP Handover</text>
+    <rect class="rackdown-external-box" x="203.2" y="880.9" width="76.2" height="16" rx="3" ry="3" />
+    <defs><clipPath id="rackdown-1vp2hgp-external-1-label-clip" clipPathUnits="userSpaceOnUse"><rect x="207.2" y="881.9" width="68.2" height="14" /></clipPath></defs>
+    <text class="rackdown-external-label" x="241.3" y="892.9" text-anchor="middle" clip-path="url(#rackdown-1vp2hgp-external-1-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>ISP Hando…</text>
   </g>
 </svg>
