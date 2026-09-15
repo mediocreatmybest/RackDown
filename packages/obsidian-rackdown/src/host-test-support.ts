@@ -19,7 +19,9 @@ export class TestElement extends EventTarget {
   };
   parentElement: TestElement | undefined;
   textContent = '';
-  innerHTML = '';
+  private html = '';
+  onInnerHtml: ((value: string) => void) | undefined;
+  value = '';
   hidden = false;
   focus = vi.fn();
   ownerDocument = { defaultView: { open: vi.fn() } };
@@ -34,6 +36,13 @@ export class TestElement extends EventTarget {
 
   instanceOf(type: typeof TestElement): boolean {
     return this instanceof type;
+  }
+  get innerHTML(): string {
+    return this.html;
+  }
+  set innerHTML(value: string) {
+    this.html = value;
+    this.onInnerHtml?.(value);
   }
   setAttribute(key: string, value: string): void {
     if (key === 'class') {
@@ -100,11 +109,13 @@ export class TestElement extends EventTarget {
       cls?: string;
       text?: string;
       type?: string;
+      value?: string;
       attr?: Record<string, string>;
     } = {},
   ): TestElement {
     const child = this.append(new TestElement(tag, options.cls));
     child.textContent = options.text ?? '';
+    child.value = options.value ?? '';
     for (const [key, value] of Object.entries(options.attr ?? {}))
       child.setAttribute(key, value);
     if (options.type) child.setAttribute('type', options.type);
@@ -160,7 +171,26 @@ export function fire(
 
 export class TestRenderChild {
   private cleanups: (() => void)[] = [];
+  private children: TestRenderChild[] = [];
+  private loaded = false;
   constructor(readonly containerEl: HTMLElement) {}
+  load(): void {
+    if (this.loaded) return;
+    this.loaded = true;
+    this.onload();
+  }
+  onload(): void {}
+  addChild<T extends TestRenderChild>(child: T): T {
+    this.children.push(child);
+    if (this.loaded) child.load();
+    return child;
+  }
+  removeChild<T extends TestRenderChild>(child: T): T {
+    const index = this.children.indexOf(child);
+    if (index >= 0) this.children.splice(index, 1);
+    child.unload();
+    return child;
+  }
   registerDomEvent(
     element: EventTarget,
     type: string,
@@ -171,7 +201,10 @@ export class TestRenderChild {
   }
   unload(): void {
     this.onunload();
+    for (const child of this.children.splice(0)) child.unload();
     for (const cleanup of this.cleanups) cleanup();
+    this.cleanups = [];
+    this.loaded = false;
   }
   onunload(): void {}
 }
