@@ -51,6 +51,23 @@ RackDown is an independent muckabout project and does not claim affiliation with
 Core works without Obsidian, a browser or a catalogue. Hosts supply source and
 optional enrichment, then choose how to display the result.
 
+## Connection categories and focused diagrams
+
+Connections can be `power`, `network`, `console` or `unclassified`. Devices can
+participate in several categories. Media remains a separate description:
+
+```rackdown
+power:1 -- host:power1 IEC-C13 category power
+core:1 -- host:eth0 fibre category network
+```
+
+Without an explicit category, core uses conservative known endpoint evidence;
+generic connections remain valid and unclassified. Media text alone does not
+classify a connection. The [core API](packages/rackdown-core/README.md#connection-selection)
+can select connections and render focused SVGs while retaining all equipment,
+full-scene routing and rack geometry. Host filtering controls and cable schedules
+are separate future work.
+
 ## Command-line interface
 
 Render a diagram to SVG or check a document for diagnostics:

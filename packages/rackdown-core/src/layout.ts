@@ -1,3 +1,7 @@
+import type {
+  ConnectionCategory,
+  ConnectionCategoryReason,
+} from './connection-category.js';
 import type { Diagnostic } from './diagnostics.js';
 import type {
   ExternalLinkIntent,
@@ -87,6 +91,10 @@ export interface LayoutConnection {
   from: LayoutConnectionEndpoint;
   to: LayoutConnectionEndpoint;
   media?: string;
+  /** Primary purpose, resolved independently of media and visual appearance. */
+  category: ConnectionCategory;
+  /** Bounded explanation; this is not hardware validation or a confidence score. */
+  categoryReason: ConnectionCategoryReason;
 }
 
 export interface LayoutExternal {

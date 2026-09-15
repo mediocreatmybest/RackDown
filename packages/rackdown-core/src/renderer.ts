@@ -1,4 +1,8 @@
 import { packBottomExternals } from './bottom-externals.js';
+import {
+  type ConnectionSelection,
+  selectConnections,
+} from './connection-selection.js';
 import type { RackFace } from './document.js';
 import { externalDisplayLabel } from './external-labels.js';
 import type {
@@ -75,6 +79,8 @@ export interface ConnectionVisualStyle {
 }
 
 export interface SvgRenderOptions {
+  /** Filter emitted connections after complete scene layout and routing. */
+  connectionSelection?: ConnectionSelection;
   /** Stable host-provided namespace used to avoid SVG id collisions. */
   namespace?: string;
   /** Renderer-only placement for external-reference annotations. */
@@ -276,6 +282,10 @@ function layoutFingerprint(layout: RackLayout): unknown {
       endpointFingerprint(connection.from),
       endpointFingerprint(connection.to),
       connection.media ?? null,
+      ...(connection.category !== undefined &&
+      connection.category !== 'unclassified'
+        ? [connection.category]
+        : []),
     ]),
     externals: layout.externals.map((external) => [
       external.id,
@@ -338,6 +348,7 @@ function connectionStyleFingerprint(
 function rendererNamespace(
   layout: RackLayout,
   options: SvgRenderOptions,
+  selectedIds?: readonly string[],
 ): string {
   const routing = connectionRouting(options);
   const theme = svgTheme(options);
@@ -347,6 +358,9 @@ function rendererNamespace(
       ? fnv1a(
           JSON.stringify({
             layout: layoutFingerprint(layout),
+            ...(selectedIds === undefined
+              ? {}
+              : { selectedConnectionIds: selectedIds }),
             externalPlacement: externalPlacement(options),
             ...(routing === 'direct' ? {} : { connectionRouting: routing }),
             ...connectionStyleFingerprint(options),
@@ -1217,7 +1231,7 @@ function renderConnection(
     (connection.to.kind === 'device' && connection.to.adHocPort);
   const style = resolveConnectionVisualStyle(connection, adHoc, options);
   const styleAttributes = renderConnectionStyleAttributes(style);
-  const common = `id="${id}" class="rackdown-connection${adHoc ? ' rackdown-connection-ad-hoc' : ''}${style.defaultWidth ? ' rackdown-connection-default-width' : ''}" data-connection-id="${escapeXml(connection.id)}" data-routing="${connection.routing}"${media}${styleAttributes}`;
+  const common = `id="${id}" class="rackdown-connection${adHoc ? ' rackdown-connection-ad-hoc' : ''}${style.defaultWidth ? ' rackdown-connection-default-width' : ''}" data-connection-id="${escapeXml(connection.id)}" data-category="${escapeXml(connection.category ?? 'unclassified')}" data-routing="${connection.routing}"${media}${styleAttributes}`;
 
   const title = `<title>${escapeXml(connectionTitle(connection, deviceById))}</title>`;
 
@@ -1438,8 +1452,9 @@ function pluralize(count: number, singular: string, plural: string): string {
 function diagramDescription(
   layout: RackLayout,
   scene: RoutedRenderScene,
+  connectionCount = scene.connections.length,
 ): string {
-  return `${pluralize(layout.racks.length, 'rack', 'racks')}, ${pluralize(scene.devices.length, 'device', 'devices')}, ${pluralize(scene.connections.length, 'connection', 'connections')}.`;
+  return `${pluralize(layout.racks.length, 'rack', 'racks')}, ${pluralize(scene.devices.length, 'device', 'devices')}, ${pluralize(connectionCount, 'connection', 'connections')}.`;
 }
 
 function appendRenderedItems<T>(
@@ -1466,7 +1481,16 @@ export function toSvg(
   const colourMode = connectionColourMode(options);
   const sizing = svgSizing(options);
   const style = svgStyle(svgTheme(options));
-  const namespace = rendererNamespace(layout, options);
+  const selected = selectConnections(layout, options.connectionSelection);
+  const selectedIds = new Set(selected.map((connection) => connection.id));
+  const filtered = selected.length !== layout.connections.length;
+  const namespace = rendererNamespace(
+    layout,
+    options,
+    filtered ? selected.map((connection) => connection.id) : undefined,
+  );
+  // Every view shares the complete scene, including corridor allocation,
+  // callout packing and the measured viewport. Selection affects emission only.
   const scene = routeWithMeasuredExternalFloor(
     buildRenderScene(layout, placement, routing),
     routing,
@@ -1476,7 +1500,24 @@ export function toSvg(
     layout.racks.length === 1 && layout.racks[0]
       ? `${layout.racks[0].name} rack diagram`
       : 'RackDown diagram';
-  const description = diagramDescription(layout, scene);
+  const visibleConnections = scene.connections.filter((connection) =>
+    selectedIds.has(connection.id),
+  );
+  const visibleExternalIds = new Set(
+    visibleConnections.flatMap((connection) =>
+      [connection.from, connection.to].flatMap((endpoint) =>
+        endpoint.kind === 'external' ? [endpoint.externalId] : [],
+      ),
+    ),
+  );
+  const unclassified = layout.connections.filter(
+    (connection) => (connection.category ?? 'unclassified') === 'unclassified',
+  ).length;
+  const description =
+    diagramDescription(layout, scene, visibleConnections.length) +
+    (filtered
+      ? ` Selected ${selected.length} of ${layout.connections.length} documented connections; excluded ${layout.connections.length - selected.length}. ${unclassified} of ${layout.connections.length} documented connections unclassified; classification does not verify cabling completeness.`
+      : '');
   const dimensions = rootDimensionAttributes(viewport, sizing);
   const lines = [
     `<svg id="${namespace}-root" xmlns="http://www.w3.org/2000/svg"${dimensions} viewBox="${formatNumber(viewport.xMm)} ${formatNumber(viewport.yMm)} ${formatNumber(viewport.widthMm)} ${formatNumber(viewport.heightMm)}" data-external-placement="${placement}" data-connection-routing="${routing}" data-connection-colour-mode="${colourMode}" role="img" aria-labelledby="${namespace}-title" aria-describedby="${namespace}-desc">`,
@@ -1514,7 +1555,9 @@ export function toSvg(
     scene.connections,
     `${namespace}-connection`,
     (connection, id) =>
-      renderConnection(connection, id, options, connectionDeviceById),
+      selectedIds.has(connection.id)
+        ? renderConnection(connection, id, options, connectionDeviceById)
+        : [],
   );
   appendRenderedItems(
     lines,
@@ -1526,7 +1569,10 @@ export function toSvg(
     lines,
     scene.externals,
     `${namespace}-external`,
-    (external, id) => renderExternal(external, id),
+    (external, id) =>
+      !filtered || visibleExternalIds.has(external.id)
+        ? renderExternal(external, id)
+        : [],
   );
 
   lines.push('</svg>');

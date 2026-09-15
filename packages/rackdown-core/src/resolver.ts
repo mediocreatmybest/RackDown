@@ -1,3 +1,4 @@
+import { classifyConnection } from './connection-category.js';
 import type {
   DeviceDefinition,
   DeviceIndex,
@@ -726,6 +727,9 @@ export function resolve(
     };
   }
 
+  const devicesById = new Map(
+    layoutDevices.map((device) => [device.id, device]),
+  );
   const connections: LayoutConnection[] = [];
   for (const statement of document.connections) {
     const fromReference = resolveEndpointReference(statement.from, statement);
@@ -738,6 +742,7 @@ export function resolve(
     const to = materialiseEndpoint(toReference, statement);
     connections.push({
       id: statement.id,
+      ...classifyConnection(statement, from, to, devicesById),
       from,
       to,
       ...(statement.media === undefined ? {} : { media: statement.media }),

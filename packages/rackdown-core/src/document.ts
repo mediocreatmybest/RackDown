@@ -1,3 +1,4 @@
+import type { ConnectionCategory } from './connection-category.js';
 import type { Diagnostic } from './diagnostics.js';
 import type { SourceSpan } from './source.js';
 
@@ -62,6 +63,8 @@ export interface ConnectionStatement {
   to: ConnectionEndpointReference;
   /** Free-form descriptive media such as "fibre" or "power". */
   media?: string;
+  /** Explicit author intent; invalid annotations suppress inference during recovery. */
+  category?: ConnectionCategory | 'invalid';
   source: SourceSpan;
 }
 

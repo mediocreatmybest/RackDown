@@ -1,4 +1,10 @@
 export type {
+  ConnectionCategory,
+  ConnectionCategoryReason,
+} from './connection-category.js';
+export type { ConnectionSelection } from './connection-selection.js';
+export { selectConnections } from './connection-selection.js';
+export type {
   DeviceDefinition,
   DeviceIndex,
   DevicePortDefinition,
