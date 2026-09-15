@@ -499,6 +499,43 @@ perimeter
 
 Visual endpoint fan-out is approximate. It does not claim exact physical port coordinates.
 
+### Local perimeter presentation
+
+Perimeter routing reserves same-row Class H routes first, without changing their
+attachment or track policy. It then tries local vertical attachments for devices
+in the same rack projection. Their facing edges must have a gap, and their
+horizontal spans must overlap. Front and rear are separate projections.
+
+The local vertical attempt is limited to the existing Class V short-hop range:
+raw-anchor vertical separation greater than 0.001 mm and at most 88.9 mm. Longer
+connections retain the existing lane-consuming strategy so downstream perimeter
+allocations remain stable. Facing-edge gaps and overlap widths must exceed the
+0.01 mm geometry tolerance.
+
+The preferred X is the midpoint of the horizontal overlap. Attachments use the
+bottom edge of the upper device and the top edge of the lower device, trying
+offsets of 0, -2.5 and +2.5 mm. Out-of-bounds positions are unavailable, never
+clamped or compressed. Straight vertical routes are preferred. If those fail,
+at most six Z-shaped candidates use distinct fan positions and one horizontal
+seam halfway between the facing edges. They are ordered by length, then upper
+and lower fan order. No candidate leaves the overlap/gap rectangle or its rack.
+
+Every complete local vertical route is checked against all device interiors,
+including both endpoint devices; boundary contact is legal. Rounded elbows are
+also checked using conservative control-point bounding boxes. A local vertical
+route keeps 2.5 mm centreline separation from reserved Class H routes and earlier
+accepted local vertical routes. That geometric separation does not promise
+painted-stroke clearance at every display scale or custom thickness.
+
+Only accepted routes reserve local space. They consume no perimeter corridor
+state, and failed candidates consume no state. Existing attachment fan counts
+still include every connection. Geometry ordering remains top-down by raw-anchor
+mean Y, with source order breaking ties. Exhausted or blocked local attempts
+fall back to the existing perimeter strategy; source direction, RackLayout and
+direct/orthogonal/lanes behaviour are unchanged.
+
+### Connection style intent
+
 Renderer-neutral connection style intent currently includes:
 
 ```text

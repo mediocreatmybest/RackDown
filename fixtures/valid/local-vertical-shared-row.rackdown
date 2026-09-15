@@ -1,0 +1,6 @@
+rack "Small Garage Rack" 12U 19in u1 bottom views front rear
+9 switch "TP-Link 16 Port 2.5Gbe PoE+ Switch" as core01
+7 device "Mini PC 01" as mpc01
+7 device "Mini PC 02" as mpc02
+mpc01:02 -- core01:01
+mpc02:02 -- core01:02

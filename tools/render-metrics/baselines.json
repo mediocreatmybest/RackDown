@@ -71,8 +71,8 @@
       "crossings": 1,
       "occludedMm": 0,
       "foreignRackTransitMm": 0,
-      "totalLengthMm": 2988,
-      "bends": 16,
+      "totalLengthMm": 2877,
+      "bends": 12,
       "viewportWidthMm": 1088,
       "viewportHeightMm": 1197
     },
@@ -135,8 +135,8 @@
       "crossings": 0,
       "occludedMm": 0,
       "foreignRackTransitMm": 0,
-      "totalLengthMm": 3367,
-      "bends": 21,
+      "totalLengthMm": 3311,
+      "bends": 19,
       "viewportWidthMm": 1088,
       "viewportHeightMm": 969
     },

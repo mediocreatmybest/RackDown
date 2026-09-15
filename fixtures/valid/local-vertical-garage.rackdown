@@ -1,0 +1,18 @@
+rack "Small Garage Rack" 12U 19in u1 bottom views front rear
+12 patch "12 Port CAT6 Patch Panel"
+11 blank "Blanking Plate"
+9 switch "TP-Link 16 Port 2.5Gbe PoE+ Switch" as core01
+7 device "Mini PC 01" as mpc01
+7 device "Mini PC 02" as mpc02
+4 router "TP-Link Gbit Router" as router
+2 2U blank "Blanking Plate"
+1 ups "APC Back-UPS" as ups
+rear 2 device "PDU" as pdu
+rear 7 shelf "Shelf"
+core01:1 -- router:port1
+mpc01:01 -- mpc02:01
+mpc01:02 -- core01:01
+mpc02:02 -- core01:02
+ups:iec01 -- pdu:iec01
+router:port1 -- [[ISP NTU]]
+pdu:iec04 -- external "GPO01"

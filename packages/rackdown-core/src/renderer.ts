@@ -14,6 +14,7 @@ import type {
   RectMm,
 } from './layout.js';
 import {
+  CONNECTION_CORNER_RADIUS_MM,
   NORMAL_ROUTING_ENVELOPE_MM,
   type RoutingConnection,
   type RoutingObstacle,
@@ -40,15 +41,6 @@ const EMPTY_WIDTH_MM = 120;
 const EMPTY_HEIGHT_MM = 40;
 const TITLE_OFFSET_MM = 7.5;
 const U_LABEL_OFFSET_MM = 3.5;
-/**
- * Nominal corner radius for rounded route elbows, in millimetres.
- *
- * Frozen by the R7 proof on #203. The exit stub is 6.35mm and lane spacing is
- * 4mm, so a 4mm nominal radius would clamp on ordinary stub-adjacent bends and
- * never actually be nominal; 3mm survives the normal stub while still visibly
- * softening the corner. Shorter segments clamp automatically.
- */
-const CONNECTION_CORNER_RADIUS_MM = 3;
 /** Millimetre tolerance for treating a route segment as zero-length or axis-aligned. */
 const ROUTE_GEOMETRY_EPSILON_MM = 1e-9;
 const DEFAULT_CONNECTION_WIDTH = 2;
