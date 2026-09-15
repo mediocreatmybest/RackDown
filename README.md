@@ -65,20 +65,35 @@ Without an explicit category, core uses conservative known endpoint evidence;
 generic connections remain valid and unclassified. Media text alone does not
 classify a connection. The [core API](packages/rackdown-core/README.md#connection-selection)
 can select connections and render focused SVGs while retaining all equipment,
-full-scene routing and rack geometry. Host filtering controls and cable schedules
-are separate future work.
+full-scene routing and rack geometry. The same selection semantics drive the
+host-neutral cable schedule API and CLI output.
 
 ## Command-line interface
 
-Render a diagram to SVG or check a document for diagnostics:
+Render a diagram, emit a cable schedule or check a document for diagnostics:
 
 ```bash
 # Render to SVG (stdout or output file)
 rackdown render rack.rackdown -o rack.svg
 
+# Cable schedule as Markdown (the default)
+rackdown schedule rack.rackdown
+
+# Documented power relationships as Markdown
+rackdown schedule rack.rackdown --category power --format md
+
+# Documented network relationships as CSV
+rackdown schedule rack.rackdown --category network --format csv -o network-cables.csv
+
 # Check for diagnostics (exits non-zero on error)
 rackdown check rack.rackdown
 ```
+
+Schedule categories select documented connections, and `unclassified` means no
+category was established—not that the relationship is invalid. Endpoint A and
+Endpoint B preserve authoring order without implying electrical or network
+direction. Output describes RackDown relationships and does not verify real-world
+cabling completeness.
 
 ### Hugo static-site integration
 

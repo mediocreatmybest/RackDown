@@ -74,6 +74,13 @@ function createMemoryEnvironment(
 const VALID_SOURCE = 'rack "Server Rack" 12U\n1 switch "Core"\n';
 const WARNING_SOURCE = 'rack "Comms Rack" 12U views front front\n';
 const ERROR_SOURCE = 'rack 0U\n';
+const SCHEDULE_SOURCE = `rack "Main Rack" 12U
+10 switch "Core | Switch" as core
+rear 8 server "PVE01" as pve
+core:"Port | 1" -- pve:"NIC 1" fibre category network
+pve -- external "Console Cart" category console
+external "Mains" -- core:power IEC-C13 category power
+core:odd -- pve:odd custom category unclassified`;
 
 describe('runCli', () => {
   // 1. top-level help exits 0 and writes usage to stdout
@@ -99,6 +106,12 @@ describe('runCli', () => {
     const code4 = await runCli(['check', '-h'], memory4.env);
     expect(code4).toBe(0);
     expect(memory4.stdout()).toBe(`${USAGE_TEXT}\n`);
+
+    const memory5 = createMemoryEnvironment();
+    const code5 = await runCli(['schedule', '--help'], memory5.env);
+    expect(code5).toBe(0);
+    expect(memory5.stdout()).toBe(`${USAGE_TEXT}\n`);
+    expect(memory5.stdout()).toContain('rackdown schedule');
   });
 
   // 2. no command exits 2
@@ -616,5 +629,214 @@ describe('runCli', () => {
     expect(code2).toBe(0);
     expect(memory1.stdout()).toBe(memory2.stdout());
     expect(memory1.stderr()).toBe(memory2.stderr());
+  });
+
+  it('writes the default Markdown schedule from a file to stdout', async () => {
+    const memory = createMemoryEnvironment({
+      files: { 'rack.rackdown': SCHEDULE_SOURCE },
+    });
+    const code = await runCli(['schedule', 'rack.rackdown'], memory.env);
+
+    expect(code).toBe(0);
+    expect(memory.stderr()).toBe('');
+    expect(memory.wasWriteFileCalled()).toBe(false);
+    expect(memory.stdout()).toContain(
+      '| Connection | Category | Endpoint A | Port A | Location A | Endpoint B | Port B | Location B | Media |',
+    );
+    expect(memory.stdout()).toContain(
+      '| connection-4 | network | Core \\| Switch | Port \\| 1 | Main Rack · U10 · front | PVE01 | NIC 1 | Main Rack · U8 · rear | fibre |',
+    );
+    expect(memory.stdout().indexOf('connection-4')).toBeLessThan(
+      memory.stdout().indexOf('connection-7'),
+    );
+  });
+
+  it('emits CSV in the same semantic column order', async () => {
+    const memory = createMemoryEnvironment({ stdin: SCHEDULE_SOURCE });
+    const code = await runCli(['schedule', '-', '--format', 'csv'], memory.env);
+
+    expect(code).toBe(0);
+    const lines = memory.stdout().trimEnd().split('\n');
+    expect(lines[0]).toBe(
+      'Connection,Category,Endpoint A,Port A,Location A,Endpoint B,Port B,Location B,Media',
+    );
+    expect(lines[1]).toBe(
+      'connection-4,network,Core | Switch,Port | 1,Main Rack · U10 · front,PVE01,NIC 1,Main Rack · U8 · rear,fibre',
+    );
+  });
+
+  it('emits structured schedule JSON with its own schema version', async () => {
+    const memory = createMemoryEnvironment({
+      files: { 'rack.rackdown': SCHEDULE_SOURCE },
+    });
+    const code = await runCli(
+      ['schedule', 'rack.rackdown', '--format', 'json'],
+      memory.env,
+    );
+
+    expect(code).toBe(0);
+    expect(memory.stdout().endsWith('\n')).toBe(true);
+    const output = JSON.parse(memory.stdout());
+    expect(output.schemaVersion).toBe(1);
+    expect(output.connections).toHaveLength(4);
+    expect(output.connections[0]).toEqual(
+      expect.objectContaining({
+        connectionId: 'connection-4',
+        category: 'network',
+        media: 'fibre',
+        a: expect.objectContaining({
+          kind: 'device',
+          label: 'Core | Switch',
+          alias: 'core',
+          rackName: 'Main Rack',
+          positionU: 10,
+          mountFace: 'front',
+        }),
+      }),
+    );
+  });
+
+  it('writes a schedule to -o without writing stdout', async () => {
+    const memory = createMemoryEnvironment({ stdin: SCHEDULE_SOURCE });
+    const code = await runCli(
+      ['schedule', '-', '--format', 'csv', '-o', 'cables.csv'],
+      memory.env,
+    );
+
+    expect(code).toBe(0);
+    expect(memory.stdout()).toBe('');
+    expect(memory.writtenFiles()['cables.csv']).toContain(
+      'Connection,Category,Endpoint A',
+    );
+  });
+
+  it('filters one or repeated categories using OR semantics in source order', async () => {
+    const files = { 'rack.rackdown': SCHEDULE_SOURCE };
+    const one = createMemoryEnvironment({ files });
+    const oneCode = await runCli(
+      [
+        'schedule',
+        'rack.rackdown',
+        '--category',
+        'network',
+        '--format',
+        'json',
+      ],
+      one.env,
+    );
+    expect(oneCode).toBe(0);
+    expect(
+      JSON.parse(one.stdout()).connections.map(
+        (row: { category: string }) => row.category,
+      ),
+    ).toEqual(['network']);
+
+    const repeated = createMemoryEnvironment({ files });
+    const repeatedCode = await runCli(
+      [
+        'schedule',
+        'rack.rackdown',
+        '--category',
+        'power',
+        '--category',
+        'network',
+        '--format',
+        'json',
+      ],
+      repeated.env,
+    );
+    expect(repeatedCode).toBe(0);
+    expect(
+      JSON.parse(repeated.stdout()).connections.map(
+        (row: { category: string }) => row.category,
+      ),
+    ).toEqual(['network', 'power']);
+  });
+
+  it('rejects invalid categories as a usage error without reading input', async () => {
+    const memory = createMemoryEnvironment();
+    const code = await runCli(
+      ['schedule', 'missing.rackdown', '--category', 'NETWORK'],
+      memory.env,
+    );
+
+    expect(code).toBe(2);
+    expect(memory.stderr()).toContain(
+      'Error: Invalid value for --category: "NETWORK".',
+    );
+    expect(memory.stdout()).toBe('');
+  });
+
+  it('emits deterministic headers or an empty array when a filter matches nothing', async () => {
+    const files = { 'rack.rackdown': VALID_SOURCE };
+    const markdown = createMemoryEnvironment({ files });
+    expect(
+      await runCli(
+        ['schedule', 'rack.rackdown', '--category', 'power'],
+        markdown.env,
+      ),
+    ).toBe(0);
+    expect(markdown.stdout().trimEnd().split('\n')).toHaveLength(2);
+
+    const csv = createMemoryEnvironment({ files });
+    await runCli(
+      ['schedule', 'rack.rackdown', '--category', 'power', '--format', 'csv'],
+      csv.env,
+    );
+    expect(csv.stdout().trimEnd().split('\n')).toHaveLength(1);
+
+    const json = createMemoryEnvironment({ files });
+    await runCli(
+      ['schedule', 'rack.rackdown', '--category', 'power', '--format', 'json'],
+      json.env,
+    );
+    expect(JSON.parse(json.stdout())).toEqual({
+      schemaVersion: 1,
+      connections: [],
+    });
+  });
+
+  it('prints warnings and still emits a schedule', async () => {
+    const memory = createMemoryEnvironment({
+      files: { 'warn.rackdown': WARNING_SOURCE },
+    });
+    const code = await runCli(['schedule', 'warn.rackdown'], memory.env);
+
+    expect(code).toBe(0);
+    expect(memory.stderr()).toContain(
+      'warn.rackdown:1:35: warn: Duplicate rack view: front',
+    );
+    expect(memory.stdout()).toContain('| Connection | Category |');
+  });
+
+  it('prevents stdout and file schedule output when diagnostics contain errors', async () => {
+    const memory = createMemoryEnvironment({
+      files: { 'error.rackdown': ERROR_SOURCE },
+    });
+    const code = await runCli(
+      ['schedule', 'error.rackdown', '-o', 'cables.md'],
+      memory.env,
+    );
+
+    expect(code).toBe(1);
+    expect(memory.stderr()).toContain(
+      'error.rackdown:1:6: error: Rack height is missing or invalid.',
+    );
+    expect(memory.stdout()).toBe('');
+    expect(memory.wasWriteFileCalled()).toBe(false);
+  });
+
+  it('produces byte-identical repeated schedule output', async () => {
+    const first = createMemoryEnvironment({ stdin: SCHEDULE_SOURCE });
+    const second = createMemoryEnvironment({ stdin: SCHEDULE_SOURCE });
+
+    expect(await runCli(['schedule', '-', '--format', 'json'], first.env)).toBe(
+      0,
+    );
+    expect(
+      await runCli(['schedule', '-', '--format', 'json'], second.env),
+    ).toBe(0);
+    expect(first.stdout()).toBe(second.stdout());
+    expect(first.stderr()).toBe(second.stderr());
   });
 });

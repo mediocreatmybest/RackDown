@@ -1,3 +1,10 @@
+export type {
+  CableScheduleDeviceEndpoint,
+  CableScheduleEndpoint,
+  CableScheduleExternalEndpoint,
+  CableScheduleRow,
+} from './cable-schedule.js';
+export { buildCableSchedule } from './cable-schedule.js';
 export type { ConnectionCategory } from './connection-category.js';
 export type { ConnectionSelection } from './connection-selection.js';
 export { selectConnections } from './connection-selection.js';
