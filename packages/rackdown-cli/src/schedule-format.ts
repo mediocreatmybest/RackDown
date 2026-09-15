@@ -35,9 +35,12 @@ function fields(row: CableScheduleRow): readonly string[] {
 }
 
 function escapeMarkdownTableCell(value: string): string {
+  // Escape authored HTML/entities before inserting our own line-break markup.
   return value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('|', '\\|')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replace(/[\\|*_`[\]()~!]/g, '\\$&')
     .replace(/\r\n|\r|\n/g, '<br>');
 }
 
