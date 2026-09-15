@@ -58,6 +58,28 @@ Use exact resolved IDs. A host can find a device by its exact authored `alias`
 in `layout.devices`, then supply that device's `id`; do not pass aliases as IDs.
 Generated IDs are not persistent identities across source edits.
 
+### Cable schedules
+
+`buildCableSchedule(layout, selection?)` projects selected connections into
+small host-neutral rows. It calls `selectConnections()` internally, retains
+source order and does not mutate the layout.
+
+```ts
+import { buildCableSchedule } from '@rackdown/core';
+
+const rows = buildCableSchedule(layout, {
+  categories: ['power', 'network'],
+});
+```
+
+Each row contains `connectionId`, `category`, optional `media`, and neutral `a`
+and `b` endpoints. A device endpoint contains its resolved label, device ID,
+optional alias and canonical port name, plus rack ID/name, U position and mount
+face. An external endpoint contains its display label and stable resolved
+external ID. Schedule rows contain no SVG coordinates, routes, catalogue
+objects or resolved host links. Endpoint order reflects authoring order and
+does not imply electrical or network direction.
+
 The renderer calculates routes, callout positions and viewport from the complete
 layout, then omits unselected connections and unused external callouts. All racks
 and devices remain; retained routes, colours and styles stay fixed. Empty views

@@ -1,6 +1,6 @@
 # @rackdown/cli
 
-Command-line interface for RackDown equipment rack diagrams.
+Command-line interface for RackDown equipment rack diagrams and cable schedules.
 
 The CLI provides standalone diagram rendering and syntax/semantic validation without requiring an Obsidian vault, a browser, or an active network connection.
 
@@ -17,6 +17,21 @@ rackdown render rack.rackdown -o rack.svg
 
 # Read from stdin and render to stdout
 cat rack.rackdown | rackdown render -
+
+# Write a Markdown cable schedule to stdout
+rackdown schedule rack.rackdown
+
+# Select documented power and network relationships
+rackdown schedule rack.rackdown \
+  --category power \
+  --category network \
+  --format md
+
+# Write documented network relationships as CSV
+rackdown schedule rack.rackdown \
+  --category network \
+  --format csv \
+  -o network-cables.csv
 
 # Check for diagnostics (exits non-zero on error)
 rackdown check rack.rackdown
@@ -54,6 +69,23 @@ Validates a RackDown document and reports parser and resolver diagnostics to std
 - **Output**: Purely diagnostic. If no diagnostics exist, stdout and stderr remain empty.
 - **Exit Code**: Exits `0` if there are no errors (including when warnings or info diagnostics exist); exits `1` if any error-severity diagnostic is produced.
 
+### `rackdown schedule <file.rackdown|-> [-o <output|->] [options]`
+
+Builds a cable schedule from the resolved `RackLayout`; source is not parsed a
+second time and SVG output is not inspected.
+
+- **Source**: A file path or `-` to read from stdin.
+- **Output (`-o, --output`)**: A file path, or stdout when omitted or set to `-`.
+- **Format (`--format md|csv|json`)**: Markdown by default; CSV uses the same columns, while JSON returns structured schedule rows under schedule `schemaVersion: 1`.
+- **Category (`--category power|network|console|unclassified`)**: Exact, repeatable filter values combined with OR. With no category flag, all documented connections are included.
+- **Diagnostics**: Warnings are written to stderr without preventing output. Error diagnostics prevent output and exit with code `1`. A valid empty selection still exits `0` and emits format-appropriate headers or an empty JSON array.
+
+The columns use neutral **Endpoint A** and **Endpoint B** terminology. Their
+order preserves RackDown authoring order and does not imply electrical or
+network direction. `unclassified` is valid data, not a validation error.
+Schedules report documented RackDown relationships; they do not verify that
+real-world cabling is complete.
+
 ## Exit Codes
 
 - `0`: Successful execution (including clean runs and runs with info or warning diagnostics).
@@ -78,8 +110,7 @@ The CLI uses the pinned full offline device catalogue from `@rackdown/devices` b
 
 ## Deferred Features
 
-The initial CLI MVP focuses strictly on `render` and `check`. The following features are intentionally deferred to future iterations:
-- Cable schedule export (`schedule`);
+The following features are intentionally deferred to future iterations:
 - Device search and discovery (`devices search`);
 - Raster and PDF output (PNG, PDF);
 - Connection emphasis options;
