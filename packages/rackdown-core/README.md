@@ -29,7 +29,7 @@ embeds several diagrams. Hosts own navigation and lifecycle behaviour.
 
 ## Connection selection
 
-`resolve` assigns each `LayoutConnection` a `category` and `categoryReason`.
+`resolve` assigns each `LayoutConnection` a required `category`.
 An explicit source modifier such as `fibre category network` wins over endpoint
 evidence. `category unclassified` suppresses inference. Media is preserved and
 never used to infer category. See the [category rules](../../docs/specification.md#connection-category).
@@ -72,10 +72,10 @@ still provide a distinct explicit namespace for each SVG instance. Filtering is
 a focused presentation, not privacy redaction or host interaction. Hosts can use
 the same selector for emphasis without trimming the layout.
 
-The resolved fields are additive under `schemaVersion: 1`. TypeScript callers
-constructing `LayoutConnection` objects must supply `category` and `categoryReason`;
-re-resolving source fills both. For older JavaScript layouts missing `category`,
-selection and rendering treat it as unclassified without attempting inference.
+`RackLayout` uses `schemaVersion: 2` because each resolved connection now requires
+`category`. TypeScript callers constructing `LayoutConnection` objects must supply
+it; re-resolving source produces the current layout contract. `RackDocument`
+remains at `schemaVersion: 1`. No layout migration machinery is provided.
 
 ## Optional connection hover emphasis
 

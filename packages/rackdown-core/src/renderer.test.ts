@@ -2278,7 +2278,7 @@ describe('routing envelope viewport stability (#257)', () => {
       };
 
       return {
-        schemaVersion: 1,
+        schemaVersion: 2,
         racks,
         devices,
         connections: options.connections
@@ -2561,7 +2561,6 @@ sw:1 -- [[External]]`;
         layout.connections.push({
           id: 'ghost-conn',
           category: 'unclassified',
-          categoryReason: 'no-evidence',
           from: {
             kind: 'device',
             deviceId: 'non-existent',

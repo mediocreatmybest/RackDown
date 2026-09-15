@@ -742,7 +742,7 @@ export function resolve(
     const to = materialiseEndpoint(toReference, statement);
     connections.push({
       id: statement.id,
-      ...classifyConnection(statement, from, to, devicesById),
+      category: classifyConnection(statement, from, to, devicesById),
       from,
       to,
       ...(statement.media === undefined ? {} : { media: statement.media }),
@@ -750,7 +750,7 @@ export function resolve(
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     racks,
     devices: layoutDevices,
     connections,

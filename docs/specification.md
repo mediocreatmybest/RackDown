@@ -387,7 +387,7 @@ quoted ports and all external reference forms are unchanged.
 | `fibre` | `fibre` | Absent; use endpoint evidence |
 | `category` or `category adhoc` | `category` | Historical one-token media; no annotation |
 | `category=network` | `category=network` | Historical media; no annotation |
-| `category category network` | `category` | `network`; media can itself be named category |
+| `category category network` | Absent | Repeated keyword: warn; unclassified |
 | `category NETWORK` | Absent | `network` |
 | `FiBrE category network` | `FiBrE` | `network` |
 | `category unclassified` | Absent | Suppresses inference |
@@ -398,7 +398,8 @@ quoted ports and all external reference forms are unchanged.
 
 A lone first `category` must remain media for backward compatibility, so it
 cannot also diagnose a missing value. With an annotation, media must precede
-`category`. Invalid annotations preserve the connection and other rack content,
+`category`; media literally named `category` cannot be combined with an explicit
+category annotation. Invalid annotations preserve the connection and other rack content,
 report token-located warnings, and suppress inference. Parsed recovery records
 `category: 'invalid'`; this is never a resolved category.
 
@@ -425,9 +426,10 @@ direction. Management-only interfaces remain network; PoE capability neither
 proves live power delivery nor adds a second category or connection. Network is
 broader than Ethernet. Category assignment performs no compatibility validation.
 
-`LayoutConnection.categoryReason` explains the result with `explicit`,
-`invalid-explicit`, `one-endpoint`, `both-endpoints`, `conflicting-endpoints` or
-`no-evidence`. It does not replace source diagnostics.
+`RackLayout` uses `schemaVersion: 2` with a required `LayoutConnection.category`.
+The source `RackDocument` remains at `schemaVersion: 1`. Malformed annotations
+are explained by parser diagnostics; the resolved layout exposes no classification
+reason taxonomy.
 
 ### Connections across rack faces
 

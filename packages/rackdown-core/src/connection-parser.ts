@@ -247,17 +247,6 @@ function parseEndpointWithTrailing(
   for (let index = 0; index < content.length; index += 1) {
     const token = content[index];
     if (!token) continue;
-    // `category category network` is media named "category" plus a modifier.
-    if (
-      allowMedia &&
-      media === undefined &&
-      category === undefined &&
-      token.text.toLowerCase() === 'category' &&
-      content[index + 1]?.text.toLowerCase() === 'category'
-    ) {
-      media = token.text;
-      continue;
-    }
     // A lone first `category` remains historical free-form media.
     if (
       allowMedia &&

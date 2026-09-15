@@ -70,12 +70,15 @@ describe('explicit connection category grammar', () => {
     });
   });
 
-  it('allows historical media named category alongside an explicit modifier', () => {
+  it('rejects repeated category keywords rather than treating one as media', () => {
     const doc = connection('CaTeGoRy adhoc category network');
-    expect(doc.diagnostics).toEqual([]);
+    expect(doc.diagnostics).toContainEqual(
+      expect.objectContaining({ severity: 'warn', line: 4 }),
+    );
+    expect(doc.connections[0]).not.toHaveProperty('media');
+    expect(resolve(doc, devices).connections[0]?.category).toBe('unclassified');
     expect(doc.connections[0]).toMatchObject({
-      media: 'CaTeGoRy',
-      category: 'network',
+      category: 'invalid',
       to: { adHoc: true },
     });
   });
@@ -108,6 +111,7 @@ describe('explicit connection category grammar', () => {
   it.each([
     ['category unknown', 'unknown'],
     ['category all', 'all'],
+    ['category category network', 'category network'],
     ['fibre category', 'category'],
     ['category power category network', 'category network'],
     ['category power category power', 'category power', true],
@@ -127,7 +131,6 @@ describe('explicit connection category grammar', () => {
       );
       expect(resolve(doc, devices).connections[0]).toMatchObject({
         category: 'unclassified',
-        categoryReason: 'invalid-explicit',
       });
       expect(resolve(doc, devices).devices).toHaveLength(2);
     },
@@ -206,15 +209,12 @@ describe('classification from resolved endpoint evidence', () => {
       expect(forward.connections).toHaveLength(1);
       expect(forward.connections[0]?.category).toBe(category);
       expect(reverse.connections[0]?.category).toBe(category);
-      expect(reverse.connections[0]?.categoryReason).toBe(
-        forward.connections[0]?.categoryReason,
-      );
       expect(forward.connections[0]?.from).toEqual(reverse.connections[0]?.to);
       expect(forward.connections[0]?.to).toEqual(reverse.connections[0]?.from);
     },
   );
 
-  it('explains explicit, recovery, single, agreeing, conflicting and absent evidence', () => {
+  it('classifies explicit, invalid, single, agreeing, conflicting and absent evidence', () => {
     const layout = resolve(
       parse(`${header}
 a:net -- b:net category power
@@ -226,16 +226,14 @@ a:net -- b:out
 a -- b`),
       devices,
     );
-    expect(
-      layout.connections.map((c) => [c.category, c.categoryReason]),
-    ).toEqual([
-      ['power', 'explicit'],
-      ['unclassified', 'explicit'],
-      ['unclassified', 'invalid-explicit'],
-      ['power', 'one-endpoint'],
-      ['network', 'both-endpoints'],
-      ['unclassified', 'conflicting-endpoints'],
-      ['unclassified', 'no-evidence'],
+    expect(layout.connections.map((c) => c.category)).toEqual([
+      'power',
+      'unclassified',
+      'unclassified',
+      'power',
+      'network',
+      'unclassified',
+      'unclassified',
     ]);
     expect(layout.connections).toHaveLength(7);
     expect(layout.diagnostics).toContainEqual(
@@ -256,7 +254,7 @@ a -- b`),
       adHocPort: true,
       portName: 'shared',
     });
-    expect(layout.connections[0]?.categoryReason).toBe('no-evidence');
+    expect(layout.connections[0]?.category).toBe('unclassified');
     expect(
       layout.devices[0]?.ports.find((p) => p.name === 'poe'),
     ).toMatchObject({

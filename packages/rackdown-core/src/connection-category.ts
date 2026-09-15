@@ -6,14 +6,6 @@ export type ConnectionCategory =
   | 'network'
   | 'console'
   | 'unclassified';
-export type ConnectionCategoryReason =
-  | 'explicit'
-  | 'invalid-explicit'
-  | 'one-endpoint'
-  | 'both-endpoints'
-  | 'conflicting-endpoints'
-  | 'no-evidence';
-
 export function isConnectionCategory(
   value: unknown,
 ): value is ConnectionCategory {
@@ -62,27 +54,16 @@ export function classifyConnection(
   from: LayoutConnectionEndpoint,
   to: LayoutConnectionEndpoint,
   devices: ReadonlyMap<string, LayoutDevice>,
-): { category: ConnectionCategory; categoryReason: ConnectionCategoryReason } {
+): ConnectionCategory {
   if (statement.category !== undefined) {
     return isConnectionCategory(statement.category)
-      ? { category: statement.category, categoryReason: 'explicit' }
-      : { category: 'unclassified', categoryReason: 'invalid-explicit' };
+      ? statement.category
+      : 'unclassified';
   }
   const left = endpointCategory(from, devices);
   const right = endpointCategory(to, devices);
   if (left !== undefined && right !== undefined && left !== right) {
-    return {
-      category: 'unclassified',
-      categoryReason: 'conflicting-endpoints',
-    };
+    return 'unclassified';
   }
-  return {
-    category: left ?? right ?? 'unclassified',
-    categoryReason:
-      left !== undefined && right !== undefined
-        ? 'both-endpoints'
-        : left !== undefined || right !== undefined
-          ? 'one-endpoint'
-          : 'no-evidence',
-  };
+  return left ?? right ?? 'unclassified';
 }
