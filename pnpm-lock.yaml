@@ -40,8 +40,8 @@ importers:
         version: link:../rackdown-devices
     devDependencies:
       '@types/node':
-        specifier: 26.5.1
-        version: 26.5.1
+        specifier: 26.6.3
+        version: 26.6.3
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
@@ -53,7 +53,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@types/node@26.5.1)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1))
+        version: 5.0.2(@types/node@26.6.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1))
 
   packages/rackdown-cli:
     dependencies:
@@ -65,8 +65,8 @@ importers:
         version: link:../rackdown-devices
     devDependencies:
       '@types/node':
-        specifier: 26.5.1
-        version: 26.5.1
+        specifier: 26.6.3
+        version: 26.6.3
       tsdown:
         specifier: 0.23.0
         version: 0.23.0(typescript@7.0.2)
@@ -75,7 +75,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@types/node@26.5.1)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1))
+        version: 5.0.2(@types/node@26.6.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1))
 
   packages/rackdown-core:
     devDependencies:
@@ -87,7 +87,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@types/node@26.5.1)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1))
+        version: 5.0.2(@types/node@26.6.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1))
 
   packages/rackdown-devices: {}
 
@@ -442,8 +442,8 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/node@26.5.1':
-    resolution: {integrity: sha512-CzNm2FezW4VR/LjG6yUdiEgLE/rAQ9Slj5gCu/C2VrdcW7I0ahNZ8DRbHT7zOZ6r3ONgd/bsQIeSaoDGrd1C6g==}
+  '@types/node@26.6.3':
+    resolution: {integrity: sha512-dsqMQQoeTLqu9wynDD00q573mNzso3IdQOAfHRJqLCcmCFPoGo9A1bDpUcv/9tnKpErQWv9uKeGfl37EIS02Yg==}
 
   '@types/tern@0.23.9':
     resolution: {integrity: sha512-ypzHFE/wBzh+BlH6rrBgS5I/Z7RD21pGhZ2rltb/+ZrVM1awdZwjx7hE5XfuYgHWk9uvV5HLZN3SloevCAp3Bw==}
@@ -1312,7 +1312,7 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/node@26.5.1':
+  '@types/node@26.6.3':
     dependencies:
       undici-types: 8.9.0
 
@@ -1380,14 +1380,14 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  '@vitest/mocker@5.0.2(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@vitest/mocker@5.0.2(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.2
       estree-walker: 3.0.3
       magic-string: 1.3.1
     optionalDependencies:
-      vite: 8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1)
 
   '@vitest/spy@5.0.2': {}
 
@@ -1721,7 +1721,7 @@ snapshots:
 
   verkit@0.4.0: {}
 
-  vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1):
+  vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -1729,15 +1729,15 @@ snapshots:
       rolldown: 1.2.8
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.5.1
+      '@types/node': 26.6.3
       esbuild: 0.28.2
       fsevents: 2.3.3
       yaml: 2.9.1
 
-  vitest@5.0.2(@types/node@26.5.1)(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1)):
+  vitest@5.0.2(@types/node@26.6.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.2(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.2(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -1748,10 +1748,10 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(yaml@2.9.1)
       why-is-node-running: 3.2.2
     optionalDependencies:
-      '@types/node': 26.5.1
+      '@types/node': 26.6.3
     transitivePeerDependencies:
       - msw
 
