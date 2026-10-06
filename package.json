@@ -27,7 +27,7 @@
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.5.15",
     "yaml": "2.9.1"
   },
   "description": "Text-first rack documentation workspace.",
