@@ -35,8 +35,8 @@ b:nic1 -- a:nic2
 b:nic2 -- c:nic1
 ```
 
-<a href="examples/generated/3-node-stacked.png">
-  <img src="examples/generated/3-node-stacked.png" alt="3-node cluster (shelf)" width="450">
+<a href="examples/generated/3-node-shelf.png">
+  <img src="examples/generated/3-node-shelf.png" alt="3-node cluster (shelf)" width="450">
 </a>
 
 Try it in the playground with `pnpm dev`. The diagram shows front and rear views
@@ -131,7 +131,7 @@ hugo --source apps/hugo-rackdown
 ## Obsidian controls
 
 > [!NOTE]
-> Beep Boop! This feature will eventually be stripped out of the this repository, and eventually land as its own dedicated plugin.
+> Beep Boop! This feature will eventually be stripped out of this repository, and eventually land as its own dedicated plugin.
 > For this moment, this is really just a proof-of-concept.
 
 In Obsidian's RackDown plugin settings, choose routing (Perimeter, Direct,

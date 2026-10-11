@@ -72,13 +72,37 @@ export function nestedBrackets(
         for (let i = 1; i < route.length; i++) {
           const a = route[i - 1] as PointMm;
           const b = route[i] as PointMm;
+          const dx = b.xMm - a.xMm;
+          const dy = b.yMm - a.yMm;
+          const length = Math.hypot(dx, dy);
+          if (length === 0) continue;
           for (let j = 1; j < other.length; j++) {
             const c = other[j - 1] as PointMm;
             const d = other[j] as PointMm;
             const cross =
               (b.xMm - a.xMm) * (d.yMm - c.yMm) -
               (b.yMm - a.yMm) * (d.xMm - c.xMm);
-            if (Math.abs(cross) < 1e-9) continue;
+            if (Math.abs(cross) < 1e-9) {
+              // Parallel segments conflict only when they share a positive
+              // length, not when they merely touch or lie on separate lines.
+              const ux = dx / length;
+              const uy = dy / length;
+              if (
+                [c, d].some(
+                  (p) =>
+                    Math.abs((p.xMm - a.xMm) * uy - (p.yMm - a.yMm) * ux) >
+                    1e-9,
+                )
+              )
+                continue;
+              const cAlong = (c.xMm - a.xMm) * ux + (c.yMm - a.yMm) * uy;
+              const dAlong = (d.xMm - a.xMm) * ux + (d.yMm - a.yMm) * uy;
+              const overlap =
+                Math.min(length, Math.max(cAlong, dAlong)) -
+                Math.max(0, Math.min(cAlong, dAlong));
+              if (overlap > 1e-9) count++;
+              continue;
+            }
             const t =
               ((c.xMm - a.xMm) * (d.yMm - c.yMm) -
                 (c.yMm - a.yMm) * (d.xMm - c.xMm)) /

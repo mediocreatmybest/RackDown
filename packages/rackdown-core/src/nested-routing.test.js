@@ -4,6 +4,7 @@ import {
   extractRoutes,
   sharedSegmentLength,
 } from '../../../tools/render-metrics/metrics.mjs';
+import { nestedBrackets } from './nested-routing.js';
 import { parse } from './parser.js';
 import { toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
@@ -52,6 +53,122 @@ function render(header, cables) {
   return { layout, svg, routes: extractRoutes(svg) };
 }
 const shapes = (routes) => routes.map((r) => JSON.stringify(r.points)).sort();
+
+describe('bracket conflicts with fixed routes', () => {
+  const request = {
+    id: 'bracket',
+    from: { key: 'a', start: 0, end: 20, edges: [0, 20] },
+    to: { key: 'b', start: 80, end: 100, edges: [0, 20] },
+    offset: 10,
+  };
+  for (const axis of ['x', 'y']) {
+    // Reflect the horizontal case onto the vertical planner's preferred right side.
+    const point = ([along, across]) =>
+      axis === 'x'
+        ? { xMm: along, yMm: across }
+        : { xMm: 20 - across, yMm: along };
+    const plan = (fixedRoutes = []) =>
+      nestedBrackets([request], axis, () => true, Infinity, fixedRoutes).get(
+        request.id,
+      );
+    for (const reversed of [false, true]) {
+      it.each([
+        [
+          'contained seam overlap',
+          [
+            [30, -10],
+            [70, -10],
+          ],
+        ],
+        [
+          'partial seam overlap',
+          [
+            [0, -10],
+            [30, -10],
+          ],
+        ],
+        [
+          'coincident seam',
+          [
+            [10, -10],
+            [90, -10],
+          ],
+        ],
+        [
+          'side-leg overlap',
+          [
+            [10, -8],
+            [10, -2],
+          ],
+        ],
+        [
+          'proper crossing',
+          [
+            [50, -15],
+            [50, -5],
+          ],
+        ],
+      ])(
+        `avoids %s on axis ${axis} (reversed=${reversed})`,
+        (_name, segment) => {
+          const fixed = segment.map(point);
+          if (reversed) fixed.reverse();
+          const before = JSON.stringify(fixed);
+          const route = plan([fixed]);
+          expect(route).toBeDefined();
+          expect(route).not.toEqual(plan());
+          expect(
+            sharedSegmentLength(
+              [route, fixed].map((points, id) => ({
+                id: String(id),
+                points: points.map((p) => [p.xMm, p.yMm]),
+              })),
+            ),
+          ).toBe(0);
+          expect(plan([fixed])).toEqual(route);
+          expect(JSON.stringify(fixed)).toBe(before);
+        },
+      );
+      it.each([
+        [
+          'parallel but separate',
+          [
+            [30, -9],
+            [70, -9],
+          ],
+        ],
+        [
+          'collinear but disjoint',
+          [
+            [100, -10],
+            [120, -10],
+          ],
+        ],
+        [
+          'endpoint-only contact',
+          [
+            [90, -10],
+            [110, -10],
+          ],
+        ],
+        [
+          'zero-length segment',
+          [
+            [50, -10],
+            [50, -10],
+          ],
+        ],
+      ])(
+        `ignores %s on axis ${axis} (reversed=${reversed})`,
+        (_name, segment) => {
+          const fixed = segment.map(point);
+          if (reversed) fixed.reverse();
+          expect(plan([fixed])).toEqual(plan());
+        },
+      );
+    }
+  }
+});
 
 describe('nested same-rack meshes (#329)', () => {
   for (const shelf of [false, true])
