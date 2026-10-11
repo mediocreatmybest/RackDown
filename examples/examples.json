@@ -4,6 +4,22 @@
   "defaultRenderOptions": ["--sizing", "responsive", "--routing", "perimeter"],
   "generated": [
     {
+      "source": "3-node-shelf.rackdown",
+      "output": "3-node-shelf.svg"
+    },
+    {
+      "source": "3-node-stacked.rackdown",
+      "output": "3-node-stacked.svg"
+    },
+    {
+      "source": "4-node-shelf.rackdown",
+      "output": "4-node-shelf.svg"
+    },
+    {
+      "source": "4-node-stacked.rackdown",
+      "output": "4-node-stacked.svg"
+    },
+    {
       "source": "home-lab.rackdown",
       "output": "home-lab.svg"
     },

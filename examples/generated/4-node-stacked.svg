@@ -1,6 +1,6 @@
-<svg id="rackdown-4-node-stacked-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 579.75 371.35" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-4-node-stacked-title" aria-describedby="rackdown-4-node-stacked-desc">
-  <title id="rackdown-4-node-stacked-title">4-node cluster (stacked) rack diagram</title>
-  <desc id="rackdown-4-node-stacked-desc">1 rack, 4 devices, 6 connections.</desc>
+<svg id="rackdown-kloq1a-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 579.75 371.35" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-kloq1a-title" aria-describedby="rackdown-kloq1a-desc">
+  <title id="rackdown-kloq1a-title">4-node cluster (stacked) rack diagram</title>
+  <desc id="rackdown-kloq1a-desc">1 rack, 4 devices, 6 connections.</desc>
   <style>
   .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
@@ -19,8 +19,19 @@
   :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
   .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
   .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
+  @media (prefers-color-scheme: dark) {
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+  .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
+  .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
+  .rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
+  .rackdown-blank { fill: var(--rackdown-blank-fill, #475569); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+  .rackdown-shelf { fill: var(--rackdown-shelf-fill, #293548); stroke: var(--rackdown-shelf-stroke, #94a3b8); }
+  .rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #cbd5e1); }
+  :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }
+  .rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }
+  }
   </style>
-  <g id="rackdown-4-node-stacked-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-1" data-face="front" data-width-inches="19">
+  <g id="rackdown-kloq1a-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-1" data-face="front" data-width-inches="19">
     <rect class="rackdown-rack" x="0" y="0" width="482.6" height="266.7" />
     <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">4-node cluster (stacked)</text>
     <text class="rackdown-u-label" data-u="6" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">6</text>
@@ -35,54 +46,54 @@
     <line class="rackdown-u-line" x1="0" y1="222.25" x2="482.6" y2="222.25" />
     <text class="rackdown-u-label" data-u="1" x="-3.5" y="244.475" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
-  <path id="rackdown-4-node-stacked-connection-1" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-7" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,55.563 L 488.95,55.563 L 493.95,55.563 Q 496.95,55.563 496.95,58.563 L 496.95,204.433 Q 496.95,207.433 493.95,207.433 L 488.95,207.433 L 482.6,207.433">
+  <path id="rackdown-kloq1a-connection-1" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-7" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,55.563 L 488.95,55.563 L 493.95,55.563 Q 496.95,55.563 496.95,58.563 L 496.95,204.433 Q 496.95,207.433 493.95,207.433 L 488.95,207.433 L 482.6,207.433">
     <title>a:nic3 → d:nic1</title>
   </path>
-  <path id="rackdown-4-node-stacked-connection-2" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-8" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 482.6,77.788 L 485.95,77.788 Q 488.95,77.788 488.95,80.788 L 488.95,100.717 Q 488.95,103.717 485.95,103.717 L 482.6,103.717">
+  <path id="rackdown-kloq1a-connection-2" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-8" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 482.6,77.788 L 485.95,77.788 Q 488.95,77.788 488.95,80.788 L 488.95,100.717 Q 488.95,103.717 485.95,103.717 L 482.6,103.717">
     <title>a:nic1 → b:nic1</title>
   </path>
-  <path id="rackdown-4-node-stacked-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-9" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,66.675 L 488.95,66.675 L 490.95,66.675 Q 492.95,66.675 492.95,68.675 L 492.95,153.575 Q 492.95,155.575 490.95,155.575 L 488.95,155.575 L 482.6,155.575">
+  <path id="rackdown-kloq1a-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-9" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 482.6,66.675 L 488.95,66.675 L 490.95,66.675 Q 492.95,66.675 492.95,68.675 L 492.95,153.575 Q 492.95,155.575 490.95,155.575 L 488.95,155.575 L 482.6,155.575">
     <title>a:nic2 → c:nic1</title>
   </path>
-  <path id="rackdown-4-node-stacked-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-10" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 482.6,118.533 L 485.95,118.533 Q 488.95,118.533 488.95,121.533 L 488.95,141.463 Q 488.95,144.463 485.95,144.463 L 482.6,144.463">
+  <path id="rackdown-kloq1a-connection-4" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-10" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#cc79a7" d="M 482.6,118.533 L 485.95,118.533 Q 488.95,118.533 488.95,121.533 L 488.95,141.463 Q 488.95,144.463 485.95,144.463 L 482.6,144.463">
     <title>b:nic2 → c:nic2</title>
   </path>
-  <path id="rackdown-4-node-stacked-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-11" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 0,111.125 L -3.35,111.125 Q -6.35,111.125 -6.35,114.125 L -6.35,197.025 Q -6.35,200.025 -3.35,200.025 L 0,200.025">
+  <path id="rackdown-kloq1a-connection-5" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-11" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#e69f00" d="M 0,111.125 L -3.35,111.125 Q -6.35,111.125 -6.35,114.125 L -6.35,197.025 Q -6.35,200.025 -3.35,200.025 L 0,200.025">
     <title>b:nic3 → d:nic2</title>
   </path>
-  <path id="rackdown-4-node-stacked-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-12" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#56b4e9" d="M 482.6,166.688 L 485.95,166.688 Q 488.95,166.688 488.95,169.688 L 488.95,189.617 Q 488.95,192.617 485.95,192.617 L 482.6,192.617">
+  <path id="rackdown-kloq1a-connection-6" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-12" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#56b4e9" d="M 482.6,166.688 L 485.95,166.688 Q 488.95,166.688 488.95,169.688 L 488.95,189.617 Q 488.95,192.617 485.95,192.617 L 482.6,192.617">
     <title>c:nic3 → d:nic3</title>
   </path>
-  <g id="rackdown-4-node-stacked-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-2" data-device-type="server" data-position-u="5" data-u-height="1" data-mount-face="front" data-alias="a">
-    <clipPath id="rackdown-4-node-stacked-device-1-clip">
+  <g id="rackdown-kloq1a-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-2" data-device-type="server" data-position-u="5" data-u-height="1" data-mount-face="front" data-alias="a">
+    <clipPath id="rackdown-kloq1a-device-1-clip">
       <rect x="0" y="44.45" width="482.6" height="44.45" />
     </clipPath>
     <title>Node A</title>
     <rect class="rackdown-device" x="0" y="44.45" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-4-node-stacked-device-1-clip)" x="241.3" y="66.675" text-anchor="middle" dominant-baseline="middle">Node A</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-kloq1a-device-1-clip)" x="241.3" y="66.675" text-anchor="middle" dominant-baseline="middle">Node A</text>
   </g>
-  <g id="rackdown-4-node-stacked-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-3" data-device-type="server" data-position-u="4" data-u-height="1" data-mount-face="front" data-alias="b">
-    <clipPath id="rackdown-4-node-stacked-device-2-clip">
+  <g id="rackdown-kloq1a-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-3" data-device-type="server" data-position-u="4" data-u-height="1" data-mount-face="front" data-alias="b">
+    <clipPath id="rackdown-kloq1a-device-2-clip">
       <rect x="0" y="88.9" width="482.6" height="44.45" />
     </clipPath>
     <title>Node B</title>
     <rect class="rackdown-device" x="0" y="88.9" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-4-node-stacked-device-2-clip)" x="241.3" y="111.125" text-anchor="middle" dominant-baseline="middle">Node B</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-kloq1a-device-2-clip)" x="241.3" y="111.125" text-anchor="middle" dominant-baseline="middle">Node B</text>
   </g>
-  <g id="rackdown-4-node-stacked-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="server" data-position-u="3" data-u-height="1" data-mount-face="front" data-alias="c">
-    <clipPath id="rackdown-4-node-stacked-device-3-clip">
+  <g id="rackdown-kloq1a-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="server" data-position-u="3" data-u-height="1" data-mount-face="front" data-alias="c">
+    <clipPath id="rackdown-kloq1a-device-3-clip">
       <rect x="0" y="133.35" width="482.6" height="44.45" />
     </clipPath>
     <title>Node C</title>
     <rect class="rackdown-device" x="0" y="133.35" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-4-node-stacked-device-3-clip)" x="241.3" y="155.575" text-anchor="middle" dominant-baseline="middle">Node C</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-kloq1a-device-3-clip)" x="241.3" y="155.575" text-anchor="middle" dominant-baseline="middle">Node C</text>
   </g>
-  <g id="rackdown-4-node-stacked-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="server" data-position-u="2" data-u-height="1" data-mount-face="front" data-alias="d">
-    <clipPath id="rackdown-4-node-stacked-device-4-clip">
+  <g id="rackdown-kloq1a-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="server" data-position-u="2" data-u-height="1" data-mount-face="front" data-alias="d">
+    <clipPath id="rackdown-kloq1a-device-4-clip">
       <rect x="0" y="177.8" width="482.6" height="44.45" />
     </clipPath>
     <title>Node D</title>
     <rect class="rackdown-device" x="0" y="177.8" width="482.6" height="44.45" />
-    <text class="rackdown-device-label" clip-path="url(#rackdown-4-node-stacked-device-4-clip)" x="241.3" y="200.025" text-anchor="middle" dominant-baseline="middle">Node D</text>
+    <text class="rackdown-device-label" clip-path="url(#rackdown-kloq1a-device-4-clip)" x="241.3" y="200.025" text-anchor="middle" dominant-baseline="middle">Node D</text>
   </g>
 </svg>
