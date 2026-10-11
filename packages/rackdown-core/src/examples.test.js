@@ -12,6 +12,38 @@ const here = dirname(fileURLToPath(import.meta.url));
 const examplesRoot = join(here, '..', '..', '..', 'examples');
 
 const CANONICAL_EXAMPLES = {
+  '3-node-shelf.rackdown': {
+    useCatalogue: false,
+    expectedRacks: 1,
+    expectedDevices: 4,
+    expectedConnections: 3,
+    expectedExternals: 0,
+    clean: true,
+  },
+  '3-node-stacked.rackdown': {
+    useCatalogue: false,
+    expectedRacks: 1,
+    expectedDevices: 3,
+    expectedConnections: 3,
+    expectedExternals: 0,
+    clean: true,
+  },
+  '4-node-shelf.rackdown': {
+    useCatalogue: false,
+    expectedRacks: 1,
+    expectedDevices: 5,
+    expectedConnections: 6,
+    expectedExternals: 0,
+    clean: true,
+  },
+  '4-node-stacked.rackdown': {
+    useCatalogue: false,
+    expectedRacks: 1,
+    expectedDevices: 4,
+    expectedConnections: 6,
+    expectedExternals: 0,
+    clean: true,
+  },
   'home-lab.rackdown': {
     useCatalogue: true,
     expectedRacks: 1,
@@ -70,6 +102,10 @@ describe('public examples CI canary suite', () => {
     const names = examples.map((e) => e.name);
     expect(names).toEqual(
       expect.arrayContaining([
+        '3-node-shelf.rackdown',
+        '3-node-stacked.rackdown',
+        '4-node-shelf.rackdown',
+        '4-node-stacked.rackdown',
         'home-lab.rackdown',
         'routing.rackdown',
         'shared-rows.rackdown',
