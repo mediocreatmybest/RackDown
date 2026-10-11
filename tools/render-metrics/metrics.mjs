@@ -321,6 +321,42 @@ export function crossingCount(routes) {
   return crossings;
 }
 
+/** Pairwise collinear overlap length between distinct logical routes, in mm. */
+export function sharedSegmentLength(routes) {
+  let total = 0;
+  for (let i = 0; i < routes.length; i++) {
+    for (let j = i + 1; j < routes.length; j++) {
+      if (routes[i].id === routes[j].id) continue;
+      for (const [a, b] of segments(routes[i].points)) {
+        const dx = b[0] - a[0];
+        const dy = b[1] - a[1];
+        const length = Math.hypot(dx, dy);
+        if (length === 0) continue;
+        const ux = dx / length;
+        const uy = dy / length;
+        for (const [c, d] of segments(routes[j].points)) {
+          if (
+            [c, d].some(
+              (p) =>
+                Math.abs((p[0] - a[0]) * uy - (p[1] - a[1]) * ux) >
+                PARALLEL_EPSILON,
+            )
+          )
+            continue;
+          const cAlong = (c[0] - a[0]) * ux + (c[1] - a[1]) * uy;
+          const dAlong = (d[0] - a[0]) * ux + (d[1] - a[1]) * uy;
+          total += Math.max(
+            0,
+            Math.min(length, Math.max(cAlong, dAlong)) -
+              Math.max(0, Math.min(cAlong, dAlong)),
+          );
+        }
+      }
+    }
+  }
+  return total;
+}
+
 /** The rack projection a device rectangle sits within, by centre point. */
 function rackKeyForDeviceRect(deviceRect, rackRects) {
   const x = deviceRect.x + deviceRect.w / 2;
@@ -438,6 +474,7 @@ export function computeMetrics(layout, svg) {
         .map((rect) => rect.y),
     ).size,
     crossings: crossingCount(routes),
+    sharedSegmentMm: round(sharedSegmentLength(routes)),
     occludedMm: round(occludedMm),
     foreignRackTransitMm: round(foreignRackTransitMm),
     totalLengthMm: round(totalLengthMm),
@@ -455,6 +492,7 @@ function round(value) {
 /** Metrics where a lower value is better, used by the assert mode's direction check. */
 export const LOWER_IS_BETTER = Object.freeze([
   'crossings',
+  'sharedSegmentMm',
   'externalBoxInteriorRoutes',
   'foreignExternalStemRoutes',
   'localDeviceInteriorRoutes',

@@ -115,7 +115,9 @@ describe('bounded perimeter attachment fan-out', () => {
     for (let index = 1; index < ys.length; index += 1) {
       // Two independently rounded endpoints can differ by up to 0.001 mm.
       expect(
-        Math.abs((ys[index] ?? 0) - (ys[index - 1] ?? 0) - 44.45 / 23),
+        Math.abs(
+          Math.abs((ys[index] ?? 0) - (ys[index - 1] ?? 0)) - 44.45 / 23,
+        ),
       ).toBeLessThanOrEqual(0.001);
     }
     expectSpan(
@@ -145,7 +147,7 @@ describe('bounded perimeter attachment fan-out', () => {
   it.each([
     [0.5, 8, 2.5],
     [0.5, 24, 22.225 / 23],
-    [2, 24, 2.5],
+    [2, 24, 88.9 / 25],
     [2, 48, 88.9 / 47],
   ])('uses %sU bounds with %s occurrences', (height, count, spacing) => {
     const { layout, endpoints } = render(
@@ -164,7 +166,7 @@ describe('bounded perimeter attachment fan-out', () => {
       (height * 44.45) / 2 - halfSpan,
       (height * 44.45) / 2 + halfSpan,
     );
-    expect((ys[1] ?? 0) - (ys[0] ?? 0)).toBeCloseTo(spacing, 3);
+    expect(Math.abs((ys[1] ?? 0) - (ys[0] ?? 0))).toBeCloseTo(spacing, 3);
   });
 
   it.each([
@@ -195,7 +197,7 @@ describe('bounded perimeter attachment fan-out', () => {
     },
   );
 
-  it('uses six C3 locals and two fallbacks while preserving downstream occurrence indices', () => {
+  it('spreads six shelf locals and the downstream side fan independently', () => {
     const { layout, endpoints } = render(
       [
         'rack "Shared and local" 12U',
@@ -209,19 +211,31 @@ describe('bounded perimeter attachment fan-out', () => {
     expect(layout.diagnostics).toEqual([]);
     const all = [...endpoints.values()];
     for (const [index, [from, to]] of all.slice(0, 6).entries()) {
-      const offset = [0, -2.5, 2.5][index % 3] as number;
+      const leftX = (241.3 * (3 - (index % 3))) / 4;
+      const rightX = 241.3 + (241.3 * (1 + (index % 3))) / 4;
       const yMm = index < 3 ? 88.9 : 133.35;
-      expect(from).toEqual({ xMm: 120.65 + offset, yMm });
-      expect(to).toEqual({ xMm: 361.95 + offset, yMm });
+      expect(from.xMm).toBeCloseTo(leftX, 3);
+      expect(from.yMm).toBe(yMm);
+      expect(to.xMm).toBeCloseTo(rightX, 3);
+      expect(to.yMm).toBe(yMm);
     }
     for (const [from, to] of all.slice(6, 8)) {
       expect([0, 482.6]).toContain(from.xMm);
       expect(to.xMm).toBe(from.xMm);
     }
-    // Local routes occupy indices 0..7 in the same 24-occurrence group.
-    const perimeter = all.slice(8).map(([from]) => from.yMm);
-    expect(perimeter[0]).toBeCloseTo(88.9 + 8 * (44.45 / 23), 3);
-    expect(perimeter.at(-1)).toBeCloseTo(133.35, 3);
+    // Side selection may split this fan; each edge spreads its own endpoints.
+    for (const x of [0, 482.6]) {
+      const ys = all
+        .slice(8)
+        .map(([from]) => from)
+        .filter((from) => from.xMm === x)
+        .map((from) => from.yMm)
+        .sort((a, b) => a - b);
+      for (const [i, y] of ys.entries())
+        expect(
+          Math.abs(y - (88.9 + ((i + 1) * 44.45) / (ys.length + 1))),
+        ).toBeLessThanOrEqual(0.001);
+    }
     expect(layout.connections).toHaveLength(24);
   });
 

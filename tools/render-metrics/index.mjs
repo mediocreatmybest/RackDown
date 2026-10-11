@@ -38,11 +38,16 @@ const CORPUS = [
   'fixtures/valid/unicode.rackdown',
   'fixtures/valid/perimeter-garage.rackdown',
   'fixtures/valid/perimeter-dense.rackdown',
+  'fixtures/valid/cluster-3-stacked.rackdown',
+  'fixtures/valid/cluster-3-shelf.rackdown',
+  'fixtures/valid/cluster-4-stacked.rackdown',
+  'fixtures/valid/cluster-4-shelf.rackdown',
 ];
 
 const METRIC_COLUMNS = [
   ['connections', 5],
   ['crossings', 10],
+  ['sharedSegmentMm', 14],
   ['occludedMm', 11],
   ['externalBoxInteriorRoutes', 10],
   ['foreignExternalStemRoutes', 10],

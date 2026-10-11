@@ -1,0 +1,12 @@
+rack "4-node cluster (stacked)" 6U
+5 server "Node A" as a
+4 server "Node B" as b
+3 server "Node C" as c
+2 server "Node D" as d
+
+a:nic3 -- d:nic1
+a:nic1 -- b:nic1
+a:nic2 -- c:nic1
+b:nic2 -- c:nic2
+b:nic3 -- d:nic2
+c:nic3 -- d:nic3

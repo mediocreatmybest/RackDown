@@ -45,14 +45,15 @@ describe('C3 presentation allocation', () => {
       ...routeConnections(repeat(8), [rack], 'perimeter').values(),
     ];
     for (let i = 0; i < 6; i++) {
-      const offset = [0, -2.5, 2.5][i % 3] as number;
+      const leftX = (25 * (3 - (i % 3))) / 4;
+      const rightX = 50 + (25 * (1 + (i % 3))) / 4;
       const boundary = i < 3 ? 80 : 100;
       const seam = boundary + (i < 3 ? -1 : 1) * (6 + (i % 3) * 4);
       expect(routes[i]).toEqual([
-        { xMm: 12.5 + offset, yMm: boundary },
-        { xMm: 12.5 + offset, yMm: seam },
-        { xMm: 62.5 + offset, yMm: seam },
-        { xMm: 62.5 + offset, yMm: boundary },
+        { xMm: leftX, yMm: boundary },
+        { xMm: leftX, yMm: seam },
+        { xMm: rightX, yMm: seam },
+        { xMm: rightX, yMm: boundary },
       ]);
     }
     expect(
@@ -63,7 +64,7 @@ describe('C3 presentation allocation', () => {
   });
 
   it.each([1, 2.5, 4.999, 5, 10, 25])(
-    'does not clamp or compress a %s mm slot',
+    'spreads attachments and compresses overflow within a %s mm slot',
     (width) => {
       const from = endpoint(0, width);
       const to = endpoint(50, width);
@@ -73,14 +74,19 @@ describe('C3 presentation allocation', () => {
       const local = routes.filter((route) =>
         route.every((p) => p.xMm >= 0 && p.xMm <= 200),
       );
-      expect(local).toHaveLength(width < 5 ? 2 : 6);
+      expect(local).toHaveLength(6);
       for (const route of local) {
-        expect([width / 2, width / 2 - 2.5, width / 2 + 2.5]).toContain(
-          route[0]?.xMm,
-        );
         expect(route[0]?.xMm).toBeGreaterThanOrEqual(0);
         expect(route[0]?.xMm).toBeLessThanOrEqual(width);
       }
+      const xs = local
+        .slice(0, 3)
+        .map((route) => route[0]?.xMm as number)
+        .sort((a, b) => a - b);
+      expect(xs[1]).toBeCloseTo(width / 2);
+      expect((xs[1] as number) - (xs[0] as number)).toBeCloseTo(
+        Math.min(width / 2, Math.max(2.5, width / 4)),
+      );
     },
   );
 
@@ -96,7 +102,9 @@ describe('C3 presentation allocation', () => {
       'perimeter',
     );
     expect(
-      [...forward.values()].filter((route) => route.every((p) => p.xMm <= 200)),
+      [...forward.values()].filter((route) =>
+        route.every((p) => p.xMm >= 0 && p.xMm <= 200),
+      ),
     ).toHaveLength(6);
     for (const c of connections.slice(0, 6))
       expect(forward.get(c.id)).toEqual(
@@ -155,13 +163,11 @@ describe('C3 presentation allocation', () => {
       endpoint(50, 25, 80.0001),
     );
     const routes = routeConnections([first, second], [rack], 'perimeter');
-    expect(routes.get('a')).toEqual([
-      { xMm: 12.5, yMm: 80 },
-      { xMm: 12.5, yMm: 74 },
-      { xMm: 62.5, yMm: 74 },
-      { xMm: 62.5, yMm: 80.0008 },
-    ]);
-    expect(routes.get('b')?.[0]?.xMm).toBe(10);
+    expect(routes.get('a')?.[0]?.xMm).toBeCloseTo((25 * 2) / 3);
+    expect(routes.get('a')?.at(-1)?.xMm).toBeCloseTo(50 + 25 / 3);
+    expect(routes.get('a')?.[0]?.yMm).toBe(80);
+    expect(routes.get('a')?.at(-1)?.yMm).toBe(80.0008);
+    expect(routes.get('b')?.[0]?.xMm).toBeCloseTo(25 / 3);
     expect(routes.get('b')?.[1]?.yMm).toBeCloseTo(70.0001, 8);
   });
 

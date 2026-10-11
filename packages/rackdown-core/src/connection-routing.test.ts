@@ -552,7 +552,7 @@ describe('connection routing', () => {
       'perimeter',
     );
     const crossings = countCrossings(Array.from(routes.values()));
-    expect(crossings).toBe(74);
+    expect(crossings).toBe(81);
   });
 
   it('produces identical perimeter route geometry regardless of authoring order for distinct geometry', () => {
@@ -1074,7 +1074,7 @@ describe('connection routing', () => {
       expect(fwd.get('c2')).toEqual(rev.get('c2'));
     });
 
-    it('21. bounds perimeter gutter growth to six physical lanes and 32.7 mm in dense fan-out', () => {
+    it('21. grows side corridors rather than wrapping over occupied spans', () => {
       const denseRack: RoutingRack = {
         key: 'dense',
         xMm: 0,
@@ -1104,14 +1104,14 @@ describe('connection routing', () => {
       );
       const routeList = Array.from(routes.values());
 
-      expect(maxPhysicalLanesPerSide(routeList, denseRack)).toBe(6);
-      expect(maxPhysicalGutterMm(routeList, denseRack)).toBe(32.7);
-      expect(countCrossings(routeList)).toBe(74);
+      expect(maxPhysicalLanesPerSide(routeList, denseRack)).toBe(10);
+      expect(maxPhysicalGutterMm(routeList, denseRack)).toBe(48.7);
+      expect(countCrossings(routeList)).toBe(81);
       expect(totalBendCount(routeList)).toBe(40);
-      expect(totalRouteLength(routeList)).toBe(10253);
+      expect(totalRouteLength(routeList)).toBe(10589);
 
-      const maxRightEnvelopeX = denseRack.xMm + denseRack.widthMm + 32.7;
-      const minLeftEnvelopeX = denseRack.xMm - 32.7;
+      const maxRightEnvelopeX = denseRack.xMm + denseRack.widthMm + 48.7;
+      const minLeftEnvelopeX = denseRack.xMm - 48.7;
       for (const route of routeList) {
         for (const point of route) {
           expect(point.xMm).toBeLessThanOrEqual(maxRightEnvelopeX + 1e-6);
@@ -1166,21 +1166,21 @@ describe('connection routing', () => {
       expect(totalBendCount(routes12)).toBe(24);
       expect(totalRouteLength(routes12)).toBe(4026);
 
-      // 16 connections: still six lanes/side, reuse active
+      // 16 connections: overlapping spans require eight lanes per side.
       const routes16 = runDense(16);
-      expect(maxPhysicalLanesPerSide(routes16, denseRack)).toBe(6);
-      expect(maxPhysicalGutterMm(routes16, denseRack)).toBe(32.7);
-      expect(countCrossings(routes16)).toBe(48);
+      expect(maxPhysicalLanesPerSide(routes16, denseRack)).toBe(8);
+      expect(maxPhysicalGutterMm(routes16, denseRack)).toBe(40.7);
+      expect(countCrossings(routes16)).toBe(49);
       expect(totalBendCount(routes16)).toBe(32);
-      expect(totalRouteLength(routes16)).toBe(6792);
+      expect(totalRouteLength(routes16)).toBe(6920);
 
-      // 20 connections: still six lanes/side
+      // 20 connections: ten lanes per side.
       const routes20 = runDense(20);
-      expect(maxPhysicalLanesPerSide(routes20, denseRack)).toBe(6);
-      expect(maxPhysicalGutterMm(routes20, denseRack)).toBe(32.7);
-      expect(countCrossings(routes20)).toBe(74);
+      expect(maxPhysicalLanesPerSide(routes20, denseRack)).toBe(10);
+      expect(maxPhysicalGutterMm(routes20, denseRack)).toBe(48.7);
+      expect(countCrossings(routes20)).toBe(81);
       expect(totalBendCount(routes20)).toBe(40);
-      expect(totalRouteLength(routes20)).toBe(10253);
+      expect(totalRouteLength(routes20)).toBe(10589);
     });
 
     it('23. reuses physical lanes round-robin in global top corridor when allocations exceed capacity', () => {
@@ -1664,13 +1664,13 @@ describe('connection routing', () => {
       expect(routes.get('ab')).toEqual([
         { xMm: 80.4335, yMm: 88.9 },
         { xMm: 80.4335, yMm: 82.9 },
-        { xMm: 241.3, yMm: 82.9 },
-        { xMm: 241.3, yMm: 88.9 },
+        { xMm: 214.489, yMm: 82.9 },
+        { xMm: 214.489, yMm: 88.9 },
       ]);
       expect(routes.get('bc')).toEqual([
-        { xMm: 238.8, yMm: 88.9 },
-        { xMm: 238.8, yMm: 78.9 },
-        { xMm: 402.16650000000004, yMm: 78.9 },
+        { xMm: 268.111, yMm: 88.9 },
+        { xMm: 268.111, yMm: 82.9 },
+        { xMm: 402.16650000000004, yMm: 82.9 },
         { xMm: 402.16650000000004, yMm: 88.9 },
       ]);
     });

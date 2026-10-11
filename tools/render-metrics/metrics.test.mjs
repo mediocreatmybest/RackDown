@@ -15,9 +15,116 @@ import {
   routeEntersRect,
   routeLength,
   segmentsCross,
+  sharedSegmentLength,
 } from './metrics.mjs';
 
 const square = [{ x: 0, y: 0, w: 10, h: 10 }];
+
+test('shared segments measure overlap, not crossings, touching ends or nearby parallels', () => {
+  const route = (id, points) => ({ id, points });
+  const a = route('a', [
+    [0, 0],
+    [10, 0],
+  ]);
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [8, 0],
+        [2, 0],
+      ]),
+    ]),
+    6,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [10, 0],
+        [20, 0],
+      ]),
+    ]),
+    0,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [0, 0.001],
+        [10, 0.001],
+      ]),
+    ]),
+    0,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [5, -5],
+        [5, 5],
+      ]),
+    ]),
+    0,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('a', [
+        [2, 0],
+        [8, 0],
+      ]),
+    ]),
+    0,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [2, 0],
+        [5, 0],
+        [8, 0],
+      ]),
+    ]),
+    6,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      route('a', [
+        [0, 0],
+        [3, 4],
+      ]),
+      route('b', [
+        [3, 4],
+        [1.5, 2],
+      ]),
+    ]),
+    2.5,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      route('a', [
+        [0, 0],
+        [0, 0],
+      ]),
+      a,
+    ]),
+    0,
+  );
+  assert.equal(
+    sharedSegmentLength([
+      a,
+      route('b', [
+        [0, 0],
+        [10, 0],
+      ]),
+      route('c', [
+        [0, 0],
+        [10, 0],
+      ]),
+    ]),
+    30,
+  );
+});
 
 test('external extraction ignores namespaced clipping rectangles', () => {
   const svg =

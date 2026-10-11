@@ -56,15 +56,15 @@ const permutations = (items) =>
         ]),
       );
 
-// Frozen routes of all five unaffected connections from the pre-change head.
+// Side attachment centres change under #329; the other four routes stay fixed.
 const unchanged = [
   [
-    [482.6, 158.075],
-    [488.95, 158.075],
-    [495.3, 158.075],
-    [495.3, 376.575],
-    [488.95, 376.575],
-    [482.6, 376.575],
+    [482.6, 155.575],
+    [488.95, 155.575],
+    [495.3, 155.575],
+    [495.3, 377.825],
+    [488.95, 377.825],
+    [482.6, 377.825],
   ],
   hRoute,
   [
@@ -94,7 +94,7 @@ const unchanged = [
 describe('local vertical rendered presentation', () => {
   it.each([
     ['reduced', reduced, 88.9, 0],
-    ['full', full, 1470.35, 14],
+    ['full', full, 1474.1, 14],
   ])(
     '%s fixture has distinct ownership and complete device clearance',
     (_name, source, length, bends) => {
@@ -183,7 +183,7 @@ describe('local vertical rendered presentation', () => {
   );
 
   it.each(['8 device "Blocker"', '8.5 0.25U device "Fractional blocker"'])(
-    'uses the old shallow fallback with %s',
+    'uses separate nested side lanes with %s',
     (blocker) => {
       const source = reduced.replace(
         '7 device "Mini PC 01"',
@@ -196,16 +196,18 @@ describe('local vertical rendered presentation', () => {
       const routes = extractRoutes(svg);
       expect(routes.map((r) => r.points)).toEqual([
         [
-          [482.6, 244.475],
-          [488.95, 244.475],
-          [488.95, 154.325],
-          [482.6, 154.325],
+          [482.6, 237.067],
+          [488.95, 237.067],
+          [488.95, 162.983],
+          [482.6, 162.983],
         ],
         [
-          [482.6, 244.475],
-          [488.95, 244.475],
-          [488.95, 156.825],
-          [482.6, 156.825],
+          [482.6, 251.883],
+          [488.95, 251.883],
+          [492.95, 251.883],
+          [492.95, 148.167],
+          [488.95, 148.167],
+          [482.6, 148.167],
         ],
       ]);
     },

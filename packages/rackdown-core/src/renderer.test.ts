@@ -1977,7 +1977,7 @@ describe('routing envelope viewport stability (#257)', () => {
     expect(perimeter).toEqual(direct);
   });
 
-  it('keeps the viewport stable while capped perimeter corridors fill and wrap', () => {
+  it('keeps the normal envelope stable and expands to contain dense nested lanes', () => {
     const baseline = viewBoxMetrics(
       toSvg(resolve(parse(sameRackSource(1))), {
         namespace: 'capped',
@@ -1992,7 +1992,10 @@ describe('routing envelope viewport stability (#257)', () => {
         connectionRouting: 'perimeter',
       });
 
-      expect(viewBoxMetrics(svg)).toEqual(baseline);
+      const extent = viewBoxMetrics(svg);
+      expect(extent.height).toBe(baseline.height);
+      expect(extent.width).toBeGreaterThanOrEqual(baseline.width);
+      if (count <= 6) expect(extent).toEqual(baseline);
       expectPointsInsideViewport(svg);
 
       for (const point of routePoints(svg)) {
@@ -2004,9 +2007,8 @@ describe('routing envelope viewport stability (#257)', () => {
       }
     }
 
-    // Proves the fixture really drove the capped perimeter corridor out to its
-    // furthest lane rather than taking short local routes the whole way.
-    expect(deepest).toBeCloseTo(SIDE_ENVELOPE_MM, 6);
+    // Occupied side lanes no longer wrap back over previous cables.
+    expect(deepest).toBeGreaterThan(SIDE_ENVELOPE_MM);
   });
 
   it('lets uncapped lane routing expand the viewport beyond the envelope', () => {

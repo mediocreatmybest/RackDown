@@ -1,0 +1,13 @@
+rack "4-node cluster (shelf)" 6U
+3 2U shelf "Shelf"
+3 2U device "Node A" as a
+3 2U device "Node B" as b
+3 2U device "Node C" as c
+3 2U device "Node D" as d
+
+a:nic3 -- d:nic1
+a:nic1 -- b:nic1
+a:nic2 -- c:nic1
+b:nic2 -- c:nic2
+b:nic3 -- d:nic2
+c:nic3 -- d:nic3

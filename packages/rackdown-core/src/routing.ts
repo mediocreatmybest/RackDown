@@ -1,4 +1,9 @@
 import type { PointMm, RectMm } from './layout.js';
+import {
+  type BracketEndpoint,
+  type BracketRequest,
+  nestedBrackets,
+} from './nested-routing.js';
 
 const RIGHT_LANE_GUTTER_MM = 6.35;
 const BOTTOM_LANE_GUTTER_MM = 6.35;
@@ -28,11 +33,10 @@ export const CONNECTION_CORNER_RADIUS_MM = 3;
  * Space the router may occupy around the projected rack subject before any
  * route is actually drawn.
  *
- * Capped corridors wrap through `peekLane()`'s modulo, so they never allocate
- * past `CORRIDOR_LANE_CAPACITY - 1`. That bounds rack-side and global
- * top/bottom corridors exactly, which lets the renderer reserve a viewport
- * floor instead of letting an occupied outer lane change the apparent rack
- * scale. Uncapped corridors (pair-gap, legacy lanes) can still exceed this;
+ * The normal six-lane envelope bounds ordinary rack-side and global
+ * top/bottom corridors, which lets the renderer reserve a viewport
+ * floor instead of letting an occupied inner lane change the apparent rack
+ * scale. Overlapping side spans, pair-gap and legacy lanes can exceed this;
  * the renderer unions it with actual route extents so nothing is clipped.
  *
  * Kept here, beside the constants it derives from, so a routing-geometry
@@ -403,6 +407,7 @@ export interface RoutingCorridor {
   readonly axis: CorridorAxis;
   readonly capacity?: number | undefined;
   allocations: number;
+  occupiedSpans?: Array<Array<readonly [number, number]>>;
   coordinate(laneIndex: number, requestBaseMm?: number): number;
 }
 
@@ -411,28 +416,50 @@ export interface CorridorLanePreview {
   readonly index: number;
   readonly coordinateMm: number;
   readonly pressure: number;
+  readonly span?: readonly [number, number];
 }
 
 export function peekLane(
   corridor: RoutingCorridor,
   requestBaseMm?: number,
+  span?: readonly [number, number],
 ): CorridorLanePreview {
   const cap = corridor.capacity;
-  const index =
+  let index =
     cap === undefined || corridor.allocations < cap
       ? corridor.allocations
       : corridor.allocations % cap;
+  if (span) {
+    index = 0;
+    while (
+      corridor.occupiedSpans?.[index]?.some(
+        ([start, end]) =>
+          !(
+            span[1] + ATTACHMENT_SPACING_MM <= start ||
+            span[0] >= end + ATTACHMENT_SPACING_MM
+          ),
+      )
+    )
+      index++;
+  }
   return {
     corridor,
     index,
     coordinateMm: corridor.coordinate(index, requestBaseMm),
     pressure: corridor.allocations,
+    ...(span ? { span } : {}),
   };
 }
 
 export function consumeLane(preview: CorridorLanePreview): number {
   const index = preview.index;
   preview.corridor.allocations += 1;
+  if (preview.span) {
+    preview.corridor.occupiedSpans ??= [];
+    const occupied = preview.corridor.occupiedSpans;
+    occupied[index] ??= [];
+    occupied[index].push(preview.span);
+  }
   return index;
 }
 
@@ -718,28 +745,18 @@ export function routeConnections(
   const rackByKey = new Map(racks.map((rack) => [rack.key, rack]));
   const rightLaneUse = new Map<string, number>();
   const corridors = new Map<RoutingCorridorId, RoutingCorridor>();
+  const shortHopCorridors = new Map<RoutingCorridorId, RoutingCorridor>();
   const incidentTotals = new Map<string, number>();
   const attachmentSlots = new Map<string, number>();
   const incidentAssigned = new Map<string, number>();
   const subject = routingSubjectBounds(racks);
   let bottomLaneIndex = 0;
   const classHRoutes = new Map<string, PointMm[]>();
+  const localVerticalRoutes = new Map<string, PointMm[]>();
   // Only accepted H and vertical routes occupy this independent local space.
   const localVerticalOccupancy = new Map<string, PointMm[][]>();
   // Presentation occupancy is per projected slot and side, independent of ports.
-  const localSlots: Array<{
-    rackKey: string;
-    bounds: SlotBounds;
-    top: Set<number>;
-    bottom: Set<number>;
-  }> = [];
-  const localRows: Array<{
-    rackKey: string;
-    topY: number;
-    bottomY: number;
-    top: Array<Array<[number, number]>>;
-    bottom: Array<Array<[number, number]>>;
-  }> = [];
+  const localSlots: Array<{ rackKey: string; bounds: SlotBounds }> = [];
   const near = (a: number, b: number) =>
     Math.abs(a - b) <= SLOT_EQUALITY_EPSILON_MM;
   function localSlot(rackKey: string, bounds: SlotBounds) {
@@ -755,8 +772,6 @@ export function routeConnections(
       state = {
         rackKey,
         bounds,
-        top: new Set<number>(),
-        bottom: new Set<number>(),
       };
     }
     return state;
@@ -984,80 +999,89 @@ export function routeConnections(
     });
   }
 
-  /** C3 local presentation: top first, then bottom, then existing perimeter. */
-  function classHRoute(connection: RoutingConnection): PointMm[] | undefined {
-    if (!isClassHEligible(connection.from, connection.to)) return undefined;
-    const rackKey = connection.from.rackKey as string;
-    const rack = rackByKey.get(rackKey);
-    if (!rack) return undefined;
-    const from = connection.from.slotBounds as SlotBounds;
-    const to = connection.to.slotBounds as SlotBounds;
-    const reversed = from.leftX > to.leftX;
-    const [left, right] = reversed ? [to, from] : [from, to];
-    const leftState = localSlot(rackKey, left);
-    const rightState = localSlot(rackKey, right);
-    let row = localRows.find(
-      (candidate) =>
-        candidate.rackKey === rackKey &&
-        near(candidate.topY, left.topY) &&
-        near(candidate.bottomY, left.bottomY),
-    );
-    if (!row) {
-      row = {
-        rackKey,
-        topY: left.topY,
-        bottomY: left.bottomY,
-        top: [[], [], []],
-        bottom: [[], [], []],
-      };
+  function bracketEndpoint(
+    endpoint: RoutingEndpoint,
+    axis: 'x' | 'y',
+  ): BracketEndpoint {
+    const bounds = endpoint.slotBounds as SlotBounds;
+    // Side routes attach at the rack boundary. Shared-row devices therefore
+    // share a physical edge fan even when their horizontal slots differ.
+    const state =
+      (axis === 'y'
+        ? localSlots.find(
+            (slot) =>
+              slot.rackKey === endpoint.rackKey &&
+              near(slot.bounds.topY, bounds.topY) &&
+              near(slot.bounds.bottomY, bounds.bottomY),
+          )
+        : undefined) ?? localSlot(endpoint.rackKey as string, bounds);
+    if (!localSlots.includes(state)) localSlots.push(state);
+    const rack = rackByKey.get(endpoint.rackKey as string) as RoutingRack;
+    return {
+      key: String(localSlots.indexOf(state)),
+      start: axis === 'x' ? bounds.leftX : bounds.topY,
+      end: axis === 'x' ? bounds.rightX : bounds.bottomY,
+      edges:
+        axis === 'x'
+          ? [bounds.topY, bounds.bottomY]
+          : [rack.xMm, rack.xMm + rack.widthMm],
+    };
+  }
+
+  function planBrackets(
+    candidates: readonly RoutingConnection[],
+    axis: 'x' | 'y',
+    fixedRoutes: readonly PointMm[][] = [],
+  ) {
+    const groups = new Map<string, BracketRequest[]>();
+    for (const connection of candidates) {
+      const rackKey = connection.from.rackKey as string;
+      const group = groups.get(rackKey) ?? [];
+      const deltaY = Math.abs(
+        connection.from.anchor.yMm - connection.to.anchor.yMm,
+      );
+      group.push({
+        id: connection.id,
+        from: bracketEndpoint(connection.from, axis),
+        to: bracketEndpoint(connection.to, axis),
+        offset:
+          axis === 'x'
+            ? LOCAL_SEAM_OFFSET_MM
+            : deltaY <= SHORT_HOP_THRESHOLD_MM
+              ? EXIT_STUB_MM
+              : PERIMETER_GUTTER_MM,
+      });
+      groups.set(rackKey, group);
     }
-    const offsets = [0, -2.5, 2.5];
-    for (const side of ['top', 'bottom'] as const) {
-      for (const [li, lo] of offsets.entries()) {
-        const lx = (left.leftX + left.rightX) / 2 + lo;
-        if (leftState[side].has(li) || lx < left.leftX || lx > left.rightX)
-          continue;
-        for (const [ri, ro] of offsets.entries()) {
-          const rx = (right.leftX + right.rightX) / 2 + ro;
-          if (rightState[side].has(ri) || rx < right.leftX || rx > right.rightX)
-            continue;
-          for (const [track, distance] of [6, 10, 14].entries()) {
-            const intervals = row[side][track] as Array<[number, number]>;
-            if (
-              intervals.some(
-                ([start, end]) => !(rx + 2.5 <= start || lx >= end + 2.5),
-              )
-            )
-              continue;
-            const seam =
-              side === 'top'
-                ? Math.min(left.topY, right.topY) - distance
-                : Math.max(left.bottomY, right.bottomY) + distance;
-            const route = compactRoute([
-              { xMm: lx, yMm: side === 'top' ? left.topY : left.bottomY },
-              { xMm: lx, yMm: seam },
-              { xMm: rx, yMm: seam },
-              { xMm: rx, yMm: side === 'top' ? right.topY : right.bottomY },
-            ]);
-            if (
-              !routeIsWithinRack(route, rack) ||
-              !localRouteIsClear(rackKey, route, obstacles)
-            )
-              continue;
-            // Even approximate identity representatives are committed only on
-            // acceptance: a rejected row must not seed later equality groups.
-            if (!localSlots.includes(leftState)) localSlots.push(leftState);
-            if (!localSlots.includes(rightState)) localSlots.push(rightState);
-            if (!localRows.includes(row)) localRows.push(row);
-            leftState[side].add(li);
-            rightState[side].add(ri);
-            intervals.push([lx, rx]);
-            return reversed ? route.reverse() : route;
-          }
-        }
-      }
+    const planned = new Map<string, PointMm[]>();
+    for (const [rackKey, requests] of groups) {
+      const rack = rackByKey.get(rackKey) as RoutingRack;
+      const accepted = nestedBrackets(
+        requests,
+        axis,
+        (_request, route) =>
+          axis === 'y'
+            ? route
+                .slice(1)
+                .every((point, i) =>
+                  racks.every(
+                    (other) =>
+                      other.key === rackKey ||
+                      !segmentEntersRectInterior(
+                        route[i] as PointMm,
+                        point,
+                        other,
+                      ),
+                  ),
+                )
+            : routeIsWithinRack(route, rack) &&
+              localRouteIsClear(rackKey, route, obstacles),
+        axis === 'x' ? 3 : undefined,
+        fixedRoutes,
+      );
+      for (const [id, route] of accepted) planned.set(id, route);
     }
-    return undefined;
+    return planned;
   }
 
   /** Facing-edge presentation for the existing non-consuming Class V range. */
@@ -1163,28 +1187,58 @@ export function routeConnections(
       connection.to.anchor.yMm - connection.from.anchor.yMm,
     );
 
-    // Class V: a short vertical hop runs stub-to-stub up the rack face. It
-    // scores against current corridor pressure so a congested side is still
-    // avoided, but it never reaches the lane itself and so deliberately does
-    // not call consumeLane() — previewing pressure is not occupying a lane.
+    // Class V uses an independent span-aware local pool. Occupying a short-hop
+    // lane does not consume or add pressure to a rack-side corridor.
     if (deltaY > 1e-3 && deltaY <= SHORT_HOP_THRESHOLD_MM) {
       const candidates = (['right', 'left'] as const).map((side) => {
-        const preview = peekLane(rackCorridor(rack, side));
+        const corridor = rackCorridor(rack, side);
+        let local = shortHopCorridors.get(corridor.id);
+        if (!local) {
+          local = {
+            id: corridor.id,
+            axis: 'x',
+            allocations: 0,
+            coordinate: (index) =>
+              side === 'right'
+                ? rack.xMm +
+                  rack.widthMm +
+                  EXIT_STUB_MM +
+                  index * LANE_SPACING_MM
+                : rack.xMm - EXIT_STUB_MM - index * LANE_SPACING_MM,
+          };
+          shortHopCorridors.set(corridor.id, local);
+        }
         const { from, to } = attachmentPair(connection, side, side);
-        const route = compactRoute([from.point, from.stub, to.stub, to.point]);
+        const preview = peekLane(local, undefined, [
+          Math.min(from.point.yMm, to.point.yMm),
+          Math.max(from.point.yMm, to.point.yMm),
+        ]);
+        const route = compactRoute([
+          from.point,
+          from.stub,
+          { xMm: preview.coordinateMm, yMm: from.point.yMm },
+          { xMm: preview.coordinateMm, yMm: to.point.yMm },
+          to.stub,
+          to.point,
+        ]);
         return {
           preview,
           side,
           route,
-          score: routeScore(route, preview.pressure),
+          score: routeScore(route, corridor.allocations),
         };
       });
-      return bestCandidate(candidates).route;
+      const best = bestCandidate(candidates);
+      consumeLane(best.preview);
+      return best.route;
     }
 
     const candidates = (['right', 'left'] as const).map((side) => {
-      const preview = peekLane(rackCorridor(rack, side));
       const { from, to } = attachmentPair(connection, side, side);
+      const preview = peekLane(rackCorridor(rack, side), undefined, [
+        Math.min(from.point.yMm, to.point.yMm),
+        Math.max(from.point.yMm, to.point.yMm),
+      ]);
       const route = compactRoute([
         from.point,
         from.stub,
@@ -1462,7 +1516,7 @@ export function routeConnections(
   function routePerimeterConnection(connection: RoutingConnection): PointMm[] {
     return (
       classHRoutes.get(connection.id) ??
-      localVerticalRoute(connection) ??
+      localVerticalRoutes.get(connection.id) ??
       sameRackPerimeterRoute(connection) ??
       crossRackPerimeterRoute(connection) ??
       externalPerimeterRoute(connection) ??
@@ -1513,21 +1567,58 @@ export function routeConnections(
     ]);
   }
 
-  // Resolve H once in its original order, before vertical routes compete for
-  // nearby space. H's own slots/tracks never see vertical occupancy.
+  // Reserve nested shelf brackets before the facing-edge shortcuts, then nest
+  // the remaining stacked-device routes independently of corridor capacity.
+  let sideCandidates: RoutingConnection[] = [];
   if (mode === 'perimeter') {
+    for (const [id, route] of planBrackets(
+      allocationConnections.filter(
+        (c) =>
+          isClassHEligible(c.from, c.to) &&
+          rackByKey.has(c.from.rackKey as string),
+      ),
+      'x',
+    ))
+      classHRoutes.set(id, route);
     for (const connection of allocationConnections) {
-      const route = classHRoute(connection);
+      const route = classHRoutes.get(connection.id);
       const rackKey = connection.from.rackKey;
       if (!route || rackKey === undefined) continue;
-      classHRoutes.set(connection.id, route);
       const occupied = localVerticalOccupancy.get(rackKey) ?? [];
       occupied.push(route);
       localVerticalOccupancy.set(rackKey, occupied);
     }
+    for (const connection of allocationConnections) {
+      if (classHRoutes.has(connection.id)) continue;
+      const route = localVerticalRoute(connection);
+      if (route) localVerticalRoutes.set(connection.id, route);
+    }
+    sideCandidates = allocationConnections.filter((c) => {
+      const from = c.from.slotBounds;
+      const to = c.to.slotBounds;
+      return (
+        !classHRoutes.has(c.id) &&
+        !localVerticalRoutes.has(c.id) &&
+        c.from.rackKey !== undefined &&
+        c.from.rackKey === c.to.rackKey &&
+        rackByKey.has(c.from.rackKey) &&
+        from &&
+        to &&
+        [from, to].every(
+          (slot) =>
+            Object.values(slot).every(Number.isFinite) &&
+            slot.bottomY > slot.topY &&
+            slot.rightX > slot.leftX,
+        ) &&
+        (from.bottomY <= to.topY + SLOT_EQUALITY_EPSILON_MM ||
+          to.bottomY <= from.topY + SLOT_EQUALITY_EPSILON_MM)
+      );
+    });
   }
 
+  const pendingSides = new Set(sideCandidates.map((c) => c.id));
   for (const connection of allocationConnections) {
+    if (pendingSides.has(connection.id)) continue;
     const route =
       mode === 'direct'
         ? directRoute(connection.from.anchor, connection.to.anchor)
@@ -1539,5 +1630,16 @@ export function routeConnections(
     routes.set(connection.id, route);
   }
 
-  return routes;
+  const nestedSideRoutes = planBrackets(sideCandidates, 'y', [
+    ...routes.values(),
+  ]);
+  for (const connection of sideCandidates)
+    routes.set(
+      connection.id,
+      nestedSideRoutes.get(connection.id) ??
+        sameRackPerimeterRoute(connection) ??
+        orthogonalRoute(connection.from.anchor, connection.to.anchor),
+    );
+
+  return new Map(connections.map((c) => [c.id, routes.get(c.id) as PointMm[]]));
 }

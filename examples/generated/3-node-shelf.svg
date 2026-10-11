@@ -1,0 +1,79 @@
+<svg id="rackdown-3-node-shelf-root" xmlns="http://www.w3.org/2000/svg" viewBox="-58.1 -65.6 579.75 371.35" data-external-placement="bottom" data-connection-routing="perimeter" data-connection-colour-mode="auto" role="img" aria-labelledby="rackdown-3-node-shelf-title" aria-describedby="rackdown-3-node-shelf-desc">
+  <title id="rackdown-3-node-shelf-title">3-node cluster (shelf) rack diagram</title>
+  <desc id="rackdown-3-node-shelf-desc">1 rack, 4 devices, 3 connections.</desc>
+  <style>
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
+  .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
+  .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
+  .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
+  .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+  .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
+  .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
+  .rackdown-device-label { font-size: var(--rackdown-label-size, 12px); font-weight: 600; }
+  .rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #64748b); font-weight: 500; }
+  .rackdown-device-label-compact { font-size: var(--rackdown-label-size, 9px); }
+  .rackdown-connection { fill: none; vector-effect: non-scaling-stroke; }
+  :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
+  :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
+  .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+  .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
+  </style>
+  <g id="rackdown-3-node-shelf-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-1" data-face="front" data-width-inches="19">
+    <rect class="rackdown-rack" x="0" y="0" width="482.6" height="266.7" />
+    <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">3-node cluster (shelf)</text>
+    <text class="rackdown-u-label" data-u="6" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">6</text>
+    <line class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45" />
+    <text class="rackdown-u-label" data-u="5" x="-3.5" y="66.675" text-anchor="end" dominant-baseline="middle">5</text>
+    <line class="rackdown-u-line" x1="0" y1="88.9" x2="482.6" y2="88.9" />
+    <text class="rackdown-u-label" data-u="4" x="-3.5" y="111.125" text-anchor="end" dominant-baseline="middle">4</text>
+    <line class="rackdown-u-line" x1="0" y1="133.35" x2="482.6" y2="133.35" />
+    <text class="rackdown-u-label" data-u="3" x="-3.5" y="155.575" text-anchor="end" dominant-baseline="middle">3</text>
+    <line class="rackdown-u-line" x1="0" y1="177.8" x2="482.6" y2="177.8" />
+    <text class="rackdown-u-label" data-u="2" x="-3.5" y="200.025" text-anchor="end" dominant-baseline="middle">2</text>
+    <line class="rackdown-u-line" x1="0" y1="222.25" x2="482.6" y2="222.25" />
+    <text class="rackdown-u-label" data-u="1" x="-3.5" y="244.475" text-anchor="end" dominant-baseline="middle">1</text>
+  </g>
+  <path id="rackdown-3-node-shelf-connection-1" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-7" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 53.622,88.9 L 53.622,81.9 Q 53.622,78.9 56.622,78.9 L 425.978,78.9 Q 428.978,78.9 428.978,81.9 L 428.978,88.9">
+    <title>a:nic1 → c:nic2</title>
+  </path>
+  <path id="rackdown-3-node-shelf-connection-2" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-8" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#009e73" d="M 214.489,88.9 L 214.489,85.9 Q 214.489,82.9 211.489,82.9 L 110.244,82.9 Q 107.244,82.9 107.244,85.9 L 107.244,88.9">
+    <title>b:nic1 → a:nic2</title>
+  </path>
+  <path id="rackdown-3-node-shelf-connection-3" class="rackdown-connection rackdown-connection-ad-hoc rackdown-connection-default-width" data-connection-id="connection-9" data-category="unclassified" data-routing="perimeter" data-pattern="dashed" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" stroke="#d55e00" d="M 268.111,88.9 L 268.111,85.9 Q 268.111,82.9 271.111,82.9 L 372.356,82.9 Q 375.356,82.9 375.356,85.9 L 375.356,88.9">
+    <title>b:nic2 → c:nic1</title>
+  </path>
+  <g id="rackdown-3-node-shelf-device-1" class="rackdown-device-group rackdown-shelf-group rackdown-device-front" data-device-id="device-2" data-device-type="shelf" data-position-u="3" data-u-height="2" data-mount-face="front" data-item-role="shelf">
+    <clipPath id="rackdown-3-node-shelf-device-1-clip">
+      <rect x="0" y="88.9" width="482.6" height="88.9" />
+    </clipPath>
+    <title>Shelf</title>
+    <rect class="rackdown-device rackdown-shelf" x="0" y="88.9" width="482.6" height="88.9" />
+    <text class="rackdown-device-label rackdown-shelf-label" clip-path="url(#rackdown-3-node-shelf-device-1-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">Shelf</text>
+  </g>
+  <g id="rackdown-3-node-shelf-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-3" data-device-type="device" data-position-u="3" data-u-height="2" data-mount-face="front" data-alias="a">
+    <clipPath id="rackdown-3-node-shelf-device-2-clip">
+      <rect x="0" y="88.9" width="160.867" height="88.9" />
+    </clipPath>
+    <title>Node A</title>
+    <rect class="rackdown-device" x="0" y="88.9" width="160.867" height="88.9" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-3-node-shelf-device-2-clip)" x="80.433" y="133.35" text-anchor="middle" dominant-baseline="middle">Node A</text>
+  </g>
+  <g id="rackdown-3-node-shelf-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="device" data-position-u="3" data-u-height="2" data-mount-face="front" data-alias="b">
+    <clipPath id="rackdown-3-node-shelf-device-3-clip">
+      <rect x="160.867" y="88.9" width="160.867" height="88.9" />
+    </clipPath>
+    <title>Node B</title>
+    <rect class="rackdown-device" x="160.867" y="88.9" width="160.867" height="88.9" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-3-node-shelf-device-3-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">Node B</text>
+  </g>
+  <g id="rackdown-3-node-shelf-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="device" data-position-u="3" data-u-height="2" data-mount-face="front" data-alias="c">
+    <clipPath id="rackdown-3-node-shelf-device-4-clip">
+      <rect x="321.733" y="88.9" width="160.867" height="88.9" />
+    </clipPath>
+    <title>Node C</title>
+    <rect class="rackdown-device" x="321.733" y="88.9" width="160.867" height="88.9" />
+    <text class="rackdown-device-label" clip-path="url(#rackdown-3-node-shelf-device-4-clip)" x="402.167" y="133.35" text-anchor="middle" dominant-baseline="middle">Node C</text>
+  </g>
+</svg>

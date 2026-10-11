@@ -1,0 +1,9 @@
+rack "3-node cluster (shelf)" 6U
+3 2U shelf "Shelf"
+3 2U device "Node A" as a
+3 2U device "Node B" as b
+3 2U device "Node C" as c
+
+a:nic1 -- c:nic2
+b:nic1 -- a:nic2
+b:nic2 -- c:nic1

@@ -1,0 +1,8 @@
+rack "3-node cluster (stacked)" 6U
+5 server "Node A" as a
+4 server "Node B" as b
+3 server "Node C" as c
+
+a:nic1 -- c:nic2
+b:nic1 -- a:nic2
+b:nic2 -- c:nic1

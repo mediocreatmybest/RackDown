@@ -46,6 +46,7 @@ brittle. Lower is better for every measure except `connections`.
 | --- | --- | --- |
 | `connections` | Routes found in the SVG | Sanity check — a drop means connections stopped rendering |
 | `crossings` | Segment intersections between distinct routes | Readability. Self-intersection within one route is not counted |
+| `sharedSegmentMm` | Pairwise length of collinear overlap between distinct routes | Detects cables hidden by other cables even when `crossings` is zero; a segment shared by three routes contributes once per route pair |
 | `occludedMm` | Route length drawn underneath a device body | **The strongest readability signal.** A crossing is legible; a cable that vanishes under a server and reappears elsewhere is not |
 | `foreignRackTransitMm` | Route length inside a rack body that neither endpoint belongs to | Guard rail — see the note below |
 | `externalBoxInteriorRoutes` | Routes entering any external box, including their own target | Complete-path callout clearance |
@@ -114,9 +115,10 @@ that caused it, so the diff shows the effect.
 ## Corpus
 
 The three canonical examples and the valid fixtures listed in `CORPUS`, each
-rendered in all four routing modes — 48 results. The garage fixture pins C3
+rendered in all four routing modes — 64 results. The garage fixture pins C3
 attachments and two projected power callouts; the dense fixture pins 18
-externals in six rows.
+externals in six rows. Four cluster fixtures cover three- and four-node meshes
+both stacked and on a shelf, including zero shared segments in perimeter mode.
 
 Several fixtures have no connections at all. Those rows are near-empty by design:
 they pin rack and device geometry, so a layout change that silently moved racks

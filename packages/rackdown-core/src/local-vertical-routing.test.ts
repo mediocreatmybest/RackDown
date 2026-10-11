@@ -71,6 +71,7 @@ interface Case {
   connections: RoutingConnection[];
   obstacles?: RoutingObstacle[];
   local: Record<string, number[][]>;
+  side?: Record<string, number[][]>;
 }
 const straight = (x: number, bottom = 80, top = 40): number[][] => [
   [x, bottom],
@@ -160,6 +161,14 @@ const cases: Case[] = [
     name: 'three local routes and bounded fourth fallback',
     connections: Array.from({ length: 4 }, (_, i) => connection(`p${i}`)),
     local: { p0: straight(50), p1: straight(47.5), p2: straight(52.5) },
+    side: {
+      p3: [
+        [100, 90],
+        [106.35, 90],
+        [106.35, 30],
+        [100, 30],
+      ],
+    },
   },
   {
     name: 'distinct port anchors share physical fan capacity',
@@ -168,6 +177,14 @@ const cases: Case[] = [
       from: { ...endpoint(lower), anchor: { xMm: 100, yMm: 85 + i } },
     })),
     local: { p0: straight(50), p1: straight(47.5), p2: straight(52.5) },
+    side: {
+      p3: [
+        [100, 90],
+        [106.35, 90],
+        [106.35, 30],
+        [100, 30],
+      ],
+    },
   },
   {
     name: 'narrow overlap does not clamp or compress fan positions',
@@ -176,6 +193,14 @@ const cases: Case[] = [
       connection('b', slot(49, 51, 80, 100)),
     ],
     local: { a: straight(50) },
+    side: {
+      b: [
+        [100, 90],
+        [106.35, 90],
+        [106.35, 30],
+        [100, 30],
+      ],
+    },
   },
   {
     name: 'rack-top devices',
@@ -224,65 +249,76 @@ const cases: Case[] = [
 ];
 
 describe('bounded local vertical presentation', () => {
-  it.each(cases)('$name', ({ connections, obstacles = [], local }) => {
-    const racks = [rack, rear];
-    const bodies = connections
-      .flatMap((c) => [c.from, c.to])
-      .flatMap((ep) =>
-        ep.slotBounds ? [body(ep.slotBounds, ep.rackKey)] : [],
+  it.each(cases)(
+    '$name',
+    ({ connections, obstacles = [], local, side = {} }) => {
+      const racks = [rack, rear];
+      const bodies = connections
+        .flatMap((c) => [c.from, c.to])
+        .flatMap((ep) =>
+          ep.slotBounds ? [body(ep.slotBounds, ep.rackKey)] : [],
+        );
+      const allObstacles = [...bodies, ...obstacles];
+      const before = JSON.stringify(connections);
+      const routes = routeConnections(
+        connections,
+        racks,
+        'perimeter',
+        allObstacles,
       );
-    const allObstacles = [...bodies, ...obstacles];
-    const before = JSON.stringify(connections);
-    const routes = routeConnections(
-      connections,
-      racks,
-      'perimeter',
-      allObstacles,
-    );
-    const fallback = routeConnections(
-      withoutBounds(connections),
-      racks,
-      'perimeter',
-      allObstacles,
-    );
-    for (const c of connections) {
-      const route = routes.get(c.id);
-      if (local[c.id]) {
-        expect(points(route)).toEqual(local[c.id]);
+      const fallback = routeConnections(
+        withoutBounds(connections),
+        racks,
+        'perimeter',
+        allObstacles,
+      );
+      for (const c of connections) {
+        const route = routes.get(c.id);
+        if (local[c.id]) {
+          expect(points(route)).toEqual(local[c.id]);
+          expect(
+            localRouteIsClear(
+              c.from.rackKey as string,
+              route ?? [],
+              allObstacles,
+            ),
+          ).toBe(true);
+          expect(
+            route?.every(
+              (p) => p.xMm >= 0 && p.xMm <= 100 && p.yMm >= 0 && p.yMm <= 500,
+            ),
+          ).toBe(true);
+        } else if (side[c.id]) expect(points(route)).toEqual(side[c.id]);
+        else expect(route).toEqual(fallback.get(c.id));
+      }
+      expect(JSON.stringify(connections)).toBe(before);
+      expect(
+        routeConnections(connections, racks, 'perimeter', allObstacles),
+      ).toEqual(routes);
+      const reversed = routeConnections(
+        connections.map((c) => ({ ...c, from: c.to, to: c.from })),
+        racks,
+        'perimeter',
+        allObstacles,
+      );
+      for (const c of connections)
+        expect(reversed.get(c.id)).toEqual(
+          [...(routes.get(c.id) ?? [])].reverse(),
+        );
+      for (const mode of ['direct', 'orthogonal', 'lanes'] as const) {
         expect(
-          localRouteIsClear(
-            c.from.rackKey as string,
-            route ?? [],
+          routeConnections(connections, racks, mode, allObstacles),
+        ).toEqual(
+          routeConnections(
+            withoutBounds(connections),
+            racks,
+            mode,
             allObstacles,
           ),
-        ).toBe(true);
-        expect(
-          route?.every(
-            (p) => p.xMm >= 0 && p.xMm <= 100 && p.yMm >= 0 && p.yMm <= 500,
-          ),
-        ).toBe(true);
-      } else expect(route).toEqual(fallback.get(c.id));
-    }
-    expect(JSON.stringify(connections)).toBe(before);
-    expect(
-      routeConnections(connections, racks, 'perimeter', allObstacles),
-    ).toEqual(routes);
-    const reversed = routeConnections(
-      connections.map((c) => ({ ...c, from: c.to, to: c.from })),
-      racks,
-      'perimeter',
-      allObstacles,
-    );
-    for (const c of connections)
-      expect(reversed.get(c.id)).toEqual(
-        [...(routes.get(c.id) ?? [])].reverse(),
-      );
-    for (const mode of ['direct', 'orthogonal', 'lanes'] as const) {
-      expect(routeConnections(connections, racks, mode, allObstacles)).toEqual(
-        routeConnections(withoutBounds(connections), racks, mode, allObstacles),
-      );
-    }
-  });
+        );
+      }
+    },
+  );
 
   it.each([
     Number.NaN,

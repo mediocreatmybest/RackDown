@@ -3,8 +3,8 @@
 **Write or record the rack, RackDown draws it.**
 
 RackDown describes equipment racks in plain text and turns them into diagrams.
-Keep the source in notes or Git, review changes as text, and render the same rack in different tools.
-The document stays readable even without using a renderer.
+Keep the source in notes, Git, review changes as text, and then render the same rack in different tools.
+The document stays readable even without using the renderer.
 
 ```rackdown
 rack "Example Rack" 8U 19in u1 bottom views front rear
@@ -18,14 +18,37 @@ core:2 -- [[Upstream Rack]]
 power:1 -- host:power1
 ```
 
+Routing or connection options are also available within RackDown, supporting mini clusters, power, etc. _(Please check the examples folder)_
+
+For example:
+
+```rackdown
+rack "3-node cluster (shelf)" 6U
+
+3 2U shelf "Shelf"
+3 2U device "Node A" as a
+3 2U device "Node B" as b
+3 2U device "Node C" as c
+
+a:nic1 -- c:nic2
+b:nic1 -- a:nic2
+b:nic2 -- c:nic1
+```
+
+<a href="examples/generated/3-node-stacked.png">
+  <img src="examples/generated/3-node-stacked.png" alt="3-node cluster (shelf)" width="450">
+</a>
+
 Try it in the playground with `pnpm dev`. The diagram shows front and rear views
 in the declared order, with external targets shown as annotations. More
 [examples](examples/) cover catalogue devices, routing and shared rows.
 
 > [!NOTE]
-> Please note that I'm not a software developer by trade, I also don't code in TypeScript/JavaScript/etc., and this project is an experiment due to my dripping hatred of rack diagrams being recorded in spreadsheets.
-> RackDown has been created with a combination of tools, including Codex, Claude, Gemini, and a bunch of manual editing and tweaking, with weeks and weeks of testing.
-> As the famous poet Limpbizkit says, "Results May Vary".
+> Please note that I'm not a software developer by trade, I also don't code in TypeScript/JavaScript/etc., and this project is an experiment due to my dripping hatred of rack diagrams being recorded in spreadsheets, especially the well known spreadsheet software.
+> RackDown has been created with a combination of tools, including Codex, Claude, Gemini, VSCode, NotePad++, Obsidian, and a bunch of manual editing and tweaking, and with multiple months and weeks of testing.
+>
+> As the famous poet Limpbizkit says;
+> "Results May Vary".
 
 ## Optional enrichment
 
@@ -105,7 +128,11 @@ pnpm --filter @rackdown/hugo-proof prepare:rackdown
 hugo --source apps/hugo-rackdown
 ```
 
-## Obsidian presentation controls
+## Obsidian controls
+
+> [!NOTE]
+> Beep Boop! This feature will eventually be stripped out of the this repository, and eventually land as its own dedicated plugin.
+> For this moment, this is really just a proof-of-concept.
 
 In Obsidian's RackDown plugin settings, choose routing (Perimeter, Direct,
 Orthogonal or Lanes), external placement (Bottom or Right), connection colour
@@ -153,10 +180,12 @@ The playground should then be available at <http://127.0.0.1:4173>.
 
 ### Want To Contribute?
 
-Do you see any issues, or suggestions, maybe fixes, please open an issue or submit a pull request. 
-Connector routing is something that needs love and attention, so feel free to contribute improvements or suggestions. 
-Do I have too much waffling here? To much text perhaps? 
-Just imagine, you could help fix that problem! YES, YOU! See [Contributing](CONTRIBUTING.md) for more fun and excitement!
+Do you see any issues, or suggestions, maybe fixes, please open an issue or submit a pull request.
+Connector routing is something that needs love and attention, so feel free to contribute improvements or suggestions.
+Do I have too much waffling here, or too much text perhaps?
+Just imagine, you could help fix that problem! YES, YOU!
+
+See [contributing](CONTRIBUTING.md) for more fun and excitement!
 
 ## Status and documentation
 
