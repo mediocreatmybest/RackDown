@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -185,6 +186,44 @@ test('rejects an existing symlink staging destination', () => {
     clean(workspace);
   }
 });
+
+for (const output of ['release-staging', 'release-staging-ci_1']) {
+  const args = output === 'release-staging' ? [] : ['--out', output];
+
+  test(`rejects an ordinary file at ${output} without changing it`, () => {
+    const workspace = createWorkspace({ complete: true });
+    const destination = join(workspace.repository, output);
+    const contents = Buffer.from('preserve this staging file\n');
+    write(destination, contents);
+
+    try {
+      const result = runStage(workspace, args);
+
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /unsafe release staging destination/i);
+      assert.deepEqual(readFileSync(destination), contents);
+    } finally {
+      clean(workspace);
+    }
+  });
+
+  test(`recreates an existing directory at ${output}`, () => {
+    const workspace = createWorkspace({ complete: true });
+    const destination = join(workspace.repository, output);
+    const staleFile = join(destination, 'stale.txt');
+    write(staleFile, 'old staging output');
+
+    try {
+      const result = runStage(workspace, args);
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(existsSync(staleFile), false);
+      assert.equal(existsSync(join(destination, 'MANIFEST.json')), true);
+    } finally {
+      clean(workspace);
+    }
+  });
+}
 
 test('permits the default staging destination', () => {
   const workspace = createWorkspace({ complete: true });

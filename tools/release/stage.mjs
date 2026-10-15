@@ -164,7 +164,7 @@ try {
   }
   if (
     existingDestination &&
-    (existingDestination.isSymbolicLink() ||
+    (!existingDestination.isDirectory() ||
       dirname(realpathSync.native(stagingRoot)) !== resolvedRackdownRoot)
   ) {
     throw new Error(unsafeDestination);
