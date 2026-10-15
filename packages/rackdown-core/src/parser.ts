@@ -56,9 +56,9 @@ export function parse(source: string): RackDocument {
 
     if (first.value.toLowerCase() === 'rack') {
       const rack = parseRack(tokens, rawLine, line, document.diagnostics);
+      currentRackId = rack?.id;
       if (rack) {
         document.racks.push(rack);
-        currentRackId = rack.id;
       }
       continue;
     }

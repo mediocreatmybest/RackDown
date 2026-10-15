@@ -45,18 +45,31 @@ describe('parse', () => {
     },
   );
 
-  it('recovers after an oversized rack without adding it or its devices', () => {
-    const result = parse(`rack "Oversized" 121U
+  it.each(['121U', '1000000U', '0U', '-1U', '6.5U', 'invalid'])(
+    'clears rack context after rejecting height %s and resumes at the next valid rack',
+    (height) => {
+      const result = parse(`rack "First" 6U
+1 1U device "First device"
+rack "Rejected" ${height}
 1 1U device "Ignored"
 rack "Supported" 6U
 1 1U device "Kept"`);
 
-    expect(result.racks.map((rack) => rack.name)).toEqual(['Supported']);
-    expect(result.devices.map((device) => device.label)).toEqual(['Kept']);
-    expect(result.diagnostics.map((diagnostic) => diagnostic.severity)).toEqual(
-      ['error', 'warn'],
-    );
-  });
+      expect(result.racks.map((rack) => rack.name)).toEqual([
+        'First',
+        'Supported',
+      ]);
+      expect(
+        result.devices.map(({ label, rackId }) => ({ label, rackId })),
+      ).toEqual([
+        { label: 'First device', rackId: 'rack-1' },
+        { label: 'Kept', rackId: 'rack-5' },
+      ]);
+      expect(
+        result.diagnostics.map((diagnostic) => diagnostic.severity),
+      ).toEqual(['error', 'warn']);
+    },
+  );
 
   it('parses a rack and ordinary device placements', () => {
     const result = parse(`rack "Home Lab" 24U 19in u1 bottom
