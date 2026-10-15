@@ -1,7 +1,63 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from './parser.js';
+import { toSvg } from './renderer.js';
+import { resolve } from './resolver.js';
 
 describe('parse', () => {
+  it.each([1, 6, 42, 120])('accepts a %iU rack', (units) => {
+    const result = parse(`rack "Supported" ${units}U`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.racks).toEqual([expect.objectContaining({ units })]);
+  });
+
+  it.each([121, 1000000])('rejects a %iU rack before rendering', (units) => {
+    const result = parse(`rack "Oversized" ${units}U`);
+
+    expect(result.racks).toEqual([]);
+    expect(result.diagnostics).toEqual([
+      {
+        severity: 'error',
+        line: 1,
+        column: 18,
+        message: `Rack height ${units}U exceeds the maximum supported height of 120U.`,
+        hint: 'Specify a whole-number rack height from 1U to 120U.',
+      },
+    ]);
+    const layout = resolve(result);
+    expect(layout.racks).toEqual([]);
+    expect(toSvg(layout)).not.toContain('class="rackdown-rack"');
+    expect(toSvg(layout)).not.toContain('class="rackdown-u-label"');
+  });
+
+  it.each(['0U', '-1U', 'oops', '42', ''])(
+    'still rejects invalid height %j',
+    (height) => {
+      const result = parse(`rack "Invalid" ${height}`);
+
+      expect(result.racks).toEqual([]);
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          message: 'Rack height is missing or invalid.',
+        }),
+      ]);
+    },
+  );
+
+  it('recovers after an oversized rack without adding it or its devices', () => {
+    const result = parse(`rack "Oversized" 121U
+1 1U device "Ignored"
+rack "Supported" 6U
+1 1U device "Kept"`);
+
+    expect(result.racks.map((rack) => rack.name)).toEqual(['Supported']);
+    expect(result.devices.map((device) => device.label)).toEqual(['Kept']);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.severity)).toEqual(
+      ['error', 'warn'],
+    );
+  });
+
   it('parses a rack and ordinary device placements', () => {
     const result = parse(`rack "Home Lab" 24U 19in u1 bottom
 

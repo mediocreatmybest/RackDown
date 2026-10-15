@@ -19,6 +19,7 @@ interface Token {
 const POSITION_PATTERN = /^-?\d+(?:\.\d+)?$/;
 const U_PATTERN = /^(\d+(?:\.\d+)?)u$/i;
 const WIDTH_PATTERN = /^(\d+(?:\.\d+)?)in$/i;
+const MAX_RACK_UNITS = 120;
 
 /**
  * Parse RackDown source without throwing on malformed author input.
@@ -173,6 +174,16 @@ function parseRack(
       column: unitsToken?.column ?? rawLine.length + 1,
       message: `Rack height must be a whole number of rack units: ${unitsToken?.value}`,
       hint: 'Specify a positive whole number such as 42U. Fractional positions and heights are supported for devices, but racks require integer heights.',
+    });
+    return undefined;
+  }
+  if (units > MAX_RACK_UNITS) {
+    diagnostics.push({
+      severity: 'error',
+      line,
+      column: unitsToken?.column ?? rawLine.length + 1,
+      message: `Rack height ${units}U exceeds the maximum supported height of ${MAX_RACK_UNITS}U.`,
+      hint: `Specify a whole-number rack height from 1U to ${MAX_RACK_UNITS}U.`,
     });
     return undefined;
   }
