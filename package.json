@@ -22,8 +22,9 @@
     "metrics": "node tools/render-metrics/index.mjs",
     "release:rehearse": "pnpm check && pnpm build && pnpm examples:ci && pnpm release:stage",
     "release:stage": "node tools/release/stage.mjs",
-    "test": "pnpm test:devices && pnpm -r --if-present test",
+    "test": "pnpm test:devices && pnpm test:release && pnpm -r --if-present test",
     "test:devices": "node --test tools/devices/normalize.test.mjs tools/devices/generate.test.mjs tools/devices/full-catalogue.test.mjs && node tools/devices/verify-snapshot.mjs && node tools/devices/verify-generated.mjs",
+    "test:release": "node --test tools/release/stage.test.mjs",
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {

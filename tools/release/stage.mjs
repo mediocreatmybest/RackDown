@@ -9,14 +9,24 @@
 
 import {
   cpSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, posix, relative, resolve, sep } from 'node:path';
+import {
+  basename,
+  dirname,
+  join,
+  posix,
+  relative,
+  resolve,
+  sep,
+} from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -124,12 +134,41 @@ function listFiles(root) {
 try {
   const args = process.argv.slice(2);
   const outIndex = args.indexOf('--out');
-  const stagingRoot = resolve(
-    rackdownRoot,
-    outIndex === -1
-      ? 'release-staging'
-      : (args[outIndex + 1] ?? 'release-staging'),
-  );
+  const output = outIndex === -1 ? 'release-staging' : args[outIndex + 1];
+  if (output === undefined || output === '') {
+    throw new Error('--out requires a directory.');
+  }
+
+  const stagingRoot = resolve(rackdownRoot, output);
+  const stagingName = basename(stagingRoot);
+  const unsafeDestination = `Unsafe release staging destination: ${stagingRoot}`;
+  let stagingParent;
+  try {
+    stagingParent = realpathSync.native(dirname(stagingRoot));
+  } catch {
+    throw new Error(unsafeDestination);
+  }
+  const resolvedRackdownRoot = realpathSync.native(rackdownRoot);
+  if (
+    stagingParent !== resolvedRackdownRoot ||
+    !/^release-staging(?:-[A-Za-z0-9_-]+)?$/.test(stagingName)
+  ) {
+    throw new Error(unsafeDestination);
+  }
+
+  let existingDestination;
+  try {
+    existingDestination = lstatSync(stagingRoot);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (
+    existingDestination &&
+    (existingDestination.isSymbolicLink() ||
+      dirname(realpathSync.native(stagingRoot)) !== resolvedRackdownRoot)
+  ) {
+    throw new Error(unsafeDestination);
+  }
 
   const workspace = readJson(resolve(rackdownRoot, 'package.json'));
 
