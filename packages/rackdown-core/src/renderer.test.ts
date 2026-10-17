@@ -1097,12 +1097,12 @@ describe('toSvg', () => {
       expect(light).toContain(
         'stroke-width: var(--rackdown-stroke-width, 0.5)',
       );
-      expect(structural).toHaveLength(4);
+      expect(structural).toHaveLength(6);
       expect(
         structural?.filter(
           (rule) => rule === 'stroke-width: var(--rackdown-stroke-width, 1)',
         ),
-      ).toHaveLength(3);
+      ).toHaveLength(2);
     });
 
     it('leaves no hardcoded typography or structural stroke literals behind', () => {
@@ -1879,7 +1879,7 @@ describe('routed connection element shape', () => {
     });
 
     expect(svg).toContain('<line ');
-    expect(svg).not.toContain('<path ');
+    expect(svg).not.toMatch(/<path[^>]+class="rackdown-connection/);
   });
 
   it.each(['orthogonal', 'lanes', 'perimeter'] as const)(
@@ -2104,9 +2104,9 @@ describe('routing envelope viewport stability (#257)', () => {
 
     expect(viewBoxMetrics(svg)).toEqual({
       x: -25.4,
-      y: -25.4,
+      y: -37.4,
       width: 514.35,
-      height: 165.1,
+      height: 189.1,
     });
   });
 
@@ -2325,13 +2325,13 @@ describe('routing envelope viewport stability (#257)', () => {
       );
 
       expect(cableFree.x - connected.x).toBeCloseTo(SIDE_ENVELOPE_MM, 6);
-      expect(cableFree.y - connected.y).toBeCloseTo(TOP_ENVELOPE_MM, 6);
+      expect(cableFree.y - connected.y).toBeCloseTo(TOP_ENVELOPE_MM - 12, 6);
       expect(connected.width - cableFree.width).toBeCloseTo(
         SIDE_ENVELOPE_MM * 2,
         6,
       );
       expect(connected.height - cableFree.height).toBeCloseTo(
-        TOP_ENVELOPE_MM + SIDE_ENVELOPE_MM,
+        TOP_ENVELOPE_MM + SIDE_ENVELOPE_MM - 24,
         6,
       );
     });

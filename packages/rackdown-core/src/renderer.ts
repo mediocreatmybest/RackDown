@@ -43,7 +43,12 @@ const EXTERNAL_HORIZONTAL_GAP_MM = 4;
 const EXTERNAL_VERTICAL_GAP_MM = 4;
 const EMPTY_WIDTH_MM = 120;
 const EMPTY_HEIGHT_MM = 40;
-const TITLE_OFFSET_MM = 7.5;
+const FRAME_CROSSBAR_MM = 12;
+const FRAME_RAIL_MM = 7.3;
+const FRAME_BOLT_INSET_MM = 14;
+const FRAME_BOLT_RADIUS_MM = 4;
+// Keep titles between crossbars when projections wrap at the existing row gap.
+const FRAME_TITLE_GAP_MM = 2;
 const U_LABEL_OFFSET_MM = 3.5;
 /** Millimetre tolerance for treating a route segment as zero-length or axis-aligned. */
 const ROUTE_GEOMETRY_EPSILON_MM = 1e-9;
@@ -1023,6 +1028,16 @@ function computeViewport(scene: RoutedRenderScene): Viewport {
   for (const rect of [...scene.racks, ...scene.devices, ...scene.externals]) {
     includeRect(rect, extents);
   }
+  for (const rack of scene.racks) {
+    includeRect(
+      {
+        ...rack,
+        yMm: rack.yMm - FRAME_CROSSBAR_MM,
+        heightMm: rack.heightMm + 2 * FRAME_CROSSBAR_MM,
+      },
+      extents,
+    );
+  }
   includeRoutingEnvelope(scene, extents);
   for (const connection of scene.connections) {
     for (const point of connection.route) {
@@ -1052,7 +1067,7 @@ function renderRack(rack: ProjectedRack, id: string): string[] {
   const lines = [
     `<g id="${id}" class="rackdown-rack-group rackdown-rack-${rack.face}" data-rack-id="${escapeXml(rack.id)}" data-face="${rack.face}" data-width-inches="${formatNumber(rack.widthInches)}">`,
     `  <rect class="rackdown-rack" x="${formatNumber(rack.xMm)}" y="${formatNumber(rack.yMm)}" width="${formatNumber(rack.widthMm)}" height="${formatNumber(rack.heightMm)}" />`,
-    `  <text class="rackdown-rack-title" x="${formatNumber(rack.xMm + rack.widthMm / 2)}" y="${formatNumber(rack.yMm - TITLE_OFFSET_MM)}" text-anchor="middle">${escapeXml(title)}</text>`,
+    `  <text class="rackdown-rack-title" x="${formatNumber(rack.xMm + rack.widthMm / 2)}" y="${formatNumber(rack.yMm - FRAME_CROSSBAR_MM - FRAME_TITLE_GAP_MM)}" text-anchor="middle">${escapeXml(title)}</text>`,
   ];
 
   const wholeUnits = Math.max(0, Math.floor(rack.units));
@@ -1072,6 +1087,44 @@ function renderRack(rack: ProjectedRack, id: string): string[] {
   }
 
   lines.push('</g>');
+  return lines;
+}
+
+function renderRackFrame(rack: ProjectedRack, id: string): string[] {
+  const x = rack.xMm;
+  const right = x + rack.widthMm;
+  const y = rack.yMm;
+  const bottom = y + rack.heightMm;
+  const f = formatNumber;
+  const lines = [
+    `<g id="${id}" class="rackdown-frame" aria-hidden="true" pointer-events="none">`,
+  ];
+  for (const railX of [x, right - FRAME_RAIL_MM]) {
+    lines.push(
+      `  <rect class="rackdown-frame-rail" x="${f(railX)}" y="${f(y)}" width="${f(FRAME_RAIL_MM)}" height="${f(rack.heightMm)}" />`,
+    );
+  }
+  lines.push(
+    `  <path class="rackdown-frame-inner" d="M${f(x + FRAME_RAIL_MM)} ${f(y)} V${f(bottom)} M${f(right - FRAME_RAIL_MM)} ${f(y)} V${f(bottom)}" />`,
+  );
+  for (const capY of [y - FRAME_CROSSBAR_MM, bottom]) {
+    lines.push(
+      `  <rect class="rackdown-frame-cap" x="${f(x)}" y="${f(capY)}" width="${f(rack.widthMm)}" height="${f(FRAME_CROSSBAR_MM)}" />`,
+    );
+    for (const boltX of [
+      x + FRAME_BOLT_INSET_MM,
+      right - FRAME_BOLT_INSET_MM,
+    ]) {
+      lines.push(
+        `  <circle class="rackdown-frame-bolt" cx="${f(boltX)}" cy="${f(capY + FRAME_CROSSBAR_MM / 2)}" r="${f(FRAME_BOLT_RADIUS_MM)}" />`,
+        `  <circle class="rackdown-frame-bolt-inner" cx="${f(boltX)}" cy="${f(capY + FRAME_CROSSBAR_MM / 2)}" r="1.35" />`,
+      );
+    }
+  }
+  lines.push(
+    `  <path class="rackdown-frame-outline" d="M${f(x)} ${f(y - FRAME_CROSSBAR_MM)} H${f(right)} V${f(bottom + FRAME_CROSSBAR_MM)} H${f(x)} Z M${f(x)} ${f(y)} H${f(right)} M${f(x)} ${f(bottom)} H${f(right)}" />`,
+    '</g>',
+  );
   return lines;
 }
 
@@ -1395,7 +1448,13 @@ function renderExternal(external: ProjectedExternal, id: string): string[] {
  * Shared structural, typography and host custom-property rules together with
  * RackDown's light colour fallbacks.
  */
-const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); }
+.rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
+.rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
+.rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
+.rackdown-frame-outline { fill: none; stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
+.rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
+.rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
 .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
 .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
 .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
@@ -1419,7 +1478,13 @@ const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc
  * the dark fallback scheme without disturbing shared structural rules or host
  * custom-property overrides.
  */
-const SVG_DARK_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+const SVG_DARK_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); }
+.rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
+.rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
+.rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
+.rackdown-frame-outline { stroke: var(--rackdown-device-stroke, #cbd5e1); }
+.rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+.rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
 .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
 .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
 .rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
@@ -1552,6 +1617,8 @@ export function toSvg(
   // - Connections are emitted before devices so device rectangles paint over
   //   connection lines crossing device interiors.
   // - Devices paint over connections.
+  // - Frames sit below connections; device paint is clipped inside the rails
+  //   without moving device geometry or hiding cable endpoints behind the frame.
   // - Externals are emitted last so external annotations remain visible.
   appendRenderedItems(
     lines,
@@ -1564,6 +1631,12 @@ export function toSvg(
   );
   appendRenderedItems(
     lines,
+    scene.racks,
+    `${namespace}-frame`,
+    renderRackFrame,
+  );
+  appendRenderedItems(
+    lines,
     scene.connections,
     `${namespace}-connection`,
     (connection, id) =>
@@ -1571,12 +1644,25 @@ export function toSvg(
         ? renderConnection(connection, id, options, connectionDeviceById)
         : [],
   );
+  lines.push(
+    `  <defs><clipPath id="${namespace}-rack-interiors" clipPathUnits="userSpaceOnUse">`,
+  );
+  for (const rack of scene.racks) {
+    lines.push(
+      `    <rect x="${formatNumber(rack.xMm + FRAME_RAIL_MM)}" y="${formatNumber(rack.yMm)}" width="${formatNumber(rack.widthMm - 2 * FRAME_RAIL_MM)}" height="${formatNumber(rack.heightMm)}" />`,
+    );
+  }
+  lines.push(
+    '  </clipPath></defs>',
+    `  <g clip-path="url(#${namespace}-rack-interiors)">`,
+  );
   appendRenderedItems(
     lines,
     scene.devices,
     `${namespace}-device`,
     (device, id) => renderDevice(device, id),
   );
+  lines.push('  </g>');
   appendRenderedItems(
     lines,
     scene.externals,

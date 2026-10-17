@@ -496,7 +496,7 @@ describe('connection routing', () => {
 
     expect(defaultSvg).toContain('data-connection-routing="direct"');
     expect(defaultSvg).toContain('<line ');
-    expect(defaultSvg).not.toContain('<path ');
+    expect(defaultSvg).not.toMatch(/<path[^>]+class="rackdown-connection/);
     expect(directSvg).toBe(defaultSvg);
 
     expect(orthogonalSvg).toContain('data-connection-routing="orthogonal"');

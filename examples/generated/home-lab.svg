@@ -2,7 +2,13 @@
   <title id="rackdown-11ppvl8-title">Home Lab rack diagram</title>
   <desc id="rackdown-11ppvl8-desc">1 rack, 7 devices, 7 connections.</desc>
   <style>
-  .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); }
+  .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
+  .rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
+  .rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
+  .rackdown-frame-outline { fill: none; stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
+  .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
+  .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
   .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
   .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
@@ -20,7 +26,13 @@
   .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
   .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }
   @media (prefers-color-scheme: dark) {
-  .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+  .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); }
+  .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
+  .rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
+  .rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
+  .rackdown-frame-outline { stroke: var(--rackdown-device-stroke, #cbd5e1); }
+  .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+  .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
   .rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
   .rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
@@ -33,7 +45,7 @@
   </style>
   <g id="rackdown-11ppvl8-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-2" data-face="front" data-width-inches="19">
     <rect class="rackdown-rack" x="0" y="0" width="482.6" height="1066.8" />
-    <text class="rackdown-rack-title" x="241.3" y="-7.5" text-anchor="middle">Home Lab · Front</text>
+    <text class="rackdown-rack-title" x="241.3" y="-14" text-anchor="middle">Home Lab · Front</text>
     <text class="rackdown-u-label" data-u="24" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
     <line class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45" />
     <text class="rackdown-u-label" data-u="23" x="-3.5" y="66.675" text-anchor="end" dominant-baseline="middle">23</text>
@@ -84,7 +96,7 @@
   </g>
   <g id="rackdown-11ppvl8-rack-view-2" class="rackdown-rack-group rackdown-rack-rear" data-rack-id="rack-2" data-face="rear" data-width-inches="19">
     <rect class="rackdown-rack" x="508" y="0" width="482.6" height="1066.8" />
-    <text class="rackdown-rack-title" x="749.3" y="-7.5" text-anchor="middle">Home Lab · Rear</text>
+    <text class="rackdown-rack-title" x="749.3" y="-14" text-anchor="middle">Home Lab · Rear</text>
     <text class="rackdown-u-label" data-u="24" x="504.5" y="22.225" text-anchor="end" dominant-baseline="middle">24</text>
     <line class="rackdown-u-line" x1="508" y1="44.45" x2="990.6" y2="44.45" />
     <text class="rackdown-u-label" data-u="23" x="504.5" y="66.675" text-anchor="end" dominant-baseline="middle">23</text>
@@ -133,6 +145,38 @@
     <line class="rackdown-u-line" x1="508" y1="1022.35" x2="990.6" y2="1022.35" />
     <text class="rackdown-u-label" data-u="1" x="504.5" y="1044.575" text-anchor="end" dominant-baseline="middle">1</text>
   </g>
+  <g id="rackdown-11ppvl8-frame-1" class="rackdown-frame" aria-hidden="true" pointer-events="none">
+    <rect class="rackdown-frame-rail" x="0" y="0" width="7.3" height="1066.8" />
+    <rect class="rackdown-frame-rail" x="475.3" y="0" width="7.3" height="1066.8" />
+    <path class="rackdown-frame-inner" d="M7.3 0 V1066.8 M475.3 0 V1066.8" />
+    <rect class="rackdown-frame-cap" x="0" y="-12" width="482.6" height="12" />
+    <circle class="rackdown-frame-bolt" cx="14" cy="-6" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="14" cy="-6" r="1.35" />
+    <circle class="rackdown-frame-bolt" cx="468.6" cy="-6" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="468.6" cy="-6" r="1.35" />
+    <rect class="rackdown-frame-cap" x="0" y="1066.8" width="482.6" height="12" />
+    <circle class="rackdown-frame-bolt" cx="14" cy="1072.8" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="14" cy="1072.8" r="1.35" />
+    <circle class="rackdown-frame-bolt" cx="468.6" cy="1072.8" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="468.6" cy="1072.8" r="1.35" />
+    <path class="rackdown-frame-outline" d="M0 -12 H482.6 V1078.8 H0 Z M0 0 H482.6 M0 1066.8 H482.6" />
+  </g>
+  <g id="rackdown-11ppvl8-frame-2" class="rackdown-frame" aria-hidden="true" pointer-events="none">
+    <rect class="rackdown-frame-rail" x="508" y="0" width="7.3" height="1066.8" />
+    <rect class="rackdown-frame-rail" x="983.3" y="0" width="7.3" height="1066.8" />
+    <path class="rackdown-frame-inner" d="M515.3 0 V1066.8 M983.3 0 V1066.8" />
+    <rect class="rackdown-frame-cap" x="508" y="-12" width="482.6" height="12" />
+    <circle class="rackdown-frame-bolt" cx="522" cy="-6" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="522" cy="-6" r="1.35" />
+    <circle class="rackdown-frame-bolt" cx="976.6" cy="-6" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="976.6" cy="-6" r="1.35" />
+    <rect class="rackdown-frame-cap" x="508" y="1066.8" width="482.6" height="12" />
+    <circle class="rackdown-frame-bolt" cx="522" cy="1072.8" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="522" cy="1072.8" r="1.35" />
+    <circle class="rackdown-frame-bolt" cx="976.6" cy="1072.8" r="4" />
+    <circle class="rackdown-frame-bolt-inner" cx="976.6" cy="1072.8" r="1.35" />
+    <path class="rackdown-frame-outline" d="M508 -12 H990.6 V1078.8 H508 Z M508 0 H990.6 M508 1066.8 H990.6" />
+  </g>
   <path id="rackdown-11ppvl8-connection-1" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-12" data-category="network" data-routing="perimeter" data-media="fibre" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#56b4e9" d="M 241.3,355.6 L 241.3,311.15">
     <title>core:SFP+ 25 → gw:port.11 (fibre)</title>
   </path>
@@ -154,6 +198,11 @@
   <path id="rackdown-11ppvl8-connection-7" class="rackdown-connection rackdown-connection-default-width" data-connection-id="connection-18" data-category="network" data-routing="perimeter" data-pattern="solid" data-colour-source="auto" stroke-width="2" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke="#d55e00" d="M 482.6,290.175 L 485.95,290.175 Q 488.95,290.175 488.95,293.175 L 488.95,1076.5 Q 488.95,1079.5 485.95,1079.5 L 244.3,1079.5 Q 241.3,1079.5 241.3,1082.5 L 241.3,1109.5">
     <title>gw:port.9 → ISP Handover</title>
   </path>
+  <defs><clipPath id="rackdown-11ppvl8-rack-interiors" clipPathUnits="userSpaceOnUse">
+    <rect x="7.3" y="0" width="468" height="1066.8" />
+    <rect x="515.3" y="0" width="468" height="1066.8" />
+  </clipPath></defs>
+  <g clip-path="url(#rackdown-11ppvl8-rack-interiors)">
   <g id="rackdown-11ppvl8-device-1" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="ubiquiti-unifi-dream-machine-pro" data-position-u="18" data-u-height="1" data-mount-face="front" data-alias="gw">
     <clipPath id="rackdown-11ppvl8-device-1-clip">
       <rect x="0" y="266.7" width="482.6" height="44.45" />
@@ -208,6 +257,7 @@
     </clipPath>
     <title>blank</title>
     <rect class="rackdown-device rackdown-blank" x="0" y="1022.35" width="482.6" height="44.45" />
+  </g>
   </g>
   <g id="rackdown-11ppvl8-external-1" class="rackdown-external-group" data-external-id="external-1" data-label="Remote Rack" data-link-style="wiki" data-placement="bottom" data-target="Remote Rack">
     <title>Remote Rack</title>

@@ -100,7 +100,9 @@ describe('external display labels', () => {
     expect(clip).toBeDefined();
     expect(other).not.toContain(`id="${clip}"`);
     const viewBox = svg.match(/viewBox="[^"]+"/)?.[0];
-    const routes = svg.match(/<path[^>]+ d="[^"]+"/g);
+    const routes = svg.match(
+      /<path[^>]+class="rackdown-connection[^>]+ d="[^"]+"/g,
+    );
     expect(routes).toHaveLength(1);
     external.label = 'Short';
     const short = toSvg(layout, {
@@ -108,6 +110,8 @@ describe('external display labels', () => {
       connectionRouting: 'perimeter',
     });
     expect(short.match(/viewBox="[^"]+"/)?.[0]).toBe(viewBox);
-    expect(short.match(/<path[^>]+ d="[^"]+"/g)).toEqual(routes);
+    expect(
+      short.match(/<path[^>]+class="rackdown-connection[^>]+ d="[^"]+"/g),
+    ).toEqual(routes);
   });
 });
