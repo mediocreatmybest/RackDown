@@ -54,10 +54,10 @@ in the declared order, with external targets shown as annotations. More
 [examples](examples/) cover catalogue devices, routing and shared rows.
 
 > [!NOTE]
-> Please note that I'm not a software developer by trade, I also don't code in TypeScript/JavaScript/etc., and this project is an experiment due to my dripping hatred of rack diagrams being recorded in spreadsheets, especially the well known spreadsheet software.
-> RackDown has been created with a combination of tools, including Codex, Claude, Gemini, VSCode, NotePad++, Obsidian, and a bunch of manual editing and tweaking, and with multiple months and weeks of testing.
+> Please note that I'm not a software developer by trade and this project is an experiment due to my dripping hatred of rack diagrams being created in spreadsheets, especially the well known spreadsheet software.
+> I also don't code in TypeScript/JavaScript/etc., as such, RackDown has been created with a combination of tools, including Codex, Claude, Gemini, VSCode, NotePad++, Obsidian, and a bunch of manual editing and tweaking, and with multiple months and weeks of testing.
 >
-> As the famous poet Limpbizkit says;
+> As the famous poet Limpbizkit says; 
 > "Results May Vary".
 
 ## Optional enrichment
