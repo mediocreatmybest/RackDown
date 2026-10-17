@@ -6,7 +6,7 @@
   .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
   .rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
   .rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
-  .rackdown-frame-outline { fill: none; stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
+  .rackdown-frame-outline { fill: none; stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
   .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
   .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
@@ -30,7 +30,7 @@
   .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
   .rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
   .rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
-  .rackdown-frame-outline { stroke: var(--rackdown-device-stroke, #cbd5e1); }
+  .rackdown-frame-outline { stroke: var(--rackdown-rack-stroke, #94a3b8); }
   .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
   .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
   .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
@@ -45,7 +45,6 @@
   </style>
   <g id="rackdown-t869xa-rack-view-1" class="rackdown-rack-group rackdown-rack-front" data-rack-id="rack-1" data-face="front" data-width-inches="19">
     <rect class="rackdown-rack" x="0" y="0" width="482.6" height="266.7" />
-    <text class="rackdown-rack-title" x="241.3" y="-14" text-anchor="middle">4-node cluster (shelf)</text>
     <text class="rackdown-u-label" data-u="6" x="-3.5" y="22.225" text-anchor="end" dominant-baseline="middle">6</text>
     <line class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45" />
     <text class="rackdown-u-label" data-u="5" x="-3.5" y="66.675" text-anchor="end" dominant-baseline="middle">5</text>
@@ -93,7 +92,7 @@
     <title>c:nic3 → d:nic3</title>
   </path>
   <defs><clipPath id="rackdown-t869xa-rack-interiors" clipPathUnits="userSpaceOnUse">
-    <rect x="7.3" y="0" width="468" height="266.7" />
+    <rect x="7.3" y="-65.6" width="468" height="371.35" />
   </clipPath></defs>
   <g clip-path="url(#rackdown-t869xa-rack-interiors)">
   <g id="rackdown-t869xa-device-1" class="rackdown-device-group rackdown-shelf-group rackdown-device-front" data-device-id="device-2" data-device-type="shelf" data-position-u="3" data-u-height="2" data-mount-face="front" data-item-role="shelf">
@@ -137,4 +136,5 @@
     <text class="rackdown-device-label" clip-path="url(#rackdown-t869xa-device-5-clip)" x="422.275" y="133.35" text-anchor="middle" dominant-baseline="middle">Node D</text>
   </g>
   </g>
+  <text class="rackdown-rack-title" x="241.3" y="-14" text-anchor="middle" dominant-baseline="text-after-edge">4-node cluster (shelf)</text>
 </svg>

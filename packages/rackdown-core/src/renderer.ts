@@ -47,7 +47,7 @@ const FRAME_CROSSBAR_MM = 12;
 const FRAME_RAIL_MM = 7.3;
 const FRAME_BOLT_INSET_MM = 14;
 const FRAME_BOLT_RADIUS_MM = 4;
-// Keep titles between crossbars when projections wrap at the existing row gap.
+// Nominal clearance above the crossbar without changing rack row positions.
 const FRAME_TITLE_GAP_MM = 2;
 const U_LABEL_OFFSET_MM = 3.5;
 /** Millimetre tolerance for treating a route segment as zero-length or axis-aligned. */
@@ -1059,15 +1059,9 @@ function computeViewport(scene: RoutedRenderScene): Viewport {
 }
 
 function renderRack(rack: ProjectedRack, id: string): string[] {
-  const faceName = rack.face === 'front' ? 'Front' : 'Rear';
-  const title =
-    rack.views.length === 1 && rack.face === 'front'
-      ? rack.name
-      : `${rack.name} · ${faceName}`;
   const lines = [
     `<g id="${id}" class="rackdown-rack-group rackdown-rack-${rack.face}" data-rack-id="${escapeXml(rack.id)}" data-face="${rack.face}" data-width-inches="${formatNumber(rack.widthInches)}">`,
     `  <rect class="rackdown-rack" x="${formatNumber(rack.xMm)}" y="${formatNumber(rack.yMm)}" width="${formatNumber(rack.widthMm)}" height="${formatNumber(rack.heightMm)}" />`,
-    `  <text class="rackdown-rack-title" x="${formatNumber(rack.xMm + rack.widthMm / 2)}" y="${formatNumber(rack.yMm - FRAME_CROSSBAR_MM - FRAME_TITLE_GAP_MM)}" text-anchor="middle">${escapeXml(title)}</text>`,
   ];
 
   const wholeUnits = Math.max(0, Math.floor(rack.units));
@@ -1452,7 +1446,7 @@ const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc
 .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
 .rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
 .rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
-.rackdown-frame-outline { fill: none; stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
+.rackdown-frame-outline { fill: none; stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
 .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
 .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
 .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
@@ -1482,7 +1476,7 @@ const SVG_DARK_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b
 .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
 .rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
 .rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
-.rackdown-frame-outline { stroke: var(--rackdown-device-stroke, #cbd5e1); }
+.rackdown-frame-outline { stroke: var(--rackdown-rack-stroke, #94a3b8); }
 .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
 .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
 .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
@@ -1647,9 +1641,11 @@ export function toSvg(
   lines.push(
     `  <defs><clipPath id="${namespace}-rack-interiors" clipPathUnits="userSpaceOnUse">`,
   );
+  // Hide side borders only; the resolver retains out-of-bounds devices with
+  // warnings, and the measured viewport already includes their vertical extent.
   for (const rack of scene.racks) {
     lines.push(
-      `    <rect x="${formatNumber(rack.xMm + FRAME_RAIL_MM)}" y="${formatNumber(rack.yMm)}" width="${formatNumber(rack.widthMm - 2 * FRAME_RAIL_MM)}" height="${formatNumber(rack.heightMm)}" />`,
+      `    <rect x="${formatNumber(rack.xMm + FRAME_RAIL_MM)}" y="${formatNumber(viewport.yMm)}" width="${formatNumber(rack.widthMm - 2 * FRAME_RAIL_MM)}" height="${formatNumber(viewport.heightMm)}" />`,
     );
   }
   lines.push(
@@ -1663,6 +1659,18 @@ export function toSvg(
     (device, id) => renderDevice(device, id),
   );
   lines.push('  </g>');
+  // Bottom-align using the host's actual font metrics, not a fixed baseline
+  // offset. Paint last so larger titles cannot be covered by another row's frame.
+  for (const rack of scene.racks) {
+    const faceName = rack.face === 'front' ? 'Front' : 'Rear';
+    const title =
+      rack.views.length === 1 && rack.face === 'front'
+        ? rack.name
+        : `${rack.name} · ${faceName}`;
+    lines.push(
+      `  <text class="rackdown-rack-title" x="${formatNumber(rack.xMm + rack.widthMm / 2)}" y="${formatNumber(rack.yMm - FRAME_CROSSBAR_MM - FRAME_TITLE_GAP_MM)}" text-anchor="middle" dominant-baseline="text-after-edge">${escapeXml(title)}</text>`,
+    );
+  }
   appendRenderedItems(
     lines,
     scene.externals,

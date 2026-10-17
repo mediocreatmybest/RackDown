@@ -75,7 +75,11 @@ core:1 -- host:1`),
       expect(svg).toContain(
         'class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45"',
       );
-      expect(svg).toContain('<rect x="7.3" y="0" width="468" height="266.7"');
+      const [, , viewportY, , viewportHeight] =
+        svg.match(/viewBox="([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+)"/) ?? [];
+      expect(svg).toContain(
+        `<rect x="7.3" y="${viewportY}" width="468" height="${viewportHeight}"`,
+      );
       expect(svg).toContain(
         'class="rackdown-frame" aria-hidden="true" pointer-events="none"',
       );
@@ -89,6 +93,63 @@ core:1 -- host:1`),
       expect(svg).toContain(theme === 'light' ? '#dbe2e9' : '#334155');
       if (theme === 'auto')
         expect(svg).toContain('@media (prefers-color-scheme: dark)');
+    },
+  );
+
+  it('bottom-aligns host-sized titles above crossbars and paints them after every frame', () => {
+    const svg = toSvg(
+      resolve(parse('rack "gyp" 6U views front rear\nrack "gyp" 6U')),
+    );
+    const titles = [
+      ...svg.matchAll(/<text class="rackdown-rack-title"[^>]+>/g),
+    ];
+    expect(titles).toHaveLength(3);
+    for (const title of titles) {
+      expect(title[0]).toContain('dominant-baseline="text-after-edge"');
+      expect(title.index).toBeGreaterThan(
+        svg.lastIndexOf('class="rackdown-frame-outline"'),
+      );
+    }
+    expect(svg).toContain('font-size: var(--rackdown-title-size, 14px)');
+  });
+
+  it.each(['light', 'dark', 'auto'] as const)(
+    'uses the rack stroke override in %s mode',
+    (theme) => {
+      const svg = toSvg(resolve(parse('rack "Rack" 6U')), { theme });
+      const rules = svg.match(/\.rackdown-frame-outline \{[^}]+\}/g) ?? [];
+      expect(rules[0]).toContain(
+        'stroke: var(--rackdown-rack-stroke, #475569)',
+      );
+      if (theme !== 'light')
+        expect(rules[1]).toContain(
+          'stroke: var(--rackdown-rack-stroke, #94a3b8)',
+        );
+      expect(rules.join('')).not.toContain('--rackdown-device-stroke');
+    },
+  );
+
+  it.each(['bottom', 'top'])(
+    'does not clip retained device overflow vertically with U1 at %s',
+    (u1) => {
+      const layout = resolve(
+        parse(
+          `rack "Overflow" 6U u1 ${u1}\n0 1U device "Below"\n6 2U device "Above"`,
+        ),
+      );
+      expect(layout.devices).toHaveLength(2);
+      const svg = toSvg(layout);
+      const clip = svg.match(
+        /<clipPath id="[^"]+-rack-interiors"[^>]*>\s*<rect x="[^"]+" y="([\d.-]+)" width="[^"]+" height="([\d.-]+)"/,
+      );
+      expect(clip).not.toBeNull();
+      const top = Number(clip?.[1]);
+      const bottom = top + Number(clip?.[2]);
+      for (const device of layout.devices) {
+        expect(top).toBeLessThan(device.yMm);
+        expect(bottom).toBeGreaterThan(device.yMm + device.heightMm);
+        expect(svg).toContain(`>${device.label}</text>`);
+      }
     },
   );
 });
