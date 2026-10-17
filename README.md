@@ -18,6 +18,16 @@ core:2 -- [[Upstream Rack]]
 power:1 -- host:power1
 ```
 
+> [!NOTE]
+> Want To Contribute?
+>
+>Do you see any issues, does the syntax suck, maybe you have suggestions, or fixes, please open an issue otherwise you could submit a pull request.
+>Connector routing and layout is something that needs love and attention, so feel free to contribute improvements or suggestions.
+>Do I have too much waffling here, or too much text perhaps?
+>Just imagine, you could help fix that problem! YES, YOU!
+>
+>See [contributing](CONTRIBUTING.md) for more fun and excitement!
+
 Routing or connection options are also available within RackDown, supporting mini clusters, power, etc. _(Please check the examples folder)_
 
 For example:
@@ -177,15 +187,6 @@ pnpm dev
 ```
 
 The playground should then be available at <http://127.0.0.1:4173>.
-
-### Want To Contribute?
-
-Do you see any issues, or suggestions, maybe fixes, please open an issue or submit a pull request.
-Connector routing is something that needs love and attention, so feel free to contribute improvements or suggestions.
-Do I have too much waffling here, or too much text perhaps?
-Just imagine, you could help fix that problem! YES, YOU!
-
-See [contributing](CONTRIBUTING.md) for more fun and excitement!
 
 ## Status and documentation
 
