@@ -62,6 +62,12 @@ function hydrateSvg(diagram: TestElement, source: string): void {
   const svg = appendFromOpening(diagram, 'svg', svgOpening);
 
   for (const match of source.matchAll(
+    /<rect\s+([^>]*class="rackdown-rack"[^>]*)\/>/g,
+  )) {
+    appendFromOpening(svg, 'rect', match[1] as string);
+  }
+
+  for (const match of source.matchAll(
     /<(path|line)\s+([^>]*class="[^"]*rackdown-connection[^"]*"[^>]*)>\s*<title>([^<]*)<\/title>/g,
   )) {
     const route = appendFromOpening(
@@ -143,6 +149,45 @@ describe('per-block connection views', () => {
     vi.mocked(resolve).mockClear();
   });
 
+  it.each([6, 12, 42, 52])(
+    'keeps a %iU rack the same CSS size as routing space grows',
+    (units) => {
+      const source = `rack "Lab" ${units}U\n4 switch "Core" as core\n2 server "Server" as server`;
+      const connections = [
+        '',
+        '\ncore:1 -- server:1',
+        '\ncore:1 -- [[An external endpoint beyond the rack]]',
+        Array.from(
+          { length: 20 },
+          (_, index) => `\ncore:${index} -- [[External ${index}]]`,
+        ).join(''),
+      ];
+      const fixtures = connections.map((routes) => block(source + routes));
+      const sizes = fixtures.map(({ diagram }) => {
+        const svg = diagram.querySelector('svg') as TestElement;
+        const box = (svg.getAttribute('viewBox') ?? '').split(' ').map(Number);
+        // Before explicit presentation sizing, the host CSS fits the entire viewBox.
+        const width =
+          Number.parseFloat(svg.style.getPropertyValue('width')) || 100;
+        const rack = svg.querySelector('.rackdown-rack') as TestElement;
+        return {
+          width:
+            (Number(rack.getAttribute('width')) * width) / (box[2] as number),
+          height:
+            (Number(rack.getAttribute('height')) * width) / (box[2] as number),
+          svgWidth: width,
+        };
+      });
+      for (const size of sizes) {
+        expect(size.width).toBeCloseTo(sizes[0]?.width ?? 0);
+        expect(size.height).toBeCloseTo(sizes[0]?.height ?? 0);
+      }
+      expect(sizes[0]?.width).toBeCloseTo(100);
+      expect(sizes[3]?.svgWidth).toBeGreaterThan(sizes[0]?.svgWidth ?? 0);
+      for (const { controller } of fixtures) controller.unload();
+    },
+  );
+
   it('defaults to All with accessible choices and a semantic count', () => {
     const fixture = block();
     const select = fixture.controls?.querySelector('select');
@@ -164,6 +209,39 @@ describe('per-block connection views', () => {
     expect(status?.getAttribute('aria-atomic')).toBe('true');
     expect(routes(fixture)).toHaveLength(5);
   });
+
+  it.each([
+    'rack "Lab" 12U views front rear\n4 switch "Core" as core\nrear 2 server "Server" as server',
+    'rack "Lab" 12U views rear\nrear 4 switch "Core" as core\nrear 2 server "Server" as server',
+    'rack "Lab" 12U\n4 switch "Core" as core\nrack "Other" 42U\n2 server "Server" as server',
+  ])(
+    'keeps all projected racks stable across connection changes: %s',
+    (source) => {
+      const first = block(source);
+      const connected = block(
+        `${source}\ncore:1 -- server:1 category network\ncore:2 -- [[WAN]] category power`,
+      );
+      function displayedRacks(fixture: BlockFixture) {
+        const svg = fixture.diagram.querySelector('svg') as TestElement;
+        const boxWidth = Number(svg.getAttribute('viewBox')?.split(' ')[2]);
+        const scale =
+          Number.parseFloat(svg.style.getPropertyValue('width')) / boxWidth;
+        return svg
+          .querySelectorAll('.rackdown-rack')
+          .map((rack) => [
+            Number(rack.getAttribute('width')) * scale,
+            Number(rack.getAttribute('height')) * scale,
+          ]);
+      }
+      expect(displayedRacks(connected)).toEqual(displayedRacks(first));
+      selectView(connected, 'network');
+      expect(displayedRacks(connected)).toEqual(displayedRacks(first));
+      selectView(connected, 'console');
+      expect(displayedRacks(connected)).toEqual(displayedRacks(first));
+      first.controller.unload();
+      connected.controller.unload();
+    },
+  );
 
   it.each([
     ['network', 2],

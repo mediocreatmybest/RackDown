@@ -23,6 +23,8 @@ export class TestElement extends EventTarget {
   onInnerHtml: ((value: string) => void) | undefined;
   value = '';
   hidden = false;
+  clientWidth = 100;
+  scrollLeft = 0;
   focus = vi.fn();
   ownerDocument = { defaultView: { open: vi.fn() } };
 

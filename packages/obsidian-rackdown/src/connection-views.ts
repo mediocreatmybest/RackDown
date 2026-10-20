@@ -11,6 +11,7 @@ import {
 } from './render-rackdown.js';
 import { RackDownRouteInteractions } from './route-interactions.js';
 import type { RackDownPluginSettings } from './settings.js';
+import { RackDownViewport } from './viewport.js';
 
 export type RackDownConnectionView = 'all' | ConnectionCategory;
 
@@ -31,6 +32,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
   private selected: RackDownConnectionView = 'all';
   private status: HTMLElement | undefined;
   private routeInteractions: RackDownRouteInteractions | undefined;
+  private viewport: RackDownViewport | undefined;
 
   constructor(
     containerEl: HTMLElement,
@@ -44,6 +46,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
   }
 
   override onload(): void {
+    this.viewport = this.addChild(new RackDownViewport(this.diagram));
     if (this.controls) this.buildControls(this.controls);
     this.renderSelectedView();
   }
@@ -94,6 +97,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
       this.settings,
     );
     this.diagram.innerHTML = rendered.svg;
+    this.viewport?.setSvg(this.diagram.querySelector('svg') ?? undefined);
     decorateRackDownHostLinks(this.diagram, rendered.devices);
 
     this.routeInteractions = this.addChild(
