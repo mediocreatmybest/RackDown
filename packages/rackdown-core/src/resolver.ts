@@ -490,7 +490,9 @@ export function resolve(
 
     const topOffsetU = rack.u1 === 'top' ? startU : rack.units - endU;
     const label =
-      definition?.model && placement.label === placement.deviceType
+      definition?.model &&
+      placement.explicitLabel !== true &&
+      placement.label === placement.deviceType
         ? definition.model
         : placement.label;
     if (!rack.views.includes(placement.mountFace)) {
