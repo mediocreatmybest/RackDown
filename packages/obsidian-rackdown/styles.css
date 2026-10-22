@@ -36,28 +36,63 @@
 }
 
 .rackdown-connection-view {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--input-height, 30px) 1.5em;
   align-items: center;
-  gap: var(--size-4-2);
-  margin-bottom: var(--size-4-2);
+  gap: var(--size-4-1, 4px);
+  margin-bottom: var(--size-4-2, 8px);
+  min-width: 0;
   color: var(--text-muted);
   font-size: var(--font-smallest);
+  line-height: 1.5;
+  opacity: 1;
 }
 
 .rackdown-connection-view-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--size-4-1);
+  gap: var(--size-4-1, 4px);
+  min-width: 0;
+  height: 100%;
+}
+
+.rackdown-connection-view-label > span,
+.rackdown-connection-view-status,
+.rackdown-connection-view-empty {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rackdown-connection-view-select {
+  flex: 0 1 10em;
+  min-width: 0;
   max-width: 100%;
+  height: 100%;
   font-size: inherit;
 }
 
 .rackdown-connection-view-status {
-  white-space: nowrap;
+  grid-row: 2;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rackdown-connection-view {
+    opacity: 0.7;
+  }
+
+  .rackdown-block:hover .rackdown-connection-view,
+  .rackdown-block:focus-within .rackdown-connection-view {
+    opacity: 1;
+  }
+}
+
+@media (any-pointer: coarse) {
+  .rackdown-connection-view {
+    opacity: 1;
+  }
 }
 
 .rackdown-diagram .rackdown-connection-hit {

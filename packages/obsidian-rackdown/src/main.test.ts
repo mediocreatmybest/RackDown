@@ -122,7 +122,11 @@ describe('Obsidian settings lifecycle', () => {
     } as unknown as MarkdownPostProcessorContext;
     const initial = new TestElement();
     await processor?.('rack "Lab" 12U', initial.asHtml(), context);
-    expect(initial.querySelector('.rackdown-connection-view')).toBeUndefined();
+    expect(initial.querySelector('.rackdown-connection-view')).toBeDefined();
+    expect(
+      initial.querySelector('.rackdown-connection-view-empty')?.textContent,
+    ).toBe('No connections');
+    expect(initial.querySelector('select')).toBeUndefined();
     expect(initial.querySelector('.rackdown-diagram')?.innerHTML).toContain(
       'data-connection-routing="perimeter"',
     );

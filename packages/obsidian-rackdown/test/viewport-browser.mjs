@@ -23,8 +23,8 @@ const server = createServer(async (request, response) => {
                 namespace: 'stub',
               }));
               builder.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({
-                contents:
-                  'export class MarkdownRenderChild { constructor(containerEl) { this.containerEl = containerEl; } }',
+                contents: `export * from ${JSON.stringify(fileURLToPath(new URL('test/obsidian-browser.js', root)))};`,
+                resolveDir: fileURLToPath(root),
               }));
             },
           },

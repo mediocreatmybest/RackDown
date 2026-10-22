@@ -80,10 +80,7 @@ export default class RackDownPlugin extends Plugin {
           : prepared.diagnostics;
         const block = element.createDiv({ cls: 'rackdown-block' });
         block.setAttribute('data-rackdown-theme', this.settings.theme);
-        const controls =
-          prepared.layout.connections.length > 0
-            ? block.createDiv({ cls: 'rackdown-connection-view' })
-            : undefined;
+        const controls = block.createDiv({ cls: 'rackdown-connection-view' });
         const diagram = block.createDiv({ cls: 'rackdown-diagram' });
         context.addChild(
           new RackDownConnectionViews(

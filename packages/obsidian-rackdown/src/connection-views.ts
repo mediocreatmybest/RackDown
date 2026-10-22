@@ -36,7 +36,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
 
   constructor(
     containerEl: HTMLElement,
-    private readonly controls: HTMLElement | undefined,
+    private readonly controls: HTMLElement,
     private readonly diagram: HTMLElement,
     private readonly prepared: PreparedRackDown,
     private readonly options: SvgRenderOptions,
@@ -47,11 +47,20 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
 
   override onload(): void {
     this.viewport = this.addChild(new RackDownViewport(this.diagram));
-    if (this.controls) this.buildControls(this.controls);
+    this.buildControls(this.controls);
     this.renderSelectedView();
   }
 
   private buildControls(controls: HTMLElement): void {
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', 'Connection controls');
+    if (this.prepared.layout.connections.length === 0) {
+      controls.createSpan({
+        cls: 'rackdown-connection-view-empty',
+        text: 'No connections',
+      });
+      return;
+    }
     const label = controls.createEl('label', {
       cls: 'rackdown-connection-view-label',
     });

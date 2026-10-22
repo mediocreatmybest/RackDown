@@ -1,3 +1,6 @@
+import { RackDownConnectionViews } from '../src/connection-views.ts';
+import { prepareRackDown } from '../src/render-rackdown.ts';
+import { DEFAULT_SETTINGS } from '../src/settings.ts';
 import { RackDownViewport } from '../src/viewport.ts';
 
 const results = document.querySelector('#results');
@@ -122,13 +125,120 @@ check(
   getComputedStyle(routed.diagram).overflowX === 'auto',
   'overflow is scrollable, not hidden',
 );
+function controlsFixture(width, count) {
+  const block = document
+    .querySelector('#fixtures')
+    .createDiv({ cls: 'rackdown-block' });
+  block.style.width = `${width}px`;
+  const controls = block.createDiv({ cls: 'rackdown-connection-view' });
+  const diagram = block.createDiv({ cls: 'rackdown-diagram' });
+  const source =
+    'rack "Lab" 52U\n50 switch "Core" as core\n2 server "Server" as server' +
+    Array.from(
+      { length: count },
+      (_, i) =>
+        `\ncore:${i} -- [[Endpoint ${i}]] category ${i % 2 ? 'power' : 'network'}`,
+    ).join('');
+  const controller = new RackDownConnectionViews(
+    block,
+    controls,
+    diagram,
+    prepareRackDown(source),
+    { namespace: `toolbar-${width}-${count}` },
+    DEFAULT_SETTINGS,
+  );
+  controller.load();
+  controllers.push({ controller, observer: { disconnect() {} } });
+  return { block, controls, diagram };
+}
+let reservedHeight;
+for (const width of [120, 240.25, 600]) {
+  const fixtures = [0, 1, 5].map((count) => controlsFixture(width, count));
+  await frames();
+  const offsets = fixtures.map(
+    ({ block, diagram }) =>
+      diagram.getBoundingClientRect().top - block.getBoundingClientRect().top,
+  );
+  check(
+    offsets.every((offset) => Math.abs(offset - offsets[0]) < 0.02),
+    `${width}px: zero/one/many connections reserve equal vertical space`,
+  );
+  check(
+    Boolean(
+      fixtures[0].controls.querySelector('.rackdown-connection-view-empty'),
+    ) && !fixtures[0].controls.querySelector('select'),
+    `${width}px: empty state has no unusable selector`,
+  );
+  for (const fixture of fixtures) {
+    const height = fixture.controls.getBoundingClientRect().height;
+    reservedHeight ??= height;
+    check(
+      Math.abs(height - reservedHeight) < 0.02 &&
+        fixture.controls.scrollWidth <= fixture.controls.clientWidth,
+      `${width}px: controls neither wrap nor overflow`,
+    );
+  }
+  const { controls, diagram, block } = fixtures[2];
+  const select = controls.querySelector('select');
+  const initial = diagram
+    .querySelector('.rackdown-rack')
+    .getBoundingClientRect();
+  const diagramOffset = () =>
+    diagram.getBoundingClientRect().top - block.getBoundingClientRect().top;
+  const toolbarTop = diagramOffset();
+  const widthBefore = diagram.querySelector('svg').style.width;
+  diagram.scrollLeft = 20;
+  diagram.scrollTop = 100;
+  const scroll = [diagram.scrollLeft, diagram.scrollTop];
+  select.value = 'power';
+  select.dispatchEvent(new Event('change'));
+  await frames();
+  const after = diagram.querySelector('.rackdown-rack').getBoundingClientRect();
+  check(
+    Math.abs(after.width - initial.width) < 0.02 &&
+      Math.abs(after.height - initial.height) < 0.02 &&
+      diagram.querySelector('svg').style.width === widthBefore,
+    `${width}px: category switching preserves rack scale`,
+  );
+  check(
+    diagram.scrollLeft === scroll[0] &&
+      diagram.scrollTop === scroll[1] &&
+      diagramOffset() === toolbarTop,
+    `${width}px: category switching preserves scrolling and layout (${diagram.scrollLeft},${diagram.scrollTop} expected ${scroll}; offset ${diagramOffset()} expected ${toolbarTop})`,
+  );
+  check(
+    fixtures[1].controls.querySelector('select').value === 'all',
+    `${width}px: block selection is independent`,
+  );
+  check(
+    controls.querySelector('.rackdown-connection-view-status').textContent ===
+      'Showing 2 of 5 connections',
+    `${width}px: focused category count stays accurate`,
+  );
+  const subdued =
+    matchMedia('(hover: hover) and (pointer: fine)').matches &&
+    !matchMedia('(any-pointer: coarse)').matches &&
+    !block.matches(':hover');
+  check(
+    Number(getComputedStyle(controls).opacity) === (subdued ? 0.7 : 1),
+    `${width}px: idle controls respect the device hover capability`,
+  );
+  select.focus();
+  check(
+    getComputedStyle(controls).opacity === '1' &&
+      diagramOffset() === toolbarTop,
+    `${width}px: keyboard focus reveals controls without movement`,
+  );
+  select.blur();
+}
+
 const count = messages.filter((message) => message.startsWith('FAIL')).length;
 results.prepend(
   `${count ? 'FAIL' : 'PASS'}: ${messages.length} checks, ${count} failures\n\n`,
 );
 window.addEventListener('pagehide', () =>
   controllers.forEach(({ controller, observer }) => {
-    controller.onunload();
+    controller.unload();
     observer.disconnect();
   }),
 );

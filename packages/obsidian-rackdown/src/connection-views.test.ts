@@ -96,7 +96,7 @@ function hydrateSvg(diagram: TestElement, source: string): void {
 
 interface BlockFixture {
   block: TestElement;
-  controls: TestElement | undefined;
+  controls: TestElement;
   diagram: TestElement;
   controller: RackDownConnectionViews;
 }
@@ -104,15 +104,12 @@ interface BlockFixture {
 function block(source = SOURCE, namespace = 'note-block-1'): BlockFixture {
   const prepared = prepareRackDown(source);
   const block = new TestElement('div', 'rackdown-block');
-  const controls =
-    prepared.layout.connections.length > 0
-      ? block.createDiv({ cls: 'rackdown-connection-view' })
-      : undefined;
+  const controls = block.createDiv({ cls: 'rackdown-connection-view' });
   const diagram = block.createDiv({ cls: 'rackdown-diagram' });
   diagram.onInnerHtml = (svg) => hydrateSvg(diagram, svg);
   const controller = new RackDownConnectionViews(
     block.asHtml(),
-    controls?.asHtml(),
+    controls.asHtml(),
     diagram.asHtml(),
     prepared,
     { namespace },
@@ -290,11 +287,43 @@ describe('per-block connection views', () => {
     expect(fixture.diagram.innerHTML).not.toContain('Selected 1 of 1');
   });
 
-  it('omits controls for a zero-connection document', () => {
+  it('keeps an accessible empty controls container for a zero-connection document', () => {
     const fixture = block('rack "Lab" 12U\n10 switch "Core"');
-    expect(fixture.controls).toBeUndefined();
+    expect(fixture.controls.getAttribute('role')).toBe('group');
+    expect(fixture.controls.getAttribute('aria-label')).toBe(
+      'Connection controls',
+    );
+    expect(
+      fixture.controls.querySelector('.rackdown-connection-view-empty')
+        ?.textContent,
+    ).toBe('No connections');
+    expect(fixture.controls.parentElement).toBe(fixture.block);
+    expect(fixture.diagram.contains(fixture.controls)).toBe(false);
     expect(fixture.block.querySelector('select')).toBeUndefined();
     expect(fixture.diagram.innerHTML).toContain('<svg');
+  });
+
+  it('keeps the controls, rack size and scroll position when switching categories', () => {
+    const fixture = block();
+    const select = fixture.controls.querySelector('select');
+    const svg = fixture.diagram.querySelector('svg') as TestElement;
+    const width = svg.style.getPropertyValue('width');
+    const height = svg.style.getPropertyValue('height');
+    fixture.diagram.scrollLeft = 20;
+    fixture.diagram.asHtml().scrollTop = 50;
+    for (const category of ['network', 'power', 'all'] as const) {
+      selectView(fixture, category);
+      const replacement = fixture.diagram.querySelector('svg') as TestElement;
+      expect(replacement.style.getPropertyValue('width')).toBe(width);
+      expect(replacement.style.getPropertyValue('height')).toBe(height);
+      expect(fixture.diagram.scrollLeft).toBe(20);
+      expect(fixture.diagram.asHtml().scrollTop).toBe(50);
+      expect(fixture.controls.querySelector('select')).toBe(select);
+    }
+    const markup = fixture.diagram.innerHTML;
+    fixture.controller.unload();
+    selectView(fixture, 'console');
+    expect(fixture.diagram.innerHTML).toBe(markup);
   });
 
   it('keeps category state independent between rendered blocks', () => {
