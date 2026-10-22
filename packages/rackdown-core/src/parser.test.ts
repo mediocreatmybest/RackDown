@@ -4,6 +4,119 @@ import { toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
 
 describe('parse', () => {
+  it.each(['42U', '0U', '0.5U', '121U'])(
+    'treats quoted rack name %s as literal text rather than height',
+    (name) => {
+      const result = parse(`rack "${name}" 12U`);
+      expect(result.racks[0]).toMatchObject({ name, units: 12 });
+      expect(result.diagnostics).toEqual([]);
+    },
+  );
+
+  it.each(['2U', '0.5U', '0U'])(
+    'treats quoted shorthand label %s as a literal device label',
+    (label) => {
+      const result = parse(`rack "Rack" 12U\n1 "${label}" as item`);
+      expect(result.devices[0]).toMatchObject({
+        deviceType: 'device',
+        label,
+        alias: 'item',
+        explicitLabel: true,
+      });
+      expect(result.devices[0]?.explicitUHeight).toBeUndefined();
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'warn',
+          line: 2,
+          column: 3,
+          message: 'Device type is missing; using generic device.',
+        }),
+      ]);
+    },
+  );
+
+  it('retains omitted rack names and unquoted integer/fractional device heights', () => {
+    const result = parse(
+      'rack 120U\n1 2U device "2U"\n4 0.5U device "0.5U"\n6 2U',
+    );
+    expect(result.racks[0]).toMatchObject({ name: 'Rack', units: 120 });
+    expect(
+      result.devices.map(({ label, explicitUHeight }) => ({
+        label,
+        explicitUHeight,
+      })),
+    ).toEqual([
+      { label: '2U', explicitUHeight: 2 },
+      { label: '0.5U', explicitUHeight: 0.5 },
+      { label: 'device', explicitUHeight: 2 },
+    ]);
+    expect(result.diagnostics.map(({ message }) => message)).toEqual([
+      'Rack name is missing; using "Rack".',
+      'Device type is missing; using generic device.',
+    ]);
+  });
+
+  it.each([
+    'rack "42U"',
+    'rack "42U',
+    'rack "Rack" "12U"',
+    'rack "42U" invalid',
+  ])(
+    'does not recover a quoted name or height as a dimension: %s',
+    (source) => {
+      const result = parse(source);
+      expect(result.racks).toEqual([]);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          line: 1,
+          message: 'Rack height is missing or invalid.',
+        }),
+      );
+      if (source === 'rack "42U') {
+        expect(result.diagnostics).toContainEqual(
+          expect.objectContaining({
+            severity: 'warn',
+            line: 1,
+            column: 6,
+            message: 'Unterminated quoted rack name; recovered to end of line.',
+          }),
+        );
+      }
+    },
+  );
+
+  it('recovers an unterminated U-like device label without inventing a height', () => {
+    const result = parse('rack "Rack" 12U\n1 "2U');
+    expect(result.devices[0]).toMatchObject({
+      label: '2U',
+      deviceType: 'device',
+    });
+    expect(result.devices[0]?.explicitUHeight).toBeUndefined();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        line: 2,
+        column: 3,
+        message: 'Unterminated quoted device label; recovered to end of line.',
+      }),
+    );
+  });
+
+  it('still rejects over-limit heights after a quoted U-like rack name', () => {
+    const result = parse('rack "42U" 121U');
+    expect(result.racks).toEqual([]);
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        line: 1,
+        column: 12,
+        message:
+          'Rack height 121U exceeds the maximum supported height of 120U.',
+      }),
+    ]);
+  });
+
   it.each([1, 6, 42, 120])('accepts a %iU rack', (units) => {
     const result = parse(`rack "Supported" ${units}U`);
 

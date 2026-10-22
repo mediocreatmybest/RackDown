@@ -493,6 +493,14 @@ export function resolve(
       definition?.model && placement.label === placement.deviceType
         ? definition.model
         : placement.label;
+    if (!rack.views.includes(placement.mountFace)) {
+      warnAt(
+        diagnostics,
+        placement.source,
+        `Device "${label}" is mounted on the ${placement.mountFace} face of rack "${rack.name}", which is excluded from the requested views.`,
+        `Add \`views ${[...rack.views, placement.mountFace].join(' ')}\` to the rack declaration to show both mounting faces.`,
+      );
+    }
     const yMm = rack.yMm + rackUnitsToMm(topOffsetU);
     const heightMm = rackUnitsToMm(uHeight);
     const portAnchor = {

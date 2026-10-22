@@ -1,10 +1,127 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceIndex } from './devices.js';
 import { parse } from './parser.js';
+import { toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
 import { DIAGRAM_RACK_WIDTH_MM, inchesToMm, rackUnitsToMm } from './units.js';
 
 describe('resolve', () => {
+  describe('devices on excluded mounting faces', () => {
+    it.each([
+      {
+        views: 'front',
+        visible: '10 switch "Visible" as visible',
+        hidden: '  rear 4 pdu "Hidden" as hidden',
+        face: 'rear',
+        column: 3,
+        suggested: 'front rear',
+      },
+      {
+        views: 'rear',
+        visible: 'rear 10 switch "Visible" as visible',
+        hidden: '    4 pdu "Hidden" as hidden',
+        face: 'front',
+        column: 5,
+        suggested: 'rear front',
+      },
+    ])(
+      'warns once for an excluded $face face in views $views, retaining layout and rendering policy',
+      ({ views, visible, hidden, face, column, suggested }) => {
+        for (const connectionCount of [0, 1, 2]) {
+          const connections = [
+            'visible:1 -- hidden:1 category network',
+            'hidden:2 -- visible:2 category power',
+          ].slice(0, connectionCount);
+          const source = [
+            `rack "Network" 12U views ${views}`,
+            visible,
+            hidden,
+            ...connections,
+          ].join('\n');
+          const layout = resolve(parse(source));
+          const dual = resolve(
+            parse(source.replace(`views ${views}`, `views ${suggested}`)),
+          );
+          expect(layout.racks[0]?.views).toEqual([views]);
+          expect(layout.devices).toEqual(dual.devices);
+          expect(layout.connections).toEqual(dual.connections);
+          expect(layout.devices).toHaveLength(2);
+          expect(layout.devices[1]).toMatchObject({
+            label: 'Hidden',
+            mountFace: face,
+            xMm: 0,
+            yMm: 355.6,
+            widthMm: DIAGRAM_RACK_WIDTH_MM,
+            heightMm: 44.45,
+          });
+          expect(layout.connections).toHaveLength(connectionCount);
+          expect(layout.diagnostics).toEqual([
+            {
+              severity: 'warn',
+              line: 3,
+              column,
+              message: `Device "Hidden" is mounted on the ${face} face of rack "Network", which is excluded from the requested views.`,
+              hint: `Add \`views ${suggested}\` to the rack declaration to show both mounting faces.`,
+            },
+          ]);
+          expect(dual.diagnostics).toEqual([]);
+          const svg = toSvg(layout, { namespace: 'hidden-face' });
+          expect(svg).toContain(`data-face="${views}"`);
+          expect(svg).not.toContain(`data-face="${face}"`);
+          expect(svg).toContain('data-device-id="device-2"');
+          expect(svg).not.toContain('data-device-id="device-3"');
+          expect(svg).not.toContain('data-connection-id=');
+          expect(svg).toBe(
+            toSvg({ ...layout, diagnostics: [] }, { namespace: 'hidden-face' }),
+          );
+          expect(resolve(parse(source))).toEqual(layout);
+        }
+      },
+    );
+
+    it.each(['front rear', 'rear front'])(
+      'does not warn when both faces are requested in order %s',
+      (views) => {
+        const layout = resolve(
+          parse(
+            `rack "Network" 12U views ${views}\n10 switch "Core" as core\nrear 4 pdu "Rear PDU" as pdu\ncore:1 -- pdu:1 category network`,
+          ),
+        );
+        expect(layout.racks[0]?.views).toEqual(views.split(' '));
+        expect(layout.diagnostics).toEqual([]);
+        const svg = toSvg(layout, { namespace: 'dual-view' });
+        expect(svg).toContain('data-device-id="device-2"');
+        expect(svg).toContain('data-device-id="device-3"');
+        expect(svg).toContain('data-connection-id=');
+      },
+    );
+
+    it('warns for each hidden device in the default front view', () => {
+      const layout = resolve(
+        parse('rack "Network" 12U\nrear 4 pdu "First"\nrear 2 pdu "Second"'),
+      );
+      expect(layout.devices).toHaveLength(2);
+      expect(layout.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'warn',
+          line: 2,
+          column: 1,
+          message: expect.stringContaining(
+            'Device "First" is mounted on the rear face',
+          ),
+        }),
+        expect.objectContaining({
+          severity: 'warn',
+          line: 3,
+          column: 1,
+          message: expect.stringContaining(
+            'Device "Second" is mounted on the rear face',
+          ),
+        }),
+      ]);
+    });
+  });
+
   it('normalises bottom-up multi-U placement to top-origin geometry', () => {
     const layout = resolve(
       parse(`rack "Rack" 12U 19in u1 bottom\n10 2U server "PVE01"`),

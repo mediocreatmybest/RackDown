@@ -129,9 +129,10 @@ function parseRack(
   let cursor = 1;
   let name = 'Rack';
   const possibleName = tokens[cursor];
-  const possibleUnits = possibleName
-    ? parseRackUnits(possibleName.value)
-    : undefined;
+  const possibleUnits =
+    possibleName && !possibleName.quoted
+      ? parseRackUnits(possibleName.value)
+      : undefined;
 
   if (possibleName && possibleUnits === undefined) {
     name = possibleName.value;
@@ -156,7 +157,10 @@ function parseRack(
   }
 
   const unitsToken = tokens[cursor];
-  const units = unitsToken ? parseRackUnits(unitsToken.value) : undefined;
+  const units =
+    unitsToken && !unitsToken.quoted
+      ? parseRackUnits(unitsToken.value)
+      : undefined;
   if (units === undefined || units <= 0) {
     diagnostics.push({
       severity: 'error',
@@ -314,9 +318,10 @@ function parseDevice(
   let cursor = positionIndex + 1;
   let explicitUHeight: number | undefined;
   const possibleHeight = tokens[cursor];
-  const parsedHeight = possibleHeight
-    ? parseRackUnits(possibleHeight.value)
-    : undefined;
+  const parsedHeight =
+    possibleHeight && !possibleHeight.quoted
+      ? parseRackUnits(possibleHeight.value)
+      : undefined;
   if (parsedHeight !== undefined) {
     explicitUHeight = parsedHeight;
     cursor += 1;

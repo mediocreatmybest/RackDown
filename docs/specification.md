@@ -99,6 +99,8 @@ Rack height must be a positive whole number of rack units, for example `12U` or 
 
 If rack width is omitted, resolution uses 19 inches as the layout default without warning.
 
+Quoted rack names and device labels are literal text, even when they resemble U-heights. For example, `rack "42U" 12U` names a 12U rack `42U`, and `1 "2U"` labels a generic device `2U`. Only unquoted tokens are interpreted as U-heights; the label-only device form still warns that its type is missing.
+
 Device positions and heights may use fractional U values, but the rack declaration itself uses whole rack units.
 
 ### Front and rear views
@@ -194,6 +196,8 @@ Aliases must be non-empty and contain no whitespace, quotes, colons, brackets or
 Requesting a rear view does not copy every front-mounted device into it.
 
 A front-mounted placement belongs to the front face and a rear-mounted placement belongs to the rear face. Known facts such as `fullDepth` are descriptive and do not currently cause automatic opposite-face rendering.
+
+If a device's mounting face is excluded by its rack's requested views, resolution warns at the device placement and suggests including that face. The semantic device and its connections are retained, and rendering still follows the requested views.
 
 If we add opposite-face enrichment later, it should continue to describe the same physical placement rather than creating a second source device behind the scenes.
 

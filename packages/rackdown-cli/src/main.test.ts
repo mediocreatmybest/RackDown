@@ -638,7 +638,9 @@ describe('runCli', () => {
     const code = await runCli(['schedule', 'rack.rackdown'], memory.env);
 
     expect(code).toBe(0);
-    expect(memory.stderr()).toBe('');
+    expect(memory.stderr()).toContain(
+      'rack.rackdown:3:1: warn: Device "PVE01" is mounted on the rear face',
+    );
     expect(memory.wasWriteFileCalled()).toBe(false);
     expect(memory.stdout()).toContain(
       '| Connection | Category | Endpoint A | Port A | Location A | Endpoint B | Port B | Location B | Media |',
