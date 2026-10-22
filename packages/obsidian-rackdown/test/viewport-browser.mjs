@@ -44,8 +44,9 @@ const server = createServer(async (request, response) => {
       pre { white-space: pre-wrap; }
     </style><h1>RackDown scrollbar regression</h1><pre id="results">Running…</pre><div id="fixtures"></div><script type="module" src="tests.js"></script></html>`);
   } catch (error) {
+    console.error('RackDown viewport regression server failed:', error);
     response.statusCode = 500;
-    response.end(String(error));
+    response.end('Internal server error');
   }
 });
 server.listen(4180, '127.0.0.1', () =>

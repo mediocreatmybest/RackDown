@@ -90,7 +90,7 @@ export class RackDownViewport extends MarkdownRenderChild {
 
   private contentWidth(): number {
     const element = this.containerEl;
-    if (element.clientWidth <= 0) return 0;
+    if (element.getBoundingClientRect().width <= 0) return 0;
     const view = element.ownerDocument.defaultView;
     if (!view) return element.clientWidth;
     // A zero-height block measures the live content box without rounding CSS

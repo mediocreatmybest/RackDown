@@ -73,10 +73,16 @@ describe('viewport lifecycle', () => {
     disconnect = vi.fn();
   });
 
-  function fixture(width = 250) {
+  function fixture(width = 250, rendered = true) {
     const diagram = new TestElement();
     let contentWidth = width;
     diagram.clientWidth = Math.round(width);
+    vi.spyOn(diagram, 'getBoundingClientRect').mockImplementation(() => ({
+      left: 0,
+      top: 0,
+      width: rendered ? contentWidth : 0,
+      height: rendered ? 500 : 0,
+    }));
     Object.assign(diagram.ownerDocument.defaultView, {
       getComputedStyle: () => ({
         width: `${contentWidth}px`,
@@ -143,7 +149,7 @@ describe('viewport lifecycle', () => {
     viewport.unload();
   });
 
-  it.each([235.25, 235.75])(
+  it.each([0.25, 0.49, 0.75, 235.25, 235.75])(
     'uses fractional content width %s consistently before and after observation',
     (width) => {
       const { svg, viewport, resize } = fixture(width);
@@ -156,6 +162,36 @@ describe('viewport lifecycle', () => {
       viewport.unload();
     },
   );
+
+  it('skips probing a non-rendered container even if its resolved width is positive', () => {
+    const { diagram, svg, resize, viewport } = fixture(250, false);
+    expect(svg.style.getPropertyValue('width')).toBe('800px');
+    expect(diagram.scrollLeft).toBe(0);
+    resize(400);
+    expect(svg.style.getPropertyValue('width')).toBe('800px');
+    expect(diagram.children).toEqual([svg]);
+    viewport.unload();
+  });
+
+  it('recovers from zero width into a visible subpixel pane and preserves later scrolling', () => {
+    const { diagram, svg, resize, viewport } = fixture(0);
+    resize(0.25);
+    expect(Number.parseFloat(svg.style.getPropertyValue('width'))).toBeCloseTo(
+      0.4,
+    );
+    expect(Number.parseFloat(svg.style.getPropertyValue('height'))).toBeCloseTo(
+      1.1,
+    );
+    diagram.scrollLeft = 0.1;
+    resize(0);
+    expect(Number.parseFloat(svg.style.getPropertyValue('width'))).toBeCloseTo(
+      0.4,
+    );
+    resize(250);
+    expect(svg.style.getPropertyValue('width')).toBe('400px');
+    expect(diagram.scrollLeft).toBe(0.1);
+    viewport.unload();
+  });
 
   it('uses the live gutter width when an observer entry predates scrollbar changes', () => {
     const { svg, diagram, resize, viewport } = fixture(250.75);
