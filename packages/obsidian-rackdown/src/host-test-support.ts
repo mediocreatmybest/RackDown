@@ -26,7 +26,18 @@ export class TestElement extends EventTarget {
   clientWidth = 100;
   scrollLeft = 0;
   focus = vi.fn();
-  ownerDocument = { defaultView: { open: vi.fn() } };
+  ownerDocument = {
+    createElement: (tag: string) => new TestElement(tag),
+    defaultView: {
+      open: vi.fn(),
+      getComputedStyle: (element: TestElement) => ({
+        width: `${element.parentElement?.clientWidth ?? element.clientWidth}px`,
+        paddingLeft: '0px',
+        paddingRight: '0px',
+        boxSizing: 'border-box',
+      }),
+    },
+  };
 
   constructor(
     readonly tag = 'div',

@@ -72,20 +72,38 @@ export class RackDownViewport extends MarkdownRenderChild {
       'aria-label',
       'Rack diagram, scroll to explore',
     );
-    this.availableWidth = this.containerEl.clientWidth;
+    this.availableWidth = this.contentWidth();
     // Use the owning window so detached Obsidian panes have the correct realm.
     const Observer = this.containerEl.ownerDocument.defaultView?.ResizeObserver;
     if (Observer) {
       this.observer = new Observer((entries) => {
         const entry = entries.find(({ target }) => target === this.containerEl);
-        const width = entry?.contentRect.width;
-        if (width === undefined || width <= 0 || width === this.availableWidth)
-          return;
+        if (!entry) return;
+        const width = this.contentWidth();
+        if (width <= 0 || width === this.availableWidth) return;
         this.availableWidth = width;
         this.applySize();
       });
       this.observer.observe(this.containerEl);
     }
+  }
+
+  private contentWidth(): number {
+    const element = this.containerEl;
+    if (element.clientWidth <= 0) return 0;
+    const view = element.ownerDocument.defaultView;
+    if (!view) return element.clientWidth;
+    // A zero-height block measures the live content box without rounding CSS
+    // pixels or counting padding/gutters. Integer client/offset widths lose
+    // precision under UI zoom; queued observer entries can predate gutter changes.
+    const measure = element.ownerDocument.createElement('div');
+    measure.style.cssText =
+      'display:block;box-sizing:border-box;width:100%;min-width:0;max-width:none;height:0;min-height:0;margin:0;padding:0;border:0;';
+    measure.setAttribute('aria-hidden', 'true');
+    element.append(measure);
+    const width = Number.parseFloat(view.getComputedStyle(measure).width);
+    measure.remove();
+    return Number.isFinite(width) ? width : element.clientWidth;
   }
 
   setSvg(svg: SVGSVGElement | undefined): void {
