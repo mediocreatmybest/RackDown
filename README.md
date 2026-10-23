@@ -155,13 +155,15 @@ and per-connection widths retain highest priority. Auto theme follows Obsidian.
 Settings are saved across plugin reloads. Reading View updates when a setting changes;
 existing Live Preview blocks pick up changes on their next normal render.
 
-Each rendered block with connections also has a compact selector for **All**,
+Each rendered block reserves space for connection controls. Blocks without
+connections show **No connections**; blocks with connections offer **All**,
 **Network**, **Power**, **Console** and **Unclassified** views. **All** is the
 default. The selection is temporary and local to that block; it is not written
 to settings or source. Focused views keep rack and device placement unchanged.
 Changing category resets any connections hidden through the route context menu.
 
-Diagrams automatically use responsive sizing to fit the note pane. Hover or
+Diagrams fit rack width to the note pane while retaining a scrollable viewport
+for routed connections and tall racks. Hover or
 keyboard-focus a connection to emphasise it: its resolved visible width grows
 by 1 CSS pixel, including explicit per-connection widths, without an upper cap.
 A transparent 10 CSS pixel hit target follows each route in Obsidian only,
@@ -194,6 +196,7 @@ FYI, I'm still trying to figure things out. So, no RackDown packages or releases
 The Obsidian adapter has been tested on desktop; mobile device validation remains outstanding, and is my primary method of testing.
 
 - [Library specifications](docs/specification.md)
+- [Authoring cheat sheet](docs/authoring-cheat-sheet.md)
 - [Architecture and integrations](docs/architecture.md)
 - [Upstream catalogue, licences and generation](docs/upstream-catalogue.md)
 - [Why RackDown exists, and really, should it?](HISTORY.md)

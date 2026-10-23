@@ -56,7 +56,7 @@ const permutations = (items) =>
         ]),
       );
 
-// Side attachment centres change under #329; the other four routes stay fixed.
+// Side attachment centres vary here; the other four routes stay fixed.
 const unchanged = [
   [
     [482.6, 155.575],

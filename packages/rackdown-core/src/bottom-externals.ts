@@ -2,6 +2,8 @@ import type { LayoutExternal, RectMm } from './layout.js';
 
 export const BOTTOM_EXTERNAL_SEPARATION_MM = 80.2;
 export const BOTTOM_EXTERNAL_ROW_PITCH_MM = 30;
+export const EXTERNAL_WIDTH_MM = 76.2;
+export const EXTERNAL_HEIGHT_MM = 16;
 const EPSILON_MM = 0.000001;
 
 export interface ExternalPreference {
@@ -72,10 +74,10 @@ export function packBottomExternals(
       row.push(x);
       rows[rowIndex] = row;
       positions.set(external.id, {
-        xMm: x - 38.1,
+        xMm: x - EXTERNAL_WIDTH_MM / 2,
         yMm: floorY + rowIndex * BOTTOM_EXTERNAL_ROW_PITCH_MM,
-        widthMm: 76.2,
-        heightMm: 16,
+        widthMm: EXTERNAL_WIDTH_MM,
+        heightMm: EXTERNAL_HEIGHT_MM,
       });
       break;
     }

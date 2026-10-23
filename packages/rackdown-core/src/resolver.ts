@@ -78,7 +78,7 @@ type ResolvedEndpointReference =
 // - a shelf may coexist with non-shelf devices hosted on it;
 // - shelves cannot stack with other shelves;
 // - ordinary devices may coexist only when sharing an identical vertical span
-//   (see ADR 0012 for shared-row semantics).
+//   (see "Equal-width shared rows" in docs/specification.md).
 function isCoexistingPlacement(
   a: DevicePlacement,
   b: DevicePlacement,
@@ -114,7 +114,7 @@ function deviceEndpointAnchor(device: LayoutDevice): PointMm {
   };
 }
 
-// See ADR 0012 for equal-width shared-row geometry.
+// Split each shared row equally in source order (docs/specification.md).
 function applySharedRowGeometry(
   devices: LayoutDevice[],
   rackById: ReadonlyMap<string, LayoutRack>,
@@ -231,7 +231,7 @@ function findKnownPort(
 ): DevicePortDefinition | 'ambiguous' | undefined {
   const ports = definition?.ports ?? [];
   const folded = reference.toLowerCase();
-  // See ADR 0003 for layered endpoint resolution:
+  // Known ports resolve in layers:
   // exact name -> exact label/alias -> case-insensitive match.
   // Ambiguity is rejected at the first matching layer.
   const layers = [
@@ -570,7 +570,7 @@ export function resolve(
     statement: ConnectionStatement,
   ): LayoutDevice | undefined {
     const folded = reference.toLowerCase();
-    // See ADR 0003 for layered endpoint resolution:
+    // Device references resolve in layers:
     // alias -> exact label -> case-folded label -> exact type -> case-folded type.
     // Ambiguity is rejected at the first matching layer.
     const layers = [

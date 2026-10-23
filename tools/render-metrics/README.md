@@ -4,12 +4,12 @@ Geometric quality measures for rendered RackDown SVG, with recorded baselines.
 
 This exists because renderer changes need a signal between *"the unit tests still
 pass"* and *"it looks alright in the playground"*. Routing work in particular
-changes output in ways that no semantic assertion notices — every defect
-recorded in issue #202 was present while the full gate was green.
+changes output in ways that no semantic assertion notices. The metrics cover
+route occlusion and viewport growth even when the semantic test gate is green.
 
 It does **not** replace visual dogfood. Metrics say whether output moved and by
-how much; only a person can say whether it reads better. `AGENTS.md` still
-requires a playground or Obsidian check for renderer changes.
+how much; only a person can say whether it reads better. Renderer changes also
+need inspection in the playground or Obsidian.
 
 ## Running it
 
@@ -55,7 +55,7 @@ brittle. Lower is better for every measure except `connections`.
 | `externalRows` | Populated bottom callout rows | Pins bounded overflow packing; additional rows are expected for dense scenes |
 | `totalLengthMm` | Sum of all route lengths | Catches "fixes" that remove crossings by going the long way round |
 | `bends` | Direction changes across all routes | Visual noise. Collinear joins are not bends |
-| `viewportWidthMm` / `viewportHeightMm` | Diagram extent | Catches unbounded corridor growth (issue #202 defect B) |
+| `viewportWidthMm` / `viewportHeightMm` | Diagram extent | Catches unbounded corridor growth |
 
 ### Reading occlusion
 
@@ -70,10 +70,10 @@ several-fold. `EDGE_EPSILON_MM` in `metrics.mjs` is what makes that correct.
 This is currently **zero across the whole corpus**, and that is expected. It is a
 guard against a regression that has not happened yet, not an active signal.
 
-It deliberately does not catch issue #202 defect A. That route re-enters *its
-own* rack rather than crossing an unrelated one, so it is not "foreign" transit —
+It deliberately does not catch routes that re-enter *their own* rack rather
+than crossing an unrelated one, so that is not "foreign" transit —
 `occludedMm` is the measure that catches it. `foreignRackTransitMm` is here
-because the inter-row corridor proposed as R2 could plausibly start routing
+because an inter-row corridor could plausibly start routing
 through third-party racks, and that should fail loudly when it does.
 
 ## Baselines

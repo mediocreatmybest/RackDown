@@ -38,7 +38,7 @@ function parsePointPair(token) {
 /**
  * Logical route points recovered from one routed-connection `d`.
  *
- * Routed connections are drawn with rounded elbows (#203 R7), so the markup
+ * Routed connections are drawn with rounded elbows, so the markup
  * carries approach and departure points that are presentation only. The
  * measures here are about the route the renderer decided, not about how softly
  * it was drawn, so those are dropped and the original corner is recovered from

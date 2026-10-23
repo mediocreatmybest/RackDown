@@ -31,9 +31,11 @@ function createMemoryEnvironment(
   let stdout = '';
   let stderr = '';
   let writeFileCalled = false;
+  const events: string[] = [];
 
   const env: CliEnvironment = {
     async readFile(path: string) {
+      events.push(`read file: ${path}`);
       if (options.readFileError) throw options.readFileError;
       const content = files[path];
       if (content === undefined) {
@@ -42,21 +44,26 @@ function createMemoryEnvironment(
       return content;
     },
     async writeFile(path: string, content: string) {
+      events.push(`write file: ${path}`);
       writeFileCalled = true;
       if (options.writeFileError) throw options.writeFileError;
       files[path] = content;
     },
     async readStdin() {
+      events.push('read stdin');
       if (options.stdinError) throw options.stdinError;
       return options.stdin ?? '';
     },
     writeStdout(content: string) {
+      events.push('write stdout');
       stdout += content;
     },
     writeStderr(content: string) {
+      events.push('write stderr');
       stderr += content;
     },
     async loadDeviceIndex() {
+      events.push('load catalogue');
       if (options.loadDeviceIndexError) throw options.loadDeviceIndexError;
       return options.deviceIndex ?? {};
     },
@@ -68,6 +75,7 @@ function createMemoryEnvironment(
     stderr: () => stderr,
     writtenFiles: () => files,
     wasWriteFileCalled: () => writeFileCalled,
+    events: () => events,
   };
 }
 
@@ -81,6 +89,169 @@ core:"Port | 1" -- pve:"NIC 1" fibre category network
 pve -- external "Console Cart" category console
 external "Mains" -- core:power IEC-C13 category power
 core:odd -- pve:odd custom category unclassified`;
+
+describe.each(['render', 'check', 'schedule'] as const)(
+  '%s shared input and diagnostics',
+  (command) => {
+    it('reads a file before the catalogue and reports warnings before output', async () => {
+      const memory = createMemoryEnvironment({
+        files: { 'warn.rackdown': WARNING_SOURCE },
+      });
+
+      expect(await runCli([command, 'warn.rackdown'], memory.env)).toBe(0);
+      expect(memory.events()).toEqual([
+        'read file: warn.rackdown',
+        'load catalogue',
+        'write stderr',
+        ...(command === 'check' ? [] : ['write stdout']),
+      ]);
+      expect(memory.stderr()).toBe(
+        'warn.rackdown:1:35: warn: Duplicate rack view: front [hint: Each of `front` and `rear` may appear at most once.]\n',
+      );
+      expect(memory.stdout() === '').toBe(command === 'check');
+    });
+
+    it('labels stdin diagnostics and suppresses output on document errors', async () => {
+      const memory = createMemoryEnvironment({ stdin: ERROR_SOURCE });
+
+      expect(await runCli([command, '-'], memory.env)).toBe(1);
+      expect(memory.events()).toEqual([
+        'read stdin',
+        'load catalogue',
+        'write stderr',
+      ]);
+      expect(memory.stderr()).toBe(
+        '<stdin>:1:6: error: Rack height is missing or invalid. [hint: Specify a positive rack height such as 42U.]\n',
+      );
+      expect(memory.stdout()).toBe('');
+    });
+
+    it('stops before catalogue loading when source input fails', async () => {
+      const memory = createMemoryEnvironment({
+        readFileError: new Error('Disk read fault'),
+      });
+
+      expect(await runCli([command, 'missing.rackdown'], memory.env)).toBe(2);
+      expect(memory.events()).toEqual([
+        'read file: missing.rackdown',
+        'write stderr',
+      ]);
+      expect(memory.stderr()).toBe(
+        'Error: Failed to read file "missing.rackdown": Disk read fault\n',
+      );
+    });
+
+    it('reports a stdin read failure without loading the catalogue', async () => {
+      const memory = createMemoryEnvironment({
+        stdinError: new Error('Stdin stream broken'),
+      });
+
+      expect(await runCli([command, '-'], memory.env)).toBe(2);
+      expect(memory.events()).toEqual(['read stdin', 'write stderr']);
+      expect(memory.stderr()).toBe(
+        'Error: Failed to read from stdin: Stdin stream broken\n',
+      );
+      expect(memory.stdout()).toBe('');
+    });
+
+    it('stops after catalogue failure without reporting document diagnostics', async () => {
+      const memory = createMemoryEnvironment({
+        files: { 'rack.rackdown': ERROR_SOURCE },
+        loadDeviceIndexError: new Error('Catalogue corrupt'),
+      });
+
+      expect(await runCli([command, 'rack.rackdown'], memory.env)).toBe(2);
+      expect(memory.events()).toEqual([
+        'read file: rack.rackdown',
+        'load catalogue',
+        'write stderr',
+      ]);
+      expect(memory.stderr()).toBe(
+        'Error: Failed to load device catalogue: Catalogue corrupt\n',
+      );
+    });
+  },
+);
+
+describe.each(['render', 'schedule'] as const)(
+  '%s output handling',
+  (command) => {
+    it('writes an output file after loading and resolving', async () => {
+      const memory = createMemoryEnvironment({
+        files: { 'rack.rackdown': VALID_SOURCE },
+      });
+
+      expect(
+        await runCli(
+          [command, 'rack.rackdown', '-o', 'output.txt'],
+          memory.env,
+        ),
+      ).toBe(0);
+      expect(memory.events()).toEqual([
+        'read file: rack.rackdown',
+        'load catalogue',
+        'write file: output.txt',
+      ]);
+      expect(memory.stdout()).toBe('');
+      expect(memory.stderr()).toBe('');
+      expect(memory.writtenFiles()['output.txt']).toBeTruthy();
+    });
+
+    it('reports file output failure without writing to stdout', async () => {
+      const memory = createMemoryEnvironment({
+        files: { 'rack.rackdown': VALID_SOURCE },
+        writeFileError: new Error('Read-only filesystem'),
+      });
+
+      expect(
+        await runCli(
+          [command, 'rack.rackdown', '-o', 'output.txt'],
+          memory.env,
+        ),
+      ).toBe(2);
+      expect(memory.events()).toEqual([
+        'read file: rack.rackdown',
+        'load catalogue',
+        'write file: output.txt',
+        'write stderr',
+      ]);
+      expect(memory.stderr()).toBe(
+        'Error: Failed to write output file "output.txt": Read-only filesystem\n',
+      );
+      expect(memory.stdout()).toBe('');
+    });
+  },
+);
+
+it('validates positional count before option values and option values before an empty source', async () => {
+  const missing = createMemoryEnvironment();
+  expect(await runCli(['render', '--routing', 'invalid'], missing.env)).toBe(2);
+  expect(missing.stderr()).toBe(
+    'Error: Missing source file argument for render.\n',
+  );
+  expect(missing.events()).toEqual(['write stderr']);
+
+  const empty = createMemoryEnvironment();
+  expect(await runCli(['render', '', '--routing', 'invalid'], empty.env)).toBe(
+    2,
+  );
+  expect(empty.stderr()).toBe(
+    'Error: Invalid value for --routing: "invalid". Expected direct|orthogonal|lanes|perimeter.\n',
+  );
+  expect(empty.events()).toEqual(['write stderr']);
+
+  const schedule = createMemoryEnvironment();
+  expect(
+    await runCli(
+      ['schedule', '-', '--format', 'invalid', '--category', 'invalid'],
+      schedule.env,
+    ),
+  ).toBe(2);
+  expect(schedule.stderr()).toBe(
+    'Error: Invalid value for --format: "invalid". Expected md|csv|json.\n',
+  );
+  expect(schedule.events()).toEqual(['write stderr']);
+});
 
 describe('runCli', () => {
   // 1. top-level help exits 0 and writes usage to stdout

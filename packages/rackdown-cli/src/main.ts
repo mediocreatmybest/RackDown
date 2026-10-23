@@ -6,6 +6,7 @@ import {
   type DeviceIndex,
   type Diagnostic,
   parse,
+  type RackLayout,
   resolve,
   type SvgConnectionRouting,
   type SvgExternalPlacement,
@@ -98,6 +99,73 @@ const SCHEDULE_OPTIONS = {
   format: { type: 'string' },
   category: { type: 'string', multiple: true },
 } as const;
+
+async function loadLayout(
+  sourceArg: string,
+  environment: CliEnvironment,
+): Promise<RackLayout | 1 | 2> {
+  let source: string;
+  const sourceLabel = sourceArg === '-' ? '<stdin>' : sourceArg;
+  if (sourceArg === '-') {
+    try {
+      source = await environment.readStdin();
+    } catch (error) {
+      environment.writeStderr(
+        `Error: Failed to read from stdin: ${(error as Error).message}\n`,
+      );
+      return 2;
+    }
+  } else {
+    try {
+      source = await environment.readFile(sourceArg);
+    } catch (error) {
+      environment.writeStderr(
+        `Error: Failed to read file "${sourceArg}": ${(error as Error).message}\n`,
+      );
+      return 2;
+    }
+  }
+
+  let deviceIndex: DeviceIndex;
+  try {
+    deviceIndex = await environment.loadDeviceIndex();
+  } catch (error) {
+    environment.writeStderr(
+      `Error: Failed to load device catalogue: ${(error as Error).message}\n`,
+    );
+    return 2;
+  }
+
+  const layout = resolve(parse(source), deviceIndex);
+  for (const diagnostic of layout.diagnostics) {
+    environment.writeStderr(`${formatDiagnostic(diagnostic, sourceLabel)}\n`);
+  }
+  return layout.diagnostics.some(
+    (diagnostic) => diagnostic.severity === 'error',
+  )
+    ? 1
+    : layout;
+}
+
+async function writeOutput(
+  output: string,
+  outputPath: string | undefined,
+  environment: CliEnvironment,
+): Promise<0 | 2> {
+  if (outputPath === undefined || outputPath === '-') {
+    environment.writeStdout(output);
+  } else {
+    try {
+      await environment.writeFile(outputPath, output);
+    } catch (error) {
+      environment.writeStderr(
+        `Error: Failed to write output file "${outputPath}": ${(error as Error).message}\n`,
+      );
+      return 2;
+    }
+  }
+  return 0;
+}
 
 export async function runCli(
   argv: readonly string[],
@@ -192,50 +260,8 @@ export async function runCli(
       return 2;
     }
 
-    let source: string;
-    let sourceLabel: string;
-    if (sourceArg === '-') {
-      sourceLabel = '<stdin>';
-      try {
-        source = await environment.readStdin();
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to read from stdin: ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    } else {
-      sourceLabel = sourceArg;
-      try {
-        source = await environment.readFile(sourceArg);
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to read file "${sourceArg}": ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    }
-
-    let deviceIndex: DeviceIndex;
-    try {
-      deviceIndex = await environment.loadDeviceIndex();
-    } catch (error) {
-      environment.writeStderr(
-        `Error: Failed to load device catalogue: ${(error as Error).message}\n`,
-      );
-      return 2;
-    }
-
-    const document = parse(source);
-    const layout = resolve(document, deviceIndex);
-    for (const diagnostic of layout.diagnostics) {
-      environment.writeStderr(`${formatDiagnostic(diagnostic, sourceLabel)}\n`);
-    }
-    if (
-      layout.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
-    ) {
-      return 1;
-    }
+    const layout = await loadLayout(sourceArg, environment);
+    if (typeof layout === 'number') return layout;
 
     let output: string;
     try {
@@ -251,20 +277,7 @@ export async function runCli(
       return 2;
     }
 
-    const outputPath = parsed.values.output;
-    if (outputPath === undefined || outputPath === '-') {
-      environment.writeStdout(output);
-    } else {
-      try {
-        await environment.writeFile(outputPath, output);
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to write output file "${outputPath}": ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    }
-    return 0;
+    return writeOutput(output, parsed.values.output, environment);
   }
 
   if (command === 'render') {
@@ -369,52 +382,8 @@ export async function runCli(
       return 2;
     }
 
-    let source: string;
-    let sourceLabel: string;
-
-    if (sourceArg === '-') {
-      sourceLabel = '<stdin>';
-      try {
-        source = await environment.readStdin();
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to read from stdin: ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    } else {
-      sourceLabel = sourceArg;
-      try {
-        source = await environment.readFile(sourceArg);
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to read file "${sourceArg}": ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    }
-
-    let deviceIndex: DeviceIndex;
-    try {
-      deviceIndex = await environment.loadDeviceIndex();
-    } catch (error) {
-      environment.writeStderr(
-        `Error: Failed to load device catalogue: ${(error as Error).message}\n`,
-      );
-      return 2;
-    }
-
-    const document = parse(source);
-    const layout = resolve(document, deviceIndex);
-
-    for (const diagnostic of layout.diagnostics) {
-      environment.writeStderr(`${formatDiagnostic(diagnostic, sourceLabel)}\n`);
-    }
-
-    const hasErrors = layout.diagnostics.some((d) => d.severity === 'error');
-    if (hasErrors) {
-      return 1;
-    }
+    const layout = await loadLayout(sourceArg, environment);
+    if (typeof layout === 'number') return layout;
 
     let svg: string;
     try {
@@ -426,21 +395,7 @@ export async function runCli(
       return 2;
     }
 
-    const outputPath = parsed.values.output;
-    if (outputPath === undefined || outputPath === '-') {
-      environment.writeStdout(svg);
-    } else {
-      try {
-        await environment.writeFile(outputPath, svg);
-      } catch (error) {
-        environment.writeStderr(
-          `Error: Failed to write output file "${outputPath}": ${(error as Error).message}\n`,
-        );
-        return 2;
-      }
-    }
-
-    return 0;
+    return writeOutput(svg, parsed.values.output, environment);
   }
 
   // command === 'check'
@@ -484,48 +439,6 @@ export async function runCli(
     return 2;
   }
 
-  let source: string;
-  let sourceLabel: string;
-
-  if (sourceArg === '-') {
-    sourceLabel = '<stdin>';
-    try {
-      source = await environment.readStdin();
-    } catch (error) {
-      environment.writeStderr(
-        `Error: Failed to read from stdin: ${(error as Error).message}\n`,
-      );
-      return 2;
-    }
-  } else {
-    sourceLabel = sourceArg;
-    try {
-      source = await environment.readFile(sourceArg);
-    } catch (error) {
-      environment.writeStderr(
-        `Error: Failed to read file "${sourceArg}": ${(error as Error).message}\n`,
-      );
-      return 2;
-    }
-  }
-
-  let deviceIndex: DeviceIndex;
-  try {
-    deviceIndex = await environment.loadDeviceIndex();
-  } catch (error) {
-    environment.writeStderr(
-      `Error: Failed to load device catalogue: ${(error as Error).message}\n`,
-    );
-    return 2;
-  }
-
-  const document = parse(source);
-  const layout = resolve(document, deviceIndex);
-
-  for (const diagnostic of layout.diagnostics) {
-    environment.writeStderr(`${formatDiagnostic(diagnostic, sourceLabel)}\n`);
-  }
-
-  const hasErrors = layout.diagnostics.some((d) => d.severity === 'error');
-  return hasErrors ? 1 : 0;
+  const layout = await loadLayout(sourceArg, environment);
+  return typeof layout === 'number' ? layout : 0;
 }

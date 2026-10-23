@@ -18,6 +18,7 @@ export interface BracketRequest {
 const SPACING = 2.5;
 const LANE_SPACING = 4;
 const EPSILON = 0.001;
+export const EXIT_STUB_MM = 6.35;
 const centre = (endpoint: BracketEndpoint) =>
   (endpoint.start + endpoint.end) / 2;
 const span = (request: BracketRequest) => {
@@ -211,13 +212,16 @@ export function nestedBrackets(
           ? { xMm: along, yMm: across }
           : { xMm: across, yMm: along };
       const route =
-        axis === 'y' && distance > 6.35
+        axis === 'y' && distance > EXIT_STUB_MM
           ? [
               point(from, fromEdge),
-              point(from, fromEdge + (side === 0 ? -6.35 : 6.35)),
+              point(
+                from,
+                fromEdge + (side === 0 ? -EXIT_STUB_MM : EXIT_STUB_MM),
+              ),
               point(from, seam),
               point(to, seam),
-              point(to, toEdge + (side === 0 ? -6.35 : 6.35)),
+              point(to, toEdge + (side === 0 ? -EXIT_STUB_MM : EXIT_STUB_MM)),
               point(to, toEdge),
             ]
           : [

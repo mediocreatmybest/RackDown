@@ -95,7 +95,7 @@ rack "Main Rack" 42U 19in u1 bottom
 rack "Wall Rack" 12U 10in u1 top
 ```
 
-Rack height must be a positive whole number of rack units, for example `12U` or `42U`. Rack width is currently descriptive metadata. The renderer uses a common diagram width for all racks, so `10in` and `19in` do not request literal proportional drawing widths. U1 may be at the top or bottom, and the rendered numbering reflects that choice.
+Rack height must be a whole number from 1U to 120U, for example `12U` or `42U`. Rack width is currently descriptive metadata. The renderer uses a common diagram width for all racks, so `10in` and `19in` do not request literal proportional drawing widths. U1 may be at the top or bottom, and the rendered numbering reflects that choice.
 
 If rack width is omitted, resolution uses 19 inches as the layout default without warning.
 
@@ -675,7 +675,7 @@ This is the scope we are aiming at for the current version. It is useful as a bo
 
 ### Included right now
 
-- arbitrary rack height;
+- whole-number rack heights from 1U to 120U;
 - 10-inch and 19-inch descriptive rack width;
 - U1 top or bottom;
 - fractional-U-capable coordinates;

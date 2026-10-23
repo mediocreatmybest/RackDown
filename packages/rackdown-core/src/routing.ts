@@ -2,6 +2,7 @@ import type { PointMm, RectMm } from './layout.js';
 import {
   type BracketEndpoint,
   type BracketRequest,
+  EXIT_STUB_MM,
   nestedBrackets,
 } from './nested-routing.js';
 
@@ -10,7 +11,6 @@ const BOTTOM_LANE_GUTTER_MM = 6.35;
 const LANE_SPACING_MM = 4;
 const PERIMETER_GUTTER_MM = 12.7;
 const TOP_DECORATION_CLEARANCE_MM = 7.5;
-const EXIT_STUB_MM = 6.35;
 const ATTACHMENT_SPACING_MM = 2.5;
 const BEND_PENALTY_MM = 6;
 const LANE_USE_PENALTY_MM = 8;
@@ -22,10 +22,10 @@ export const LOCAL_SEAM_OFFSET_MM = 6;
 /**
  * Nominal corner radius for rounded route elbows, in millimetres.
  *
- * Frozen by the R7 proof on #203. The exit stub is 6.35mm and lane spacing is
- * 4mm, so a 4mm nominal radius would clamp on ordinary stub-adjacent bends and
- * never actually be nominal; 3mm survives the normal stub while still visibly
- * softening the corner. Shorter segments clamp automatically.
+ * The exit stub is 6.35mm and lane spacing is 4mm, so a 4mm nominal radius
+ * would clamp on ordinary stub-adjacent bends and never actually be nominal;
+ * 3mm survives the normal stub while still visibly softening the corner.
+ * Shorter segments clamp automatically.
  */
 export const CONNECTION_CORNER_RADIUS_MM = 3;
 
@@ -100,9 +100,9 @@ const LOCAL_GEOMETRY_EPSILON_MM = 0.01;
  *
  * Deliberately tighter than `LOCAL_GEOMETRY_EPSILON_MM` and deliberately a
  * separate constant: this one asks "are these two shared-row slots the same
- * row?", which ADR 0012 already guarantees exactly, while the geometry epsilon
- * asks "is this route inside a rectangle?". Merging them would loosen one or
- * tighten the other for no reason.
+ * row?", which shared-row geometry already guarantees exactly, while the
+ * geometry epsilon asks "is this route inside a rectangle?". Merging them
+ * would loosen one or tighten the other for no reason.
  */
 const SLOT_EQUALITY_EPSILON_MM = 0.001;
 
@@ -239,10 +239,10 @@ export function localRouteIsClear(
  * of its own rack rectangle.
  *
  * A local route is in-rack presentation geometry, so it must never leave the
- * rack and come back — that shape is perimeter corridor transit, which #203 R1
- * forbids, and above a rack it would also cross the reserved title band. The
- * rack rectangle is convex and every segment is axis-aligned, so testing the
- * vertices is sufficient for the whole polyline.
+ * rack and come back. That shape belongs to perimeter corridor transit; above
+ * a rack it would also cross the reserved title band. The rack rectangle is
+ * convex and every segment is axis-aligned, so testing the vertices is
+ * sufficient for the whole polyline.
  */
 function routeIsWithinRack(
   route: readonly PointMm[],
@@ -660,7 +660,7 @@ interface RoutingSubjectBounds {
  * `bottomY` can never fall below it, whatever the racks themselves do.
  *
  * That zero anchor matches the rack-subject basis the renderer uses when
- * applying `NORMAL_ROUTING_ENVELOPE_MM` (#257). Seeding from the first rack
+ * applying `NORMAL_ROUTING_ENVELOPE_MM`. Seeding from the first rack
  * instead could let the corridors these bounds place and the envelope the
  * renderer reserves disagree when layouts no longer begin at the origin.
  */
@@ -777,7 +777,7 @@ export function routeConnections(
     return state;
   }
 
-  // #203 R4: perimeter allocation runs in geometry order so corridor lanes are
+  // Perimeter allocation runs in geometry order so corridor lanes are
   // handed out top-down regardless of source order. This orders allocator state
   // only — emission order stays the renderer's business.
   const allocationConnections =
@@ -1168,7 +1168,7 @@ export function routeConnections(
   }
 
   /**
-   * Same-rack perimeter routing: a #203 R5 Class V short hop, otherwise a lane
+   * Same-rack perimeter routing: a local vertical short hop, otherwise a lane
    * in one of the rack's own side corridors.
    */
   function sameRackPerimeterRoute(
@@ -1288,7 +1288,7 @@ export function routeConnections(
     const corridor = gapCorridor(connectionPairKey(fromRackKey, toRackKey));
     const baseY = (from.stub.yMm + to.stub.yMm) / 2;
     const preview = peekLane(corridor, baseY);
-    // #203 R2: the pair-gap ordinal advances on *attempt*, not on success, so
+    // The pair-gap ordinal advances on *attempt*, not on success, so
     // this preview is consumed before the route is known to be usable. It is
     // the router's one deliberate exception to winner-only advancement: the
     // ordinal counts attempts on this rack pair rather than occupied physical

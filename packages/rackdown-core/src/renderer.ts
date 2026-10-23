@@ -1,4 +1,8 @@
-import { packBottomExternals } from './bottom-externals.js';
+import {
+  EXTERNAL_HEIGHT_MM,
+  EXTERNAL_WIDTH_MM,
+  packBottomExternals,
+} from './bottom-externals.js';
 import {
   type ConnectionSelection,
   selectConnections,
@@ -37,8 +41,6 @@ const RACK_VIEW_GAP_MM = 25.4;
 const MAX_PROJECTIONS_PER_ROW = 2;
 const RACK_ROW_GAP_MM = 38.1;
 const EXTERNAL_GAP_MM = 12.7;
-const EXTERNAL_WIDTH_MM = 76.2;
-const EXTERNAL_HEIGHT_MM = 16;
 const EXTERNAL_HORIZONTAL_GAP_MM = 4;
 const EXTERNAL_VERTICAL_GAP_MM = 4;
 const EMPTY_WIDTH_MM = 120;
@@ -735,7 +737,7 @@ function buildRenderScene(
     if (packedBox) {
       xMm = packedBox.xMm;
       yMm = packedBox.yMm;
-      anchor = { xMm: xMm + 38.1, yMm };
+      anchor = { xMm: xMm + packedBox.widthMm / 2, yMm };
     } else if (placement === 'right') {
       xMm = subjectRightX + EXTERNAL_GAP_MM;
       yMm = index * (EXTERNAL_HEIGHT_MM + EXTERNAL_VERTICAL_GAP_MM);
@@ -1432,8 +1434,8 @@ function renderExternal(external: ProjectedExternal, id: string): string[] {
     `<g id="${id}" class="rackdown-external-group" data-external-id="${escapeXml(external.id)}" data-label="${escapeXml(external.label)}" data-link-style="${linkStyle}" data-placement="${escapeXml(external.placement)}"${targetAttr}>`,
     `  <title>${escapeXml(external.label)}</title>`,
     `  <rect class="rackdown-external-box" x="${formatNumber(external.xMm)}" y="${formatNumber(external.yMm)}" width="${formatNumber(external.widthMm)}" height="${formatNumber(external.heightMm)}" rx="3" ry="3" />`,
-    `  <defs><clipPath id="${id}-label-clip" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(external.xMm + 4)}" y="${formatNumber(external.yMm + 1)}" width="68.2" height="14" /></clipPath></defs>`,
-    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + 38.1)}" y="${formatNumber(external.yMm + 12)}" text-anchor="middle" clip-path="url(#${id}-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>${escapeXml(external.displayLabel)}</text>`,
+    `  <defs><clipPath id="${id}-label-clip" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(external.xMm + 4)}" y="${formatNumber(external.yMm + 1)}" width="${formatNumber(external.widthMm - 8)}" height="${formatNumber(external.heightMm - 2)}" /></clipPath></defs>`,
+    `  <text class="rackdown-external-label" x="${formatNumber(external.xMm + external.widthMm / 2)}" y="${formatNumber(external.yMm + 12)}" text-anchor="middle" clip-path="url(#${id}-label-clip)" style='font-family: Arial, "Liberation Sans", sans-serif; font-size: 10px; font-weight: 400; font-style: normal; font-stretch: normal; text-rendering: geometricPrecision; font-kerning: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; direction: ltr; unicode-bidi: isolate; dominant-baseline: alphabetic;'>${escapeXml(external.displayLabel)}</text>`,
     '</g>',
   ];
 }
