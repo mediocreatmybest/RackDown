@@ -35,12 +35,32 @@ interface EndpointWithMedia {
   media?: string;
 }
 
+/** Find the closing destination delimiter in one bounded pass, without decoding the target. */
+function markdownDestinationEnd(text: string, openParen: number): number {
+  let depth = 1;
+  for (let cursor = openParen + 1; cursor < text.length; cursor += 1) {
+    const character = text[cursor];
+    const next = text[cursor + 1];
+    // Only parentheses and backslashes are escaped here; other target text is literal.
+    if (character === '\\' && (next === '(' || next === ')' || next === '\\')) {
+      cursor += 1;
+      continue;
+    }
+    if (character === '(') depth += 1;
+    if (character === ')') {
+      depth -= 1;
+      if (depth === 0) return cursor;
+    }
+  }
+  return -1;
+}
+
 /** Quoted ports, plain external labels, wiki references and Markdown links protect `--` from being treated as structural. */
 function connectionOperators(text: string): number[] {
   const operators: number[] = [];
   let quoted = false;
   let external = false;
-  let markdownState: 'none' | 'bracket' | 'paren' = 'none';
+  let markdownState: 'none' | 'bracket' = 'none';
   let atEndpointStart = true;
 
   for (let cursor = 0; cursor < text.length; cursor += 1) {
@@ -54,19 +74,14 @@ function connectionOperators(text: string): number[] {
 
     if (markdownState === 'bracket') {
       if (text.startsWith('](', cursor)) {
-        markdownState = 'paren';
-        cursor += 1;
+        const close = markdownDestinationEnd(text, cursor + 1);
+        // An unfinished destination protects the rest of the line as URL content.
+        if (close < 0) break;
+        markdownState = 'none';
+        cursor = close;
         continue;
       }
       if (text[cursor] === ']') {
-        markdownState = 'none';
-        continue;
-      }
-      continue;
-    }
-
-    if (markdownState === 'paren') {
-      if (text[cursor] === ')') {
         markdownState = 'none';
         continue;
       }
@@ -632,8 +647,9 @@ function parseMarkdownEndpoint(
     return undefined;
   }
 
-  const closeParen = text.indexOf(')', separator + 2);
-  if (closeParen < 0) {
+  const closeParen = markdownDestinationEnd(text, separator + 1);
+  // An adjacent unmatched closing parenthesis is malformed URL text, not media.
+  if (closeParen < 0 || text[closeParen + 1] === ')') {
     diagnostics.push({
       severity: 'warn',
       line,

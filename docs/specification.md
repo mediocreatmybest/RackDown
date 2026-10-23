@@ -458,6 +458,8 @@ Standard web URLs are also supported through the Markdown link syntax:
 core:5 -- [Vendor documentation](https://example.com/device)
 ```
 
+Markdown link destinations support balanced parentheses, such as `[Docs](https://example.com/A_(B))`. Within a destination, `\(`, `\)` and `\\` protect the following character from delimiter interpretation. These escapes affect delimiter recognition only; Core preserves the backslashes in target metadata. Unbalanced destinations, including an extra `)` immediately after the closing delimiter, produce a warning and the connection is ignored. Media and category tokens follow the actual closing delimiter.
+
 The four forms separate display labels from host navigation intent:
 
 - `external "Label"`: A plain external endpoint with no navigation intent. It renders as an external annotation and does not become a host link.
