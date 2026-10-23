@@ -7,6 +7,7 @@ import type {
   RackFace,
   RackU1Position,
 } from './document.js';
+import { readQuotedText } from './quoted-text.js';
 import { sourceSpan } from './source.js';
 
 interface Token {
@@ -455,19 +456,14 @@ function tokenizeLine(line: string): Token[] {
 
     const column = cursor + 1;
     if (line[cursor] === '"') {
-      cursor += 1;
-      const start = cursor;
-      while (cursor < line.length && line[cursor] !== '"') {
-        cursor += 1;
-      }
-
-      const value = line.slice(start, cursor);
-      if (cursor < line.length && line[cursor] === '"') {
-        cursor += 1;
-        tokens.push({ value, column, quoted: true });
-      } else {
-        tokens.push({ value, column, quoted: true, unterminated: true });
-      }
+      const quoted = readQuotedText(line, cursor);
+      tokens.push({
+        value: quoted.value,
+        column,
+        quoted: true,
+        ...(quoted.terminated ? {} : { unterminated: true }),
+      });
+      cursor = quoted.end;
       continue;
     }
 

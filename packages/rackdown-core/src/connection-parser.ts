@@ -4,6 +4,7 @@ import type {
   ConnectionEndpointReference,
   ConnectionStatement,
 } from './document.js';
+import { readQuotedText } from './quoted-text.js';
 import { sourceSpan } from './source.js';
 
 interface ParsedEndpointText {
@@ -58,7 +59,6 @@ function markdownDestinationEnd(text: string, openParen: number): number {
 /** Quoted ports, plain external labels, wiki references and Markdown links protect `--` from being treated as structural. */
 function connectionOperators(text: string): number[] {
   const operators: number[] = [];
-  let quoted = false;
   let external = false;
   let markdownState: 'none' | 'bracket' = 'none';
   let atEndpointStart = true;
@@ -88,15 +88,9 @@ function connectionOperators(text: string): number[] {
       continue;
     }
 
-    if (quoted) {
-      if (text[cursor] === '"') {
-        quoted = false;
-      }
-      continue;
-    }
-
     if (text[cursor] === '"') {
-      quoted = true;
+      const quoted = readQuotedText(text, cursor);
+      cursor = quoted.end - 1;
       atEndpointStart = false;
       continue;
     }
@@ -385,11 +379,9 @@ function parseDeviceEndpoint(
 
   if (text[cursor] === '"') {
     const quoteColumn = column + cursor;
-    cursor += 1;
-    const start = cursor;
-    const close = text.indexOf('"', cursor);
-    if (close < 0) {
-      const port = text.slice(start);
+    const quoted = readQuotedText(text, cursor);
+    const port = quoted.value;
+    if (!quoted.terminated) {
       diagnostics.push({
         severity: 'warn',
         line,
@@ -411,7 +403,6 @@ function parseDeviceEndpoint(
       };
     }
 
-    const port = text.slice(start, close);
     if (!port) {
       diagnostics.push({
         severity: 'warn',
@@ -421,13 +412,13 @@ function parseDeviceEndpoint(
       });
       return {
         endpoint: { kind: 'device', device },
-        ...trailingText(text, close + 1),
+        ...trailingText(text, quoted.end),
       };
     }
 
     return {
       endpoint: { kind: 'device', device, port },
-      ...trailingText(text, close + 1),
+      ...trailingText(text, quoted.end),
     };
   }
 
@@ -472,10 +463,10 @@ function parsePlainExternalEndpoint(
   }
 
   const quoteColumn = column + quoteIndex;
-  const closeIndex = text.indexOf('"', quoteIndex + 1);
+  const quoted = readQuotedText(text, quoteIndex);
+  const label = quoted.value;
 
-  if (closeIndex < 0) {
-    const label = text.slice(quoteIndex + 1);
+  if (!quoted.terminated) {
     if (!label) {
       diagnostics.push({
         severity: 'warn',
@@ -499,7 +490,6 @@ function parsePlainExternalEndpoint(
     };
   }
 
-  const label = text.slice(quoteIndex + 1, closeIndex);
   if (!label) {
     diagnostics.push({
       severity: 'warn',
@@ -512,7 +502,7 @@ function parsePlainExternalEndpoint(
 
   return {
     endpoint: { kind: 'external', label },
-    ...trailingText(text, closeIndex + 1),
+    ...trailingText(text, quoted.end),
   };
 }
 

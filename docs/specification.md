@@ -103,6 +103,20 @@ Quoted rack names and device labels are literal text, even when they resemble U-
 
 Device positions and heights may use fractional U values, but the rack declaration itself uses whole rack units.
 
+### Quoted text
+
+Rack names, device labels, quoted connection ports and plain external labels share two escape sequences: `\"` represents a literal double quote, and `\\` represents a literal backslash. Other backslash sequences remain literal, including `\n`, `\t` and Windows paths such as `C:\Racks\Notes`. Only an unescaped double quote ends the field.
+
+```rackdown
+rack "Office \"A\"" 6U
+5 device "19\" shelf C:\\Racks\\A"as shelf
+shelf:"Uplink \"A\"\\backup" -- external "Carrier \"B\" handover" fibre category network
+```
+
+The device label above is `19" shelf C:\Racks\A`; the adjacent `as shelf` remains an alias. To end quoted text with a literal backslash, escape that backslash too: `"C:\\Racks\\"`.
+
+Unterminated quoted fields are scanned only to the end of their source line and use the existing recovery diagnostics. A recovered label or port warns at its opening quote. An unterminated source endpoint can hide the `--` operator, so that connection is ignored. A rack declaration still needs a height outside its quoted name. Following lines are parsed independently. Markdown and wiki links retain their separate syntax and escape rules.
+
 ### Front and rear views
 
 A rack may request one or both physical projections:
@@ -189,7 +203,7 @@ RackDown currently treats `blank` and `shelf` a little differently from ordinary
 - `shelf` represents supporting fixture or background geometry rather than exclusive equipment occupancy. It defaults to 1U, allows explicit positive and fractional heights, and can coexist with ordinary equipment on the same face without overlap warnings. A shelf keeps the full rack width and does not join shared-row splitting. Equipment placed over the same shelf interval can still split equally. Quoted labels such as `10 2U shelf "Micro PCs"` are shown; unlabeled shelves suppress the literal word `shelf` while keeping accessibility metadata.
 - `gap` is not part of v0. Unused U-space is already represented by having nothing placed there. We can add dedicated reserved-space syntax later if a real use case makes it worthwhile.
 
-Aliases must be non-empty and contain no whitespace, quotes, colons, brackets or `--`, and they must not start with `//`. Quotes after `as` do not change that shape. An unusable alias warns and is ignored while the device placement is kept.
+Aliases must be non-empty and contain no whitespace, quotes, colons, brackets or `--`, and they must not start with `//`. Quotes after `as` do not change that shape. Quoted alias tokens use the same quoted-text escapes; unquoted aliases remain literal. An unusable alias warns and is ignored while the device placement is kept.
 
 ### Front and rear placement
 
