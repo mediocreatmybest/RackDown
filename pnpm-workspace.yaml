@@ -1,5 +1,7 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+overrides:
+  vite: 8.2.4
 allowBuilds:
   esbuild: true
