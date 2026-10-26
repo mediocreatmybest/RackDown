@@ -54,7 +54,32 @@ export function parse(source: string): RackDocument {
       continue;
     }
 
-    if (startsWithConnection(rawLine)) {
+    const tokens = tokenizeLine(rawLine);
+    const first = tokens[0];
+    if (!first) {
+      continue;
+    }
+    const second = tokens[1];
+    const positionIndex =
+      !first.quoted && POSITION_PATTERN.test(first.value)
+        ? 0
+        : !first.quoted &&
+            first.value.toLowerCase() === 'rear' &&
+            second &&
+            !second.quoted &&
+            POSITION_PATTERN.test(second.value)
+          ? 1
+          : undefined;
+    // `as core--backup` (including `as --`) belongs to placement recovery.
+    // Other structural operators take precedence even with invalid source text.
+    const aliasToken =
+      positionIndex === undefined
+        ? undefined
+        : placementAliasToken(tokens, positionIndex);
+
+    if (
+      startsWithConnection(rawLine, aliasToken?.quoted ? undefined : aliasToken)
+    ) {
       const connection = parseConnection(rawLine, line, document.diagnostics);
       if (connection) {
         document.connections.push({
@@ -62,12 +87,6 @@ export function parse(source: string): RackDocument {
           source: sourceSpan(originalLine, line),
         });
       }
-      continue;
-    }
-
-    const tokens = tokenizeLine(rawLine);
-    const first = tokens[0];
-    if (!first) {
       continue;
     }
 
@@ -102,7 +121,6 @@ export function parse(source: string): RackDocument {
       continue;
     }
 
-    const second = tokens[1];
     if (
       first.value.toLowerCase() === 'rear' &&
       second &&
@@ -148,6 +166,30 @@ export function parse(source: string): RackDocument {
   }
 
   return document;
+}
+
+/** Locate the alias field using the same height/type/label boundaries as placements. */
+function placementAliasToken(
+  tokens: readonly Token[],
+  positionIndex: number,
+): Token | undefined {
+  let cursor = positionIndex + 1;
+  const height = tokens[cursor];
+  if (height && !height.quoted && parseRackUnits(height.value) !== undefined)
+    cursor += 1;
+  const type = tokens[cursor];
+  cursor += 1;
+  if (!type?.quoted) {
+    if (tokens[cursor]?.quoted) {
+      cursor += 1;
+    } else {
+      while (tokens[cursor] && tokens[cursor]?.value.toLowerCase() !== 'as')
+        cursor += 1;
+    }
+  }
+  return tokens[cursor]?.value.toLowerCase() === 'as'
+    ? tokens[cursor + 1]
+    : undefined;
 }
 
 function parseRack(

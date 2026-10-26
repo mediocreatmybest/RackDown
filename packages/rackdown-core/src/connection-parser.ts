@@ -131,24 +131,16 @@ function scanLine(
   return { operators, commentStart: text.length };
 }
 
-/** Recognise connections using the same protected-text rules as endpoint parsing. */
-export function startsWithConnection(text: string): boolean {
-  const operator = scanLine(text).operators[0];
-  if (operator === undefined) return false;
-  // A declaration can contain an invalid alias such as `as core--backup`.
-  // Only give connections priority when the source is an endpoint, not a
-  // declaration prefix. The normal fallback still diagnoses malformed lines.
-  const left = text.slice(0, operator).trim();
-  if (left.startsWith('"') || left.startsWith('[') || isPlainExternal(left)) {
-    return true;
-  }
-  const parsed = parseDeviceEndpoint(left, 1, 1, []);
-  return (
-    parsed !== undefined &&
-    (parsed.remainder === '' ||
-      parsed.remainder
-        .split(/\s+/)
-        .every((token) => token.toLowerCase() === 'adhoc'))
+/** Recognise structural operators outside a placement's alias token. */
+export function startsWithConnection(
+  text: string,
+  aliasToken?: { column: number; value: string },
+): boolean {
+  return scanLine(text).operators.some(
+    (index) =>
+      aliasToken === undefined ||
+      index < aliasToken.column - 1 ||
+      index >= aliasToken.column - 1 + aliasToken.value.length,
   );
 }
 

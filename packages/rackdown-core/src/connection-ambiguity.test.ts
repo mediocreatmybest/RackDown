@@ -746,3 +746,180 @@ describe('quoted device references and dispatch', () => {
     expect(doc.diagnostics).toEqual([]);
   });
 });
+
+describe('malformed connection dispatch recovery', () => {
+  const declarations =
+    'rack "R" 12U\n12 switch "Core" as rack\n11 router "Gateway" as 123\n';
+
+  it.each([
+    ['rack wat -- 123', 'rack', '123', 8],
+    ['123 wat -- rack', '123', 'rack', 7],
+    ['rack wat--123', 'rack', '123', 8],
+    ['123 wat--rack', '123', 'rack', 7],
+    ['rack wat\t--\t123', 'rack', '123', 8],
+    ['123 wat\t--\track', '123', 'rack', 7],
+  ])(
+    'diagnoses %s without disturbing equipment or rack context',
+    (line, from, to, column) => {
+      const statement = `  ${line} // -- ignored`;
+      const source = `${declarations}${statement}\n10 server "Next"`;
+      const document = parse(source);
+      expect(document.racks).toHaveLength(1);
+      expect(
+        document.devices.map(({ label, rackId }) => ({ label, rackId })),
+      ).toEqual([
+        { label: 'Core', rackId: 'rack-1' },
+        { label: 'Gateway', rackId: 'rack-1' },
+        { label: 'Next', rackId: 'rack-1' },
+      ]);
+      expect(document.connections).toHaveLength(1);
+      expect(document.connections[0]).toMatchObject({
+        from: { kind: 'device', device: from },
+        to: { kind: 'device', device: to },
+        source: {
+          start: { line: 4, column: 3 },
+          end: { line: 4, column: statement.length + 1 },
+        },
+      });
+      expect(document.diagnostics).toEqual([
+        {
+          severity: 'warn',
+          line: 4,
+          column,
+          message: 'Unexpected text after the source endpoint: wat',
+          hint: 'Only `adhoc` may follow a source device port before the `--` operator.',
+        },
+      ]);
+      const layout = resolve(document);
+      expect(layout.devices).toHaveLength(3);
+      expect(layout.connections).toHaveLength(1);
+      expect(layout.diagnostics).toContainEqual(document.diagnostics[0]);
+      expect(parse(source)).toEqual(document);
+      expect(resolve(parse(source))).toEqual(layout);
+      expect(toSvg(resolve(parse(source)))).toBe(toSvg(layout));
+    },
+  );
+
+  it.each(['core--backup', 'core--backup--extra', '"core--backup"', '--'])(
+    'retains malformed declaration alias recovery for %s',
+    (alias) => {
+      const document = parse(
+        `${declarations}10 server "Next" as ${alias}\n9 server "Last"`,
+      );
+      expect(document.racks).toHaveLength(1);
+      expect(document.devices).toHaveLength(4);
+      expect(document.devices[2]).toMatchObject({
+        label: 'Next',
+        rackId: 'rack-1',
+      });
+      expect(document.devices[2]?.alias).toBeUndefined();
+      expect(document.devices[3]).toMatchObject({
+        label: 'Last',
+        rackId: 'rack-1',
+      });
+      expect(document.connections).toEqual([]);
+      expect(document.diagnostics).toEqual([
+        expect.objectContaining({
+          line: 4,
+          message:
+            'Alias cannot be addressed by a connection; ignoring the alias.',
+        }),
+      ]);
+    },
+  );
+
+  it.each([
+    '10 server "Next" as -- extra',
+    'rear 10 server "Next" as -- extra',
+    '10 1U server "Next" as -- extra',
+    '10 "Next" as -- extra',
+    '10 server "Next" "as" -- extra',
+  ])(
+    'keeps the invalid alias and trailing-text diagnostics for %s',
+    (statement) => {
+      const document = parse(`${declarations}${statement}\n9 server "Last"`);
+      expect(document.devices.map(({ label }) => label)).toEqual([
+        'Core',
+        'Gateway',
+        'Next',
+        'Last',
+      ]);
+      expect(document.connections).toEqual([]);
+      expect(document.diagnostics).toContainEqual(
+        expect.objectContaining({
+          line: 4,
+          message:
+            'Alias cannot be addressed by a connection; ignoring the alias.',
+        }),
+      );
+      expect(document.diagnostics).toContainEqual(
+        expect.objectContaining({
+          line: 4,
+          message: 'Ignoring unsupported device text: extra',
+        }),
+      );
+    },
+  );
+
+  it.each([
+    '123 1U as -- rack',
+    '"123" wat as -- rack',
+    '"rear" 10 wat as -- rack',
+  ])(
+    'does not treat arbitrary source text as a placement alias: %s',
+    (statement) => {
+      const document = parse(`${declarations}${statement}\n10 server "Next"`);
+      expect(document.racks).toHaveLength(1);
+      expect(document.devices.map(({ label }) => label)).toEqual([
+        'Core',
+        'Gateway',
+        'Next',
+      ]);
+      expect(document.connections).toHaveLength(1);
+      expect(document.diagnostics).toContainEqual(
+        expect.objectContaining({
+          line: 4,
+          message: expect.stringContaining(
+            'Unexpected text after the source endpoint:',
+          ),
+        }),
+      );
+    },
+  );
+
+  it('preserves malformed declarations without a structural operator', () => {
+    const document = parse(
+      `${declarations}10 server "Next" // -- ignored\nrack "Broken" invalid\n9 server "Outside"`,
+    );
+    expect(document.devices.map(({ label }) => label)).toEqual([
+      'Core',
+      'Gateway',
+      'Next',
+    ]);
+    expect(document.connections).toEqual([]);
+    expect(document.diagnostics).toContainEqual(
+      expect.objectContaining({
+        line: 5,
+        message: 'Rack height is missing or invalid.',
+      }),
+    );
+    expect(document.diagnostics).toContainEqual(
+      expect.objectContaining({
+        line: 6,
+        message:
+          'Device placement appears before any rack declaration; ignoring it.',
+      }),
+    );
+  });
+
+  it('keeps protected operators and valid aliases intact', () => {
+    const document = parse(
+      `${declarations}10 server "Next -- backup" // rack wat -- 123\nrack -- 123\n123:1 -- rack:2\n[[Notes--Network]] -- rack\n[Docs -- label](https://example.com/a(b--c)) -- 123`,
+    );
+    expect(document.racks).toHaveLength(1);
+    expect(document.devices).toHaveLength(3);
+    expect(document.connections).toHaveLength(4);
+    expect(document.diagnostics).toEqual([]);
+    expect(resolve(document).connections).toHaveLength(4);
+  });
+});
