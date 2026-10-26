@@ -81,13 +81,13 @@ describe('connection structure', () => {
   it('supports adhoc modifier alongside embedded bracket text', () => {
     const result = parse(`${source}core:1 adhoc -- host:port[[backup`);
     expect(result.connections).toHaveLength(1);
-    expect(result.connections[0]?.from).toEqual({
+    expect(result.connections[0]?.from).toMatchObject({
       kind: 'device',
       device: 'core',
       port: '1',
       adHoc: true,
     });
-    expect(result.connections[0]?.to).toEqual({
+    expect(result.connections[0]?.to).toMatchObject({
       kind: 'device',
       device: 'host',
       port: 'port[[backup',
@@ -116,7 +116,7 @@ describe('connection structure', () => {
   it('preserves semantic external reference for core:1 -- [[Remote Rack]]', () => {
     const result = parse(`${source}core:1 -- [[Remote Rack]]`);
     expect(result.connections).toHaveLength(1);
-    expect(result.connections[0]?.from).toEqual({
+    expect(result.connections[0]?.from).toMatchObject({
       kind: 'device',
       device: 'core',
       port: '1',

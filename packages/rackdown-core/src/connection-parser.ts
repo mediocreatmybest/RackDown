@@ -380,6 +380,7 @@ function parseDeviceEndpoint(
   column: number,
   diagnostics: Diagnostic[],
 ): ParsedEndpointText | undefined {
+  const deviceSource = { line, column };
   let cursor = 0;
   let device: string;
   if (text[0] === '"') {
@@ -435,7 +436,7 @@ function parseDeviceEndpoint(
 
   if (text[cursor] !== ':') {
     return {
-      endpoint: { kind: 'device', device },
+      endpoint: { kind: 'device', device, deviceSource },
       ...trailingText(text, cursor),
     };
   }
@@ -453,12 +454,13 @@ function parseDeviceEndpoint(
       message: 'Connection port is unfinished; preserving the device endpoint.',
     });
     return {
-      endpoint: { kind: 'device', device },
+      endpoint: { kind: 'device', device, deviceSource },
       remainder: '',
       remainderOffset: text.length,
     };
   }
 
+  const portSource = { line, column: column + cursor };
   if (text[cursor] === '"') {
     const quoteColumn = column + cursor;
     const quoted = readQuotedText(text, cursor);
@@ -473,13 +475,13 @@ function parseDeviceEndpoint(
       });
       if (!port) {
         return {
-          endpoint: { kind: 'device', device },
+          endpoint: { kind: 'device', device, deviceSource },
           remainder: '',
           remainderOffset: text.length,
         };
       }
       return {
-        endpoint: { kind: 'device', device, port },
+        endpoint: { kind: 'device', device, port, deviceSource, portSource },
         remainder: '',
         remainderOffset: text.length,
       };
@@ -493,13 +495,13 @@ function parseDeviceEndpoint(
         message: 'Connection port is empty; preserving the device endpoint.',
       });
       return {
-        endpoint: { kind: 'device', device },
+        endpoint: { kind: 'device', device, deviceSource },
         ...trailingText(text, quoted.end),
       };
     }
 
     return {
-      endpoint: { kind: 'device', device, port },
+      endpoint: { kind: 'device', device, port, deviceSource, portSource },
       ...trailingText(text, quoted.end),
     };
   }
@@ -517,14 +519,14 @@ function parseDeviceEndpoint(
       message: 'Connection port is unfinished; preserving the device endpoint.',
     });
     return {
-      endpoint: { kind: 'device', device },
+      endpoint: { kind: 'device', device, deviceSource },
       remainder: '',
       remainderOffset: text.length,
     };
   }
 
   return {
-    endpoint: { kind: 'device', device, port },
+    endpoint: { kind: 'device', device, port, deviceSource, portSource },
     ...trailingText(text, cursor),
   };
 }

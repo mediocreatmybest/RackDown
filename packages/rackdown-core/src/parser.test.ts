@@ -514,8 +514,16 @@ core:banana -- pve1:toaster weird-fibre`);
     expect(result.connections).toEqual([
       expect.objectContaining({
         id: 'connection-4',
-        from: { kind: 'device', device: 'core', port: 'banana' },
-        to: { kind: 'device', device: 'pve1', port: 'toaster' },
+        from: expect.objectContaining({
+          kind: 'device',
+          device: 'core',
+          port: 'banana',
+        }),
+        to: expect.objectContaining({
+          kind: 'device',
+          device: 'pve1',
+          port: 'toaster',
+        }),
         media: 'weird-fibre',
       }),
     ]);
@@ -529,7 +537,11 @@ fibre:12 -- [[Garage Rack]]`);
 
     expect(result.connections[0]).toEqual(
       expect.objectContaining({
-        from: { kind: 'device', device: 'fibre', port: '12' },
+        from: expect.objectContaining({
+          kind: 'device',
+          device: 'fibre',
+          port: '12',
+        }),
         to: {
           kind: 'external',
           label: 'Garage Rack',
@@ -548,8 +560,8 @@ core -- pve1`);
 
     expect(result.connections[0]).toEqual(
       expect.objectContaining({
-        from: { kind: 'device', device: 'core' },
-        to: { kind: 'device', device: 'pve1' },
+        from: expect.objectContaining({ kind: 'device', device: 'core' }),
+        to: expect.objectContaining({ kind: 'device', device: 'pve1' }),
       }),
     );
     expect(result.diagnostics).toEqual([]);
@@ -561,7 +573,7 @@ core -- pve1`);
 8 server "PVE01" as pve1
 core: -- pve1:nic1`);
 
-    expect(result.connections[0]?.from).toEqual({
+    expect(result.connections[0]?.from).toMatchObject({
       kind: 'device',
       device: 'core',
     });

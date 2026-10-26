@@ -36,7 +36,7 @@ describe('quoted source text', () => {
       explicitLabel: true,
     });
     expect(document.connections).toHaveLength(2);
-    expect(document.connections[0]?.from).toEqual({
+    expect(document.connections[0]?.from).toMatchObject({
       kind: 'device',
       device: 'shelf',
       port: value,
@@ -53,7 +53,7 @@ describe('quoted source text', () => {
       kind: 'external',
       label: value,
     });
-    expect(document.connections[1]?.to).toEqual({
+    expect(document.connections[1]?.to).toMatchObject({
       kind: 'device',
       device: 'shelf',
       port: value,
@@ -308,12 +308,12 @@ core\backup:1 -- spare\\backup:1`),
     const document = parse(
       `${source}core:port\\\\raw -- core:plain\n"Core":1 -- core:2`,
     );
-    expect(document.connections[0]?.from).toEqual({
+    expect(document.connections[0]?.from).toMatchObject({
       kind: 'device',
       device: 'core',
       port: String.raw`port\\raw`,
     });
-    expect(document.connections[1]?.from).toEqual({
+    expect(document.connections[1]?.from).toMatchObject({
       kind: 'device',
       device: 'Core',
       port: '1',

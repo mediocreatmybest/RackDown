@@ -24,7 +24,7 @@ import type {
   PointMm,
   RackLayout,
 } from './layout.js';
-import type { SourceSpan } from './source.js';
+import type { SourcePosition, SourceSpan } from './source.js';
 import {
   DEFAULT_RACK_WIDTH_INCHES,
   DIAGRAM_RACK_WIDTH_MM,
@@ -60,6 +60,7 @@ interface ResolvedDeviceReference {
   device: LayoutDevice;
   definition?: DeviceDefinition;
   port?: string;
+  portSource?: SourcePosition;
   adHoc?: boolean;
 }
 
@@ -567,7 +568,7 @@ export function resolve(
 
   function resolveDeviceReference(
     reference: string,
-    statement: ConnectionStatement,
+    source: SourceSpan,
   ): LayoutDevice | undefined {
     const folded = reference.toLowerCase();
     // Device references resolve in layers:
@@ -608,7 +609,7 @@ export function resolve(
           : '';
       warnAt(
         diagnostics,
-        statement.source,
+        source,
         `Ambiguous device reference: ${reference}`,
         `Matches: ${matches.join('; ')}.${omitted} Use a unique alias or reference.`,
       );
@@ -617,7 +618,7 @@ export function resolve(
 
     warnAt(
       diagnostics,
-      statement.source,
+      source,
       `Unresolved device reference: ${reference}`,
       'Use a unique alias, label or device slug/type.',
     );
@@ -636,7 +637,9 @@ export function resolve(
       };
     }
 
-    const device = resolveDeviceReference(endpoint.device, statement);
+    const device = resolveDeviceReference(endpoint.device, {
+      start: endpoint.deviceSource ?? statement.source.start,
+    });
     if (!device) {
       return undefined;
     }
@@ -646,6 +649,9 @@ export function resolve(
       device,
       ...(definition === undefined ? {} : { definition }),
       ...(endpoint.port === undefined ? {} : { port: endpoint.port }),
+      ...(endpoint.portSource === undefined
+        ? {}
+        : { portSource: endpoint.portSource }),
       ...(endpoint.adHoc === undefined ? {} : { adHoc: endpoint.adHoc }),
     };
   }
@@ -727,14 +733,14 @@ export function resolve(
     if (knownPort === 'ambiguous') {
       warnAt(
         diagnostics,
-        statement.source,
+        { start: reference.portSource ?? statement.source.start },
         `Ambiguous port "${reference.port}" on "${reference.device.label}"; preserving it as an ad-hoc endpoint.`,
         knownEndpointHint(reference.device, knownPorts),
       );
     } else if (knownPorts.length > 0 && !reference.adHoc) {
       warnAt(
         diagnostics,
-        statement.source,
+        { start: reference.portSource ?? statement.source.start },
         `Unknown port "${reference.port}" on "${reference.device.label}"; preserving it as an ad-hoc endpoint.`,
         knownEndpointHint(reference.device, knownPorts),
       );

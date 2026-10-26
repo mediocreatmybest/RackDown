@@ -13,12 +13,14 @@ core:2 -- pve1: "Gig-E 2"
 core:3 -- pve1:"iDRAC"
 core:4 -- pve1: iDRAC`);
 
-    expect(result.connections.map((connection) => connection.to)).toEqual([
-      { kind: 'device', device: 'pve1', port: 'Gig-E 1' },
-      { kind: 'device', device: 'pve1', port: 'Gig-E 2' },
-      { kind: 'device', device: 'pve1', port: 'iDRAC' },
-      { kind: 'device', device: 'pve1', port: 'iDRAC' },
-    ]);
+    expect(result.connections.map((connection) => connection.to)).toMatchObject(
+      [
+        { kind: 'device', device: 'pve1', port: 'Gig-E 1' },
+        { kind: 'device', device: 'pve1', port: 'Gig-E 2' },
+        { kind: 'device', device: 'pve1', port: 'iDRAC' },
+        { kind: 'device', device: 'pve1', port: 'iDRAC' },
+      ],
+    );
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -32,33 +34,33 @@ core:5 -- pve1:DAC20Gbit fibre adhoc`);
 
     expect(result.connections[0]).toEqual(
       expect.objectContaining({
-        from: {
+        from: expect.objectContaining({
           kind: 'device',
           device: 'pve1',
           port: 'NIC 01',
           adHoc: true,
-        },
+        }),
       }),
     );
     expect(result.connections[1]).toEqual(
       expect.objectContaining({
-        to: {
+        to: expect.objectContaining({
           kind: 'device',
           device: 'pve1',
           port: 'DAC10Gbit',
           adHoc: true,
-        },
+        }),
         media: 'fibre',
       }),
     );
     expect(result.connections[2]).toEqual(
       expect.objectContaining({
-        to: {
+        to: expect.objectContaining({
           kind: 'device',
           device: 'pve1',
           port: 'DAC20Gbit',
           adHoc: true,
-        },
+        }),
         media: 'fibre',
       }),
     );
@@ -194,8 +196,18 @@ describe('trailing connection token diagnostics (#199 items 4-5)', () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.connections[0]).toEqual(
       expect.objectContaining({
-        from: { kind: 'device', device: 'a', port: '1', adHoc: true },
-        to: { kind: 'device', device: 'b', port: 'Odd', adHoc: true },
+        from: expect.objectContaining({
+          kind: 'device',
+          device: 'a',
+          port: '1',
+          adHoc: true,
+        }),
+        to: expect.objectContaining({
+          kind: 'device',
+          device: 'b',
+          port: 'Odd',
+          adHoc: true,
+        }),
         media: 'fibre',
       }),
     );

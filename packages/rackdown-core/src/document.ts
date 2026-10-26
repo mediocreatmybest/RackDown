@@ -1,6 +1,6 @@
 import type { ConnectionCategory } from './connection-category.js';
 import type { Diagnostic } from './diagnostics.js';
-import type { SourceSpan } from './source.js';
+import type { SourcePosition, SourceSpan } from './source.js';
 
 export type RackFace = 'front' | 'rear';
 export type RackU1Position = 'top' | 'bottom';
@@ -34,6 +34,9 @@ export interface DevicePlacement {
 export interface DeviceEndpointReference {
   kind: 'device';
   device: string;
+  /** Original token starts, including the opening quote for quoted text. */
+  deviceSource?: SourcePosition;
+  portSource?: SourcePosition;
   port?: string;
   /** Author intent that an otherwise unknown endpoint is deliberately ad-hoc. */
   adHoc?: boolean;

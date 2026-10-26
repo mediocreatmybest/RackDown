@@ -53,7 +53,7 @@ describe('explicit connection category grammar', () => {
           tail.includes('FiBrE') ? 'FiBrE' : undefined,
         );
         expect(doc.connections[0]?.from).not.toHaveProperty('adHoc');
-        expect(doc.connections[0]?.to).toEqual({
+        expect(doc.connections[0]?.to).toMatchObject({
           kind: 'device',
           device: 'b',
           port: 'net',
