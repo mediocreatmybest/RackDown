@@ -534,6 +534,68 @@ describe('resolve', () => {
     ]);
   });
 
+  it('identifies ambiguous labels across racks with faces, aliases and declaration lines', () => {
+    const source =
+      'rack "Network Rack" 12U\n12 switch "Switch"\nrack "Server Rack" 12U views front rear\nrear 8 switch "Switch" as core\n  Switch -- [[WAN]]';
+    const layout = resolve(parse(source));
+    expect(layout.connections).toEqual([]);
+    expect(layout.diagnostics).toEqual([
+      {
+        severity: 'warn',
+        line: 5,
+        column: 3,
+        message: 'Ambiguous device reference: Switch',
+        hint: 'Matches: Switch (Network Rack, U12, front, line 2); Switch (Server Rack, U8, rear, alias core, line 4). Use a unique alias or reference.',
+      },
+    ]);
+    expect(resolve(parse(source))).toEqual(layout);
+    expect(toSvg(resolve(parse(source)))).toBe(toSvg(layout));
+  });
+
+  it.each([
+    [
+      'switch "Switch"',
+      'switch "Switch" as core',
+      'Switch',
+      'Switch',
+      'Switch',
+    ],
+    ['switch "Alpha"', 'switch "Beta" as core', 'switch', 'Alpha', 'Beta'],
+  ])(
+    'distinguishes candidates in one rack: %s',
+    (first, second, reference, a, b) => {
+      const source = `rack "Rack" 12U\n12 ${first}\n8 ${second}\n${reference} -- [[WAN]]`;
+      const layout = resolve(parse(source));
+      expect(layout.connections).toEqual([]);
+      expect(layout.diagnostics).toEqual([
+        expect.objectContaining({
+          message: `Ambiguous device reference: ${reference}`,
+          hint: `Matches: ${a} (Rack, U12, front, line 2); ${b} (Rack, U8, front, alias core, line 3). Use a unique alias or reference.`,
+        }),
+      ]);
+      const unique = resolve(
+        parse(source.replace(`${reference} --`, 'core --')),
+      );
+      expect(unique.connections).toHaveLength(1);
+      expect(unique.diagnostics).toEqual([]);
+    },
+  );
+
+  it('bounds candidate counts and long names in deterministic source order', () => {
+    const name = 'x'.repeat(200);
+    const source = `rack "${name}" 12U\n${Array.from({ length: 8 }, (_, i) => `${i + 1} switch "${name}${i}"`).join('\n')}\nswitch -- [[WAN]]`;
+    const layout = resolve(parse(source));
+    const hint = layout.diagnostics[0]?.hint ?? '';
+    expect(hint).toContain('3 more matches omitted');
+    expect(hint).toContain('U1, front, line 2');
+    expect(hint).toContain('U5, front, line 6');
+    expect(hint).not.toContain('U6, front');
+    expect(hint.indexOf('U1,')).toBeLessThan(hint.indexOf('U5,'));
+    expect(hint.length).toBeLessThan(1000);
+    expect(layout.connections).toEqual([]);
+    expect(resolve(parse(source)).diagnostics).toEqual(layout.diagnostics);
+  });
+
   describe('special rack items: blank and shelf', () => {
     it('resolves bare blank with default 1U height and no diagnostics', () => {
       const layout = resolve(parse('rack "Rack" 12U 19in\n1 blank'));

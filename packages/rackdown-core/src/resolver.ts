@@ -588,11 +588,29 @@ export function resolve(
       if (candidates.length === 1) {
         return candidates[0];
       }
+      const concise = (text: string): string =>
+        text.length > 60 ? `${text.slice(0, 60)}…` : text;
+      const matches = candidates.slice(0, 5).map((candidate) => {
+        const rack = rackById.get(candidate.rackId);
+        const placement = placementByDeviceId.get(candidate.id);
+        const details = [
+          concise(rack?.name ?? candidate.rackId),
+          `U${candidate.positionU}`,
+          candidate.mountFace,
+          ...(candidate.alias ? [`alias ${concise(candidate.alias)}`] : []),
+          ...(placement ? [`line ${placement.source.start.line}`] : []),
+        ];
+        return `${concise(candidate.label)} (${details.join(', ')})`;
+      });
+      const omitted =
+        candidates.length > 5
+          ? ` ${candidates.length - 5} more matches omitted.`
+          : '';
       warnAt(
         diagnostics,
         statement.source,
         `Ambiguous device reference: ${reference}`,
-        `Matches: ${candidates.map((candidate) => candidate.label).join(', ')}.`,
+        `Matches: ${matches.join('; ')}.${omitted} Use a unique alias or reference.`,
       );
       return undefined;
     }

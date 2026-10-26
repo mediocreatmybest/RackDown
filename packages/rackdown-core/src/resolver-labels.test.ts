@@ -205,7 +205,7 @@ hOsT:eth0 -- [[WAN]]`;
         line: 12,
         column: 1,
         message: 'Ambiguous device reference: hOsT',
-        hint: 'Matches: host, HOST.',
+        hint: 'Matches: host (Servers, U4, front, line 3); HOST (Servers, U3, front, line 4). Use a unique alias or reference.',
       },
     ]);
   });
