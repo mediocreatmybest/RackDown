@@ -84,12 +84,6 @@ function scanLine(
         cursor = close;
         continue;
       }
-      // Comment protection follows the endpoint parser's first `](` separator.
-      // Keep the existing operator scan's recovery at a bare closing bracket.
-      if (!findComment && text[cursor] === ']') {
-        markdownState = 'none';
-        continue;
-      }
       continue;
     }
 
@@ -135,6 +129,27 @@ function scanLine(
   }
 
   return { operators, commentStart: text.length };
+}
+
+/** Recognise connections using the same protected-text rules as endpoint parsing. */
+export function startsWithConnection(text: string): boolean {
+  const operator = scanLine(text).operators[0];
+  if (operator === undefined) return false;
+  // A declaration can contain an invalid alias such as `as core--backup`.
+  // Only give connections priority when the source is an endpoint, not a
+  // declaration prefix. The normal fallback still diagnoses malformed lines.
+  const left = text.slice(0, operator).trim();
+  if (left.startsWith('"') || left.startsWith('[') || isPlainExternal(left)) {
+    return true;
+  }
+  const parsed = parseDeviceEndpoint(left, 1, 1, []);
+  return (
+    parsed !== undefined &&
+    (parsed.remainder === '' ||
+      parsed.remainder
+        .split(/\s+/)
+        .every((token) => token.toLowerCase() === 'adhoc'))
+  );
 }
 
 /** Remove a whitespace-delimited comment without changing preceding source offsets. */
@@ -349,15 +364,43 @@ function parseDeviceEndpoint(
   diagnostics: Diagnostic[],
 ): ParsedEndpointText | undefined {
   let cursor = 0;
-  while (
-    cursor < text.length &&
-    text[cursor] !== ':' &&
-    !/\s/.test(text[cursor] ?? '')
-  ) {
-    cursor += 1;
+  let device: string;
+  if (text[0] === '"') {
+    const quoted = readQuotedText(text, 0);
+    device = quoted.value;
+    cursor = quoted.end;
+    if (!quoted.terminated) {
+      diagnostics.push({
+        severity: 'warn',
+        line,
+        column,
+        message:
+          'Unterminated quoted device reference; recovered to end of line.',
+      });
+    } else if (
+      cursor < text.length &&
+      text[cursor] !== ':' &&
+      !/\s/.test(text[cursor] ?? '')
+    ) {
+      diagnostics.push({
+        severity: 'warn',
+        line,
+        column,
+        message: 'Unexpected text after quoted device reference; ignoring it.',
+        hint: 'Follow the closing quote with a colon, whitespace or the connection operator.',
+      });
+      return undefined;
+    }
+  } else {
+    while (
+      cursor < text.length &&
+      text[cursor] !== ':' &&
+      !/\s/.test(text[cursor] ?? '')
+    ) {
+      cursor += 1;
+    }
+    device = text.slice(0, cursor);
   }
-
-  const device = text.slice(0, cursor);
   if (!device) {
     diagnostics.push({
       severity: 'warn',

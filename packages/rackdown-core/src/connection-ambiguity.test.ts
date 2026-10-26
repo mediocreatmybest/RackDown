@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DevicePortDefinition } from './devices.js';
 import { parse } from './parser.js';
+import { toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
 
 const source =
@@ -610,4 +611,138 @@ describe('addressable device aliases', () => {
       expect(layout.diagnostics).toEqual([]);
     },
   );
+});
+
+describe('quoted device references and dispatch', () => {
+  const declarations =
+    'rack "Network" 6U\n5 switch "Core Switch" as rack\n4 router "Gateway" as 123\n';
+  it.each([
+    ['"Core Switch":1 -- "Gateway":1', 'Core Switch', 'Gateway'],
+    ['"Core Switch" -- "Gateway"', 'Core Switch', 'Gateway'],
+    ['rack -- 123', 'rack', '123'],
+    ['123 -- rack', '123', 'rack'],
+    ['rack:1 -- 123:1', 'rack', '123'],
+    ['rack :1 ADHOC -- 123:2', 'rack', '123'],
+    ['123 :1 AdHoC -- rack:2', '123', 'rack'],
+    [
+      '"Core Switch":"Port 1" adhoc -- "Gateway":"Port 2" adhoc fibre category network',
+      'Core Switch',
+      'Gateway',
+    ],
+  ])('parses and resolves %s', (line, from, to) => {
+    const text = `${declarations}  ${line} // ignored -- comment`;
+    const doc = parse(text);
+    expect(doc.diagnostics).toEqual([]);
+    expect(doc.racks).toHaveLength(1);
+    expect(doc.devices).toHaveLength(2);
+    expect(doc.connections).toHaveLength(1);
+    expect(doc.connections[0]).toMatchObject({
+      from: { kind: 'device', device: from },
+      to: { kind: 'device', device: to },
+      source: {
+        start: { line: 4, column: 3 },
+        end: { line: 4, column: (text.split('\n')[3]?.length ?? 0) + 1 },
+      },
+    });
+    const layout = resolve(doc);
+    expect(layout.connections).toHaveLength(1);
+    expect(parse(text)).toEqual(doc);
+    expect(resolve(parse(text))).toEqual(layout);
+    expect(toSvg(resolve(parse(text)))).toEqual(toSvg(layout));
+  });
+
+  it.each(['"rack":', 'rack:', '"123":""', 'rack adhoc'])(
+    'keeps source recovery and rack context for %s',
+    (reference) => {
+      const doc = parse(`${declarations}${reference} -- 123\n3 server "Next"`);
+      expect(doc.racks).toHaveLength(1);
+      expect(doc.devices).toHaveLength(3);
+      expect(doc.devices[2]?.rackId).toBe('rack-1');
+      expect(doc.connections).toHaveLength(1);
+      expect(doc.diagnostics).toContainEqual(
+        expect.objectContaining({ line: 4, severity: 'warn' }),
+      );
+      expect(doc.diagnostics.some(({ severity }) => severity === 'error')).toBe(
+        false,
+      );
+    },
+  );
+
+  it('preserves escaped labels, punctuation and quoted ports', () => {
+    const doc = parse(String.raw`rack "Rack" 6U
+5 switch "Core \"A\" // -- : Switch"
+4 router "Gateway"
+"Core \"A\" // -- : Switch":"Port \"1\"" adhoc -- "Gateway":2 fibre category network`);
+    expect(doc.diagnostics).toEqual([]);
+    expect(doc.connections[0]).toMatchObject({
+      from: {
+        device: 'Core "A" // -- : Switch',
+        port: 'Port "1"',
+        adHoc: true,
+      },
+      media: 'fibre',
+      category: 'network',
+    });
+    expect(resolve(doc).connections).toHaveLength(1);
+  });
+
+  it.each([
+    'ups',
+    'UPS',
+    'Supply',
+    'supply',
+    '"Power Supply"',
+    '"power supply"',
+  ])('resolves unique labels/types without aliases: %s', (reference) => {
+    const label = reference.includes(' ') ? 'Power Supply' : 'Supply';
+    const doc = parse(
+      `rack "Power" 6U\n4 ups "${label}"\n${reference}:out1 -- external "Power Feed"`,
+    );
+    expect(doc.devices[0]?.alias).toBeUndefined();
+    const layout = resolve(doc);
+    expect(layout.connections).toHaveLength(1);
+    expect(layout.connections[0]?.from).toMatchObject({
+      deviceId: 'device-2',
+      portName: 'out1',
+    });
+  });
+
+  it('keeps exact aliases ahead of labels and rejects ambiguous types', () => {
+    const prefix = 'rack "Rack" 6U\n5 ups "Supply"\n4 ups "Other" as Supply\n';
+    expect(
+      resolve(parse(`${prefix}"Supply" -- external "Feed"`)).connections[0]
+        ?.from,
+    ).toMatchObject({ deviceId: 'device-3' });
+    const layout = resolve(parse(`${prefix}ups -- external "Feed"`));
+    expect(layout.connections).toHaveLength(0);
+    expect(layout.diagnostics).toContainEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('Ambiguous'),
+      }),
+    );
+  });
+
+  it.each(['""', '"Gateway', '"Gateway"junk'])(
+    'diagnoses malformed destination references at original offsets: %s',
+    (reference) => {
+      const doc = parse(`${declarations}  rack -- ${reference}`);
+      expect(doc.diagnostics).toContainEqual(
+        expect.objectContaining({
+          line: 4,
+          column: 11,
+          message: expect.stringMatching(/device reference/),
+        }),
+      );
+    },
+  );
+
+  it('does not dispatch protected operators or comments as connections', () => {
+    const doc = parse(
+      'rack "Rack -- 42U" 6U // --\n5 switch "Core -- Switch" // --\n4 router "Gateway"\n[Docs [nested] -- label](https://example.com/a(b--c)) -- "Gateway"\n[[Notes--Network]] -- "Core -- Switch"',
+    );
+    expect(doc.racks).toHaveLength(1);
+    expect(doc.devices).toHaveLength(2);
+    expect(doc.connections).toHaveLength(2);
+    expect(doc.diagnostics).toEqual([]);
+  });
 });

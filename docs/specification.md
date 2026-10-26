@@ -292,6 +292,24 @@ ups:out1 -- server:power1 power
 ### Device identity
 
 Device references are resolved using source-facing identity rather than generated layout IDs.
+Aliases are optional: a unique label or device type/slug is enough. Quote display
+names containing spaces or punctuation, using the same `\\` and `\"` escapes as
+other quoted text:
+
+```rackdown
+rack "Network" 6U
+5 switch "Core Switch"
+4 router "Gateway"
+"Core Switch":1 -- "Gateway":1
+"Core Switch" -- "Gateway"
+```
+
+A colon may follow a quoted device reference to select a port, including a quoted
+port such as `"Core Switch":"Port 1"`. Quoting a reference does not change the
+resolution order or create an alias. A structural `--` takes precedence over
+rack and placement keywords, so aliases such as `rack` and `123` work in
+connections. Operators inside quoted text, wiki links, Markdown links or comments
+are not structural.
 
 Resolution order is:
 

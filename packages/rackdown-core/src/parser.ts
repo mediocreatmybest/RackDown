@@ -1,4 +1,8 @@
-import { parseConnection, stripInlineComment } from './connection-parser.js';
+import {
+  parseConnection,
+  startsWithConnection,
+  stripInlineComment,
+} from './connection-parser.js';
 import type { Diagnostic } from './diagnostics.js';
 import type {
   DevicePlacement,
@@ -47,6 +51,17 @@ export function parse(source: string): RackDocument {
     const trimmed = rawLine.trimStart();
 
     if (trimmed.length === 0 || trimmed.startsWith('//')) {
+      continue;
+    }
+
+    if (startsWithConnection(rawLine)) {
+      const connection = parseConnection(rawLine, line, document.diagnostics);
+      if (connection) {
+        document.connections.push({
+          ...connection,
+          source: sourceSpan(originalLine, line),
+        });
+      }
       continue;
     }
 
@@ -111,6 +126,7 @@ export function parse(source: string): RackDocument {
       continue;
     }
 
+    // Preserve diagnostics for malformed connections with protected operators.
     if (rawLine.includes('--')) {
       const connection = parseConnection(rawLine, line, document.diagnostics);
       if (connection) {

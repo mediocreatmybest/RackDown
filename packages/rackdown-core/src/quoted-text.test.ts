@@ -304,7 +304,7 @@ core\backup:1 -- spare\\backup:1`),
     expect(document.diagnostics).toEqual([]);
   });
 
-  it('preserves unquoted ports and does not introduce quoted device references', () => {
+  it('preserves unquoted ports alongside quoted device references', () => {
     const document = parse(
       `${source}core:port\\\\raw -- core:plain\n"Core":1 -- core:2`,
     );
@@ -315,16 +315,12 @@ core\backup:1 -- spare\\backup:1`),
     });
     expect(document.connections[1]?.from).toEqual({
       kind: 'device',
-      device: '"Core"',
+      device: 'Core',
       port: '1',
     });
     const layout = resolve(document);
-    expect(layout.connections).toHaveLength(1);
-    expect(layout.diagnostics).toEqual([
-      expect.objectContaining({
-        message: 'Unresolved device reference: "Core"',
-      }),
-    ]);
+    expect(layout.connections).toHaveLength(2);
+    expect(layout.diagnostics).toEqual([]);
   });
 
   it('resolves decoded ports and produces deterministic layout and SVG metadata', () => {
