@@ -754,8 +754,6 @@ describe('malformed connection dispatch recovery', () => {
   it.each([
     ['rack wat -- 123', 'rack', '123', 8],
     ['123 wat -- rack', '123', 'rack', 7],
-    ['rack wat--123', 'rack', '123', 8],
-    ['123 wat--rack', '123', 'rack', 7],
     ['rack wat\t--\t123', 'rack', '123', 8],
     ['123 wat\t--\track', '123', 'rack', 7],
   ])(
@@ -799,6 +797,72 @@ describe('malformed connection dispatch recovery', () => {
       expect(toSvg(resolve(parse(source)))).toBe(toSvg(layout));
     },
   );
+
+  it.each([
+    ['10 server--backup "Next"', 'server--backup', 'Next', undefined],
+    ['10 server Core--Backup', 'server', 'Core--Backup', 11],
+    ['10 server--backup', 'server--backup', 'server--backup', undefined],
+    ['10 wat--rack', 'wat--rack', 'wat--rack', undefined],
+    ['rear 10 server Core--Backup', 'server', 'Core--Backup', 16],
+  ])(
+    'preserves embedded operators in placement tokens: %s',
+    (statement, deviceType, label, warningColumn) => {
+      const source = `${declarations}${statement} // -- ignored\n9 server "Last"`;
+      const document = parse(source);
+      expect(document.connections).toEqual([]);
+      expect(document.devices).toHaveLength(4);
+      expect(document.devices[2]).toMatchObject({
+        deviceType,
+        label,
+        rackId: 'rack-1',
+      });
+      expect(document.devices[3]).toMatchObject({
+        label: 'Last',
+        rackId: 'rack-1',
+      });
+      expect(document.diagnostics).toEqual(
+        warningColumn === undefined
+          ? []
+          : [
+              {
+                severity: 'warn',
+                line: 4,
+                column: warningColumn,
+                message:
+                  'Device labels should be quoted; recovered an unquoted label.',
+                hint: `Use "${label}".`,
+              },
+            ],
+      );
+      expect(parse(source)).toEqual(document);
+      expect(resolve(parse(source))).toEqual(resolve(document));
+      expect(toSvg(resolve(parse(source)))).toBe(toSvg(resolve(document)));
+    },
+  );
+
+  it('preserves embedded operators in an unquoted rack name', () => {
+    const source = 'rack Lab--East 12U // -- ignored\n10 server "Next"';
+    const document = parse(source);
+    expect(document.racks).toHaveLength(1);
+    expect(document.racks[0]).toMatchObject({ name: 'Lab--East', units: 12 });
+    expect(document.devices[0]).toMatchObject({
+      label: 'Next',
+      rackId: 'rack-1',
+    });
+    expect(document.connections).toEqual([]);
+    expect(document.diagnostics).toEqual([
+      {
+        severity: 'warn',
+        line: 1,
+        column: 6,
+        message: 'Rack names should be quoted.',
+        hint: 'Use rack "Lab--East" ...',
+      },
+    ]);
+    expect(parse(source)).toEqual(document);
+    expect(resolve(parse(source))).toEqual(resolve(document));
+    expect(toSvg(resolve(parse(source)))).toBe(toSvg(resolve(document)));
+  });
 
   it.each(['core--backup', 'core--backup--extra', '"core--backup"', '--'])(
     'retains malformed declaration alias recovery for %s',
@@ -914,12 +978,12 @@ describe('malformed connection dispatch recovery', () => {
 
   it('keeps protected operators and valid aliases intact', () => {
     const document = parse(
-      `${declarations}10 server "Next -- backup" // rack wat -- 123\nrack -- 123\n123:1 -- rack:2\n[[Notes--Network]] -- rack\n[Docs -- label](https://example.com/a(b--c)) -- 123`,
+      `${declarations}10 server "Next -- backup" // rack wat -- 123\nrack -- 123\n123:1 -- rack:2\nrack--123\n123:1--rack:2\n[[Notes--Network]] -- rack\n[Docs -- label](https://example.com/a(b--c)) -- 123`,
     );
     expect(document.racks).toHaveLength(1);
     expect(document.devices).toHaveLength(3);
-    expect(document.connections).toHaveLength(4);
+    expect(document.connections).toHaveLength(6);
     expect(document.diagnostics).toEqual([]);
-    expect(resolve(document).connections).toHaveLength(4);
+    expect(resolve(document).connections).toHaveLength(6);
   });
 });

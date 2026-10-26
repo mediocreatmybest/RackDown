@@ -131,16 +131,41 @@ function scanLine(
   return { operators, commentStart: text.length };
 }
 
-/** Recognise structural operators outside a placement's alias token. */
+/** Recognise connections without consuming embedded declaration-token text. */
 export function startsWithConnection(
   text: string,
   aliasToken?: { column: number; value: string },
 ): boolean {
-  return scanLine(text).operators.some(
+  const operators = scanLine(text).operators.filter(
     (index) =>
       aliasToken === undefined ||
       index < aliasToken.column - 1 ||
       index >= aliasToken.column - 1 + aliasToken.value.length,
+  );
+  if (
+    operators.some(
+      (index) =>
+        (index === 0 || /\s/.test(text[index - 1] ?? '')) &&
+        (index + 2 === text.length || /\s/.test(text[index + 2] ?? '')),
+    )
+  ) {
+    return true;
+  }
+  // Compact operators require a source endpoint, otherwise `--` can belong
+  // to an unquoted rack name, device type or recovered device label.
+  const operator = operators[0];
+  if (operator === undefined) return false;
+  const left = text.slice(0, operator).trim();
+  if (left.startsWith('"') || left.startsWith('[') || isPlainExternal(left)) {
+    return true;
+  }
+  const parsed = parseDeviceEndpoint(left, 1, 1, []);
+  return (
+    parsed !== undefined &&
+    (parsed.remainder === '' ||
+      parsed.remainder
+        .split(/\s+/)
+        .every((token) => token.toLowerCase() === 'adhoc'))
   );
 }
 
