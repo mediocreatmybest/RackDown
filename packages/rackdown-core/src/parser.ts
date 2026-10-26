@@ -22,6 +22,7 @@ interface Token {
 }
 
 const POSITION_PATTERN = /^-?\d+(?:\.\d+)?$/;
+const NEGATIVE_DEVICE_U_PATTERN = /^-\d+(?:\.\d+)?u$/i;
 const U_PATTERN = /^(\d+(?:\.\d+)?)u$/i;
 const WIDTH_PATTERN = /^(\d+(?:\.\d+)?)in$/i;
 const MAX_RACK_UNITS = 120;
@@ -175,7 +176,12 @@ function placementAliasToken(
 ): Token | undefined {
   let cursor = positionIndex + 1;
   const height = tokens[cursor];
-  if (height && !height.quoted && parseRackUnits(height.value) !== undefined)
+  if (
+    height &&
+    !height.quoted &&
+    (parseRackUnits(height.value) !== undefined ||
+      NEGATIVE_DEVICE_U_PATTERN.test(height.value))
+  )
     cursor += 1;
   const type = tokens[cursor];
   cursor += 1;
@@ -396,6 +402,18 @@ function parseDevice(
       : undefined;
   if (parsedHeight !== undefined) {
     explicitUHeight = parsedHeight;
+    cursor += 1;
+  } else if (
+    possibleHeight &&
+    !possibleHeight.quoted &&
+    NEGATIVE_DEVICE_U_PATTERN.test(possibleHeight.value)
+  ) {
+    diagnostics.push({
+      severity: 'warn',
+      line,
+      column: possibleHeight.column,
+      message: 'Device height must not be negative; using default height.',
+    });
     cursor += 1;
   }
 

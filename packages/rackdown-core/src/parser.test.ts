@@ -126,6 +126,67 @@ describe('parse', () => {
     });
   });
 
+  it.each(['-2U', '-0.5U', '-0U'])(
+    'recovers negative height %s without consuming device content',
+    (height) => {
+      for (const prefix of ['1', 'rear 1']) {
+        for (const typed of ['server ', '']) {
+          const line = `  ${prefix} ${height} ${typed}"Host" as host`;
+          const source = `rack "R" 4U views front rear\n${line}\n3 switch "Next"`;
+          const document = parse(source);
+          expect(document.devices[0]).toMatchObject({
+            deviceType: typed ? 'server' : 'device',
+            label: 'Host',
+            alias: 'host',
+            positionU: 1,
+            mountFace: prefix.startsWith('rear') ? 'rear' : 'front',
+            source: {
+              start: { line: 2, column: 3 },
+              end: { line: 2, column: line.length + 1 },
+            },
+          });
+          expect(document.devices[0]?.explicitUHeight).toBeUndefined();
+          expect(document.devices[1]?.label).toBe('Next');
+          expect(document.diagnostics).toEqual([
+            expect.objectContaining({
+              severity: 'warn',
+              line: 2,
+              column: line.indexOf(height) + 1,
+              message:
+                'Device height must not be negative; using default height.',
+            }),
+          ]);
+          expect(resolve(document).devices[0]?.uHeight).toBe(1);
+          expect(
+            resolve(document, { server: { slug: 'server', uHeight: 2 } })
+              .devices[0]?.uHeight,
+          ).toBe(typed ? 2 : 1);
+          expect(parse(source)).toEqual(document);
+          expect(resolve(parse(source))).toEqual(resolve(document));
+          expect(toSvg(resolve(parse(source)))).toBe(toSvg(resolve(document)));
+        }
+      }
+    },
+  );
+
+  it.each(['-2UX', '-watU', '+2U', '-.5U'])(
+    'keeps unrelated tokens as device types: %s',
+    (deviceType) => {
+      expect(
+        parse(`rack "R" 4U\n1 ${deviceType} "Host"`).devices[0]?.deviceType,
+      ).toBe(deviceType);
+    },
+  );
+
+  it('keeps quoted negative U-like labels literal', () => {
+    const document = parse('rack "R" 4U\n1 "-2U"');
+    expect(document.devices[0]).toMatchObject({
+      deviceType: 'device',
+      label: '-2U',
+    });
+    expect(document.diagnostics).toEqual([]);
+  });
+
   it('retains omitted rack names and unquoted integer/fractional device heights', () => {
     const result = parse(
       'rack 120U\n1 2U device "2U"\n4 0.5U device "0.5U"\n6 2U',
