@@ -24,16 +24,107 @@ describe('parse', () => {
         explicitLabel: true,
       });
       expect(result.devices[0]?.explicitUHeight).toBeUndefined();
-      expect(result.diagnostics).toEqual([
+      expect(result.diagnostics).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['12 "Patch Panel"', 12, undefined, 'front'],
+    ['10 2U "Patch Panel"', 10, 2, 'front'],
+    ['rear 12 "Patch Panel"', 12, undefined, 'rear'],
+    ['rear 10 2U "Patch Panel"', 10, 2, 'rear'],
+  ])(
+    'accepts a complete generic label: %s',
+    (placement, positionU, height, face) => {
+      const source = `rack "Server Rack" 12U views front rear\n${placement} as panel\n8 switch "Core Switch"\n1 2U ups "UPS"\npanel -- "Core Switch"\n"Patch Panel" -- ups`;
+      const document = parse(source);
+      expect(document.diagnostics).toEqual([]);
+      expect(document.devices[0]).toMatchObject({
+        deviceType: 'device',
+        label: 'Patch Panel',
+        explicitLabel: true,
+        positionU,
+        mountFace: face,
+        alias: 'panel',
+      });
+      expect(document.devices[0]?.explicitUHeight).toBe(height);
+      expect(document.devices.map(({ deviceType }) => deviceType)).toEqual([
+        'device',
+        'switch',
+        'ups',
+      ]);
+      const layout = resolve(document);
+      expect(layout.diagnostics).toEqual([]);
+      expect(layout.connections).toHaveLength(2);
+      expect(parse(source)).toEqual(document);
+      expect(resolve(parse(source))).toEqual(layout);
+      expect(toSvg(resolve(parse(source)))).toBe(toSvg(layout));
+    },
+  );
+
+  it.each([
+    '10',
+    '10 2U',
+    '10 ""',
+    'rear 10 2U ""',
+    '10 "Unfinished',
+    'rear 10 2U "Unfinished',
+  ])(
+    'retains missing-type warnings for incomplete generic placements: %s',
+    (placement) => {
+      const document = parse(
+        `rack "Rack" 12U views front rear\n${placement}\n8 switch "Next"`,
+      );
+      expect(document.devices).toHaveLength(2);
+      expect(document.devices[0]?.deviceType).toBe('device');
+      expect(document.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'warn',
           line: 2,
-          column: 3,
+          column: placement.includes('"')
+            ? placement.indexOf('"') + 1
+            : placement.length + 1,
           message: 'Device type is missing; using generic device.',
         }),
-      ]);
+      );
+      if (placement.includes('Unfinished')) {
+        expect(document.diagnostics).toContainEqual(
+          expect.objectContaining({
+            severity: 'warn',
+            line: 2,
+            column: placement.indexOf('"') + 1,
+            message:
+              'Unterminated quoted device label; recovered to end of line.',
+          }),
+        );
+      }
     },
   );
+
+  it('does not infer catalogue types from generic display labels', () => {
+    const document = parse(
+      'rack "Rack" 12U\n10 "vendor-server"\n6 vendor-server "Typed Server"',
+    );
+    expect(document.diagnostics).toEqual([]);
+    const layout = resolve(document, {
+      'vendor-server': {
+        slug: 'vendor-server',
+        model: 'Catalogue Server',
+        uHeight: 2,
+      },
+    });
+    expect(layout.diagnostics).toEqual([]);
+    expect(layout.devices[0]).toMatchObject({
+      deviceType: 'device',
+      label: 'vendor-server',
+      uHeight: 1,
+    });
+    expect(layout.devices[1]).toMatchObject({
+      deviceType: 'vendor-server',
+      label: 'Typed Server',
+      uHeight: 2,
+    });
+  });
 
   it('retains omitted rack names and unquoted integer/fractional device heights', () => {
     const result = parse(

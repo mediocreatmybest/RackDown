@@ -99,7 +99,7 @@ Rack height must be a whole number from 1U to 120U, for example `12U` or `42U`. 
 
 If rack width is omitted, resolution uses 19 inches as the layout default without warning.
 
-Quoted rack names and device labels are literal text, even when they resemble U-heights. For example, `rack "42U" 12U` names a 12U rack `42U`, and `1 "2U"` labels a generic device `2U`. Only unquoted tokens are interpreted as U-heights; the label-only device form still warns that its type is missing.
+Quoted rack names and device labels are literal text, even when they resemble U-heights. For example, `rack "42U" 12U` names a 12U rack `42U`, and `1 "2U"` labels a generic device `2U`. Only unquoted tokens are interpreted as U-heights. A complete, nonempty quoted label declares a generic device without a missing-type warning; empty or unterminated labels and missing devices still warn.
 
 Device positions and heights may use fractional U values, but the rack declaration itself uses whole rack units.
 
@@ -142,7 +142,14 @@ A common placement looks like this:
 18 switch "Core Switch"
 ```
 
-Placements are front-mounted by default.
+Placements are front-mounted by default. The type may be omitted for a generic device with a complete, nonempty quoted label, with or without an explicit height:
+
+```rackdown
+12 "Patch Panel"
+10 2U "Production Server"
+```
+
+These placements keep type `device`; display labels do not imply catalogue types. The same form supports `rear` and optional `as` aliases.
 
 Rear-mounted equipment uses the `rear` prefix:
 

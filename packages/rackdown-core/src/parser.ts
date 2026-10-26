@@ -415,12 +415,14 @@ function parseDevice(
     label = typeToken.value || 'device';
     explicitLabel = true;
     reportUnterminated(typeToken, line, 'device label', diagnostics);
-    diagnostics.push({
-      severity: 'warn',
-      line,
-      column: typeToken.column,
-      message: 'Device type is missing; using generic device.',
-    });
+    if (!typeToken.value || typeToken.unterminated) {
+      diagnostics.push({
+        severity: 'warn',
+        line,
+        column: typeToken.column,
+        message: 'Device type is missing; using generic device.',
+      });
+    }
     cursor += 1;
   } else {
     deviceType = typeToken.value;

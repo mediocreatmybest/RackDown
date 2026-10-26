@@ -1,5 +1,19 @@
 # RackDown authoring cheat sheet
 
+Start with a basic rack:
+
+```rackdown
+rack "Server Rack" 12U
+12 "Patch Panel"
+10 2U "Production Server"
+8 switch "Core Switch"
+1 2U ups "UPS"
+```
+
+A complete, nonempty quoted label needs no device type and produces no missing-type warning. It declares a generic device, including with `rear` or an optional alias. Empty or unterminated labels and missing devices still warn.
+
+Add connections and shared rows when needed:
+
 ```rackdown
 rack "Workshop" 12U views front rear
 12 switch "Core Switch" as core
