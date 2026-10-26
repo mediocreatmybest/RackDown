@@ -487,12 +487,26 @@ External endpoints remain document information rather than physical rack rectang
 
 ## 9. Comments
 
-Simple line comments use `//`:
+Use `//` for full-line comments or trailing comments on rack declarations,
+front/rear placements and connections:
 
 ```rackdown
-// uplink switch
-18 switch "Core"
+// Main cabinet
+rack "Main Rack" 12U
+10 switch "Core" as core // Distribution switch
+rear 2 pdu "Power" as power // Rear mounted
+core:1 -- [[WAN]] fibre category network // Primary uplink
 ```
+
+A trailing `//` starts a comment only when preceded by whitespace and followed
+by whitespace or the end of the line, outside
+quoted text, wiki links and Markdown link labels or destinations. Existing
+full-line comments also accept `//comment` without a space after the slashes.
+Quoted labels and ports, `[[Notes//Networking]]`, Markdown URLs and ordinary
+tokens such as `https://example.com/device` retain their `//` text. Existing
+quote escapes and balanced Markdown destinations still apply; an unfinished
+protected value keeps the rest of the line for normal error recovery.
+Comments do not change the meaning of tokens before them.
 
 ## 10. Diagnostics and recovery
 

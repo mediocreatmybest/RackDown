@@ -56,8 +56,11 @@ function markdownDestinationEnd(text: string, openParen: number): number {
   return -1;
 }
 
-/** Quoted ports, plain external labels, wiki references and Markdown links protect `--` from being treated as structural. */
-function connectionOperators(text: string): number[] {
+/** Scan operators and comments outside quoted text, wiki references and Markdown links. */
+function scanLine(
+  text: string,
+  findComment = false,
+): { operators: number[]; commentStart: number } {
   const operators: number[] = [];
   let external = false;
   let markdownState: 'none' | 'bracket' = 'none';
@@ -81,7 +84,9 @@ function connectionOperators(text: string): number[] {
         cursor = close;
         continue;
       }
-      if (text[cursor] === ']') {
+      // Comment protection follows the endpoint parser's first `](` separator.
+      // Keep the existing operator scan's recovery at a bare closing bracket.
+      if (!findComment && text[cursor] === ']') {
         markdownState = 'none';
         continue;
       }
@@ -93,6 +98,15 @@ function connectionOperators(text: string): number[] {
       cursor = quoted.end - 1;
       atEndpointStart = false;
       continue;
+    }
+
+    if (
+      findComment &&
+      text.startsWith('//', cursor) &&
+      (cursor === 0 || /\s/.test(text[cursor - 1] ?? '')) &&
+      (cursor + 2 === text.length || /\s/.test(text[cursor + 2] ?? ''))
+    ) {
+      return { operators, commentStart: cursor };
     }
 
     if (atEndpointStart) {
@@ -120,7 +134,15 @@ function connectionOperators(text: string): number[] {
     }
   }
 
-  return operators;
+  return { operators, commentStart: text.length };
+}
+
+/** Remove a whitespace-delimited comment without changing preceding source offsets. */
+export function stripInlineComment(text: string): string {
+  const { commentStart } = scanLine(text, true);
+  return commentStart === text.length
+    ? text
+    : text.slice(0, commentStart).trimEnd();
 }
 
 /** Parse one line containing the v0 `--` connection operator. */
@@ -129,7 +151,7 @@ export function parseConnection(
   line: number,
   diagnostics: Diagnostic[],
 ): ConnectionStatement | undefined {
-  const operators = connectionOperators(rawLine);
+  const { operators } = scanLine(rawLine);
   const operator = operators[0] ?? -1;
   if (operator < 0) {
     diagnostics.push({

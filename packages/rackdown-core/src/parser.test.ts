@@ -694,3 +694,118 @@ rack "Server Room" 12U`);
     );
   });
 });
+
+describe('inline comments', () => {
+  const lines = [
+    'rack "Main // Rack" 12U views front rear',
+    '10 switch "Core // distribution" as core',
+    'rear 2 pdu "Power" as power',
+    'core:1 -- power:2 fibre category network',
+  ];
+
+  it('preserves semantics and rendering across multiple commented statements', () => {
+    const source = lines.join('\n');
+    const commented = lines
+      .map((line) => `${line} // note -- ignored`)
+      .join('\n');
+    const plain = parse(source);
+    const actual = parse(commented);
+    expect(actual.diagnostics).toEqual(plain.diagnostics);
+    for (const key of ['racks', 'devices', 'connections'] as const) {
+      expect(actual[key].map(({ source, ...statement }) => statement)).toEqual(
+        plain[key].map(({ source, ...statement }) => statement),
+      );
+      for (const statement of actual[key]) {
+        expect(statement.source.end?.column).toBe(
+          (commented.split('\n')[statement.source.start.line - 1]?.length ??
+            0) + 1,
+        );
+      }
+    }
+    expect(parse(commented)).toEqual(actual);
+    expect(resolve(actual)).toEqual(resolve(parse(commented)));
+    const semantics = (value: unknown) =>
+      JSON.parse(
+        JSON.stringify(value, (key, item) =>
+          key === 'source' ? undefined : item,
+        ),
+      );
+    expect(semantics(resolve(actual))).toEqual(semantics(resolve(plain)));
+    expect(toSvg(resolve(actual))).toBe(toSvg(resolve(plain)));
+  });
+
+  it.each([
+    'core:"Port // -- one" -- external "WAN // -- label"',
+    'core:1 -- [[Notes//Networking -- guide]] fibre category network',
+    'core:1 -- [Docs [nested] // networking](https://example.com)',
+    'core:1 -- [Notes // -- guide](https://example.com/a(b//c)--d) fibre',
+    String.raw`core:"Port \" // -- one" -- external "WAN \" // label"`,
+    String.raw`core:1 -- [Notes](https://example.com/a\(b//c\))`,
+    'core:1 adhoc -- power:2 adhoc fibre category power',
+    'core:1 -- power:2 https://example.com/device',
+    'core:1 -- power:2 fibre//literal',
+    'core:1 -- power:2 //literal',
+    'core:1 -- power:2 category',
+  ])('preserves protected content and suffixes: %s', (connection) => {
+    const prefix = lines.slice(0, 3).join('\n');
+    const plain = parse(`${prefix}\n${connection}`);
+    const actual = parse(`${prefix}\n${connection} // comment -- ignored`);
+    expect(actual.connections.map(({ source, ...value }) => value)).toEqual(
+      plain.connections.map(({ source, ...value }) => value),
+    );
+    expect(actual.connections).toHaveLength(1);
+    expect(actual.diagnostics).toEqual(plain.diagnostics);
+    expect(toSvg(resolve(actual))).toBe(toSvg(resolve(plain)));
+  });
+
+  it.each([
+    '  core:1 -- power:2 category invalid',
+    '  core:1 -- power:2 fibre extra',
+    '  core:1 -- power:2 fibre category',
+    '  1 switch "Missing alias" as',
+    '  rack "Missing height"',
+  ])('retains diagnostics before comments: %s', (statement) => {
+    const plain = parse(`\n${statement}`);
+    const actual = parse(`\n${statement} // ignored`);
+    expect(plain.diagnostics.length).toBeGreaterThan(0);
+    expect(actual.diagnostics).toEqual(plain.diagnostics);
+  });
+
+  it.each([' //', '\t//\tnote'])(
+    'accepts empty and tab-delimited trailing comments: %s',
+    (comment) => {
+      expect(parse(`rack "Rack" 12U${comment}`).diagnostics).toEqual([]);
+    },
+  );
+
+  it('retains whole-line comments and whitespace-only lines', () => {
+    expect(parse(' //comment\n\t// -- ignored\n //   \n  \n')).toEqual(
+      parse(''),
+    );
+  });
+
+  it('retains unfinished quoted and wiki text during recovery', () => {
+    expect(
+      parse('rack "Rack" 12U\n1 switch "Unfinished // name').devices[0]?.label,
+    ).toBe('Unfinished // name');
+    const result = parse('core:1 -- [[Unfinished // wiki');
+    expect(result.connections[0]?.to).toMatchObject({
+      label: 'Unfinished // wiki',
+      link: { style: 'wiki', target: 'Unfinished // wiki' },
+    });
+  });
+
+  it.each([
+    'rack "Unfinished // name',
+    'core:1 -- [[Unfinished // wiki',
+    'core:1 -- [Unfinished // label',
+    'core:1 -- [Link](https://example.com/unfinished // target',
+  ])(
+    'keeps malformed protected content available for recovery: %s',
+    (source) => {
+      const result = parse(source);
+      expect(result.diagnostics.length).toBeGreaterThan(0);
+      expect(parse(source)).toEqual(result);
+    },
+  );
+});

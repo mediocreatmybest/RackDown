@@ -1,4 +1,4 @@
-import { parseConnection } from './connection-parser.js';
+import { parseConnection, stripInlineComment } from './connection-parser.js';
 import type { Diagnostic } from './diagnostics.js';
 import type {
   DevicePlacement,
@@ -41,7 +41,8 @@ export function parse(source: string): RackDocument {
   const lines = source.split(/\r?\n/);
 
   for (let index = 0; index < lines.length; index += 1) {
-    const rawLine = lines[index] ?? '';
+    const originalLine = lines[index] ?? '';
+    const rawLine = stripInlineComment(originalLine);
     const line = index + 1;
     const trimmed = rawLine.trimStart();
 
@@ -59,7 +60,10 @@ export function parse(source: string): RackDocument {
       const rack = parseRack(tokens, rawLine, line, document.diagnostics);
       currentRackId = rack?.id;
       if (rack) {
-        document.racks.push(rack);
+        document.racks.push({
+          ...rack,
+          source: sourceSpan(originalLine, line),
+        });
       }
       continue;
     }
@@ -75,7 +79,10 @@ export function parse(source: string): RackDocument {
         'front',
       );
       if (device) {
-        document.devices.push(device);
+        document.devices.push({
+          ...device,
+          source: sourceSpan(originalLine, line),
+        });
       }
       continue;
     }
@@ -96,7 +103,10 @@ export function parse(source: string): RackDocument {
         'rear',
       );
       if (device) {
-        document.devices.push(device);
+        document.devices.push({
+          ...device,
+          source: sourceSpan(originalLine, line),
+        });
       }
       continue;
     }
@@ -104,7 +114,10 @@ export function parse(source: string): RackDocument {
     if (rawLine.includes('--')) {
       const connection = parseConnection(rawLine, line, document.diagnostics);
       if (connection) {
-        document.connections.push(connection);
+        document.connections.push({
+          ...connection,
+          source: sourceSpan(originalLine, line),
+        });
       }
       continue;
     }
