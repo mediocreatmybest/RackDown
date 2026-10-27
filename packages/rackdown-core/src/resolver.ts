@@ -19,6 +19,7 @@ import type {
   LayoutDevice,
   LayoutDeviceMetadata,
   LayoutExternal,
+  LayoutNote,
   LayoutPort,
   LayoutRack,
   PointMm,
@@ -783,6 +784,43 @@ export function resolve(
     });
   }
 
+  const notes: LayoutNote[] = [];
+  const connectionIds = new Set(connections.map((connection) => connection.id));
+  for (const note of document.notes ?? []) {
+    const target = note.target;
+    if (target.kind === 'device-reference') {
+      const device = resolveDeviceReference(target.reference, {
+        start: target.referenceSource ?? note.source.start,
+      });
+      if (device)
+        notes.push({
+          ...note,
+          target: { kind: 'device', deviceId: device.id },
+        });
+    } else if (target.kind === 'device') {
+      if (devicesById.has(target.deviceId)) notes.push({ ...note, target });
+    } else if (target.kind === 'connection') {
+      if (connectionIds.has(target.connectionId))
+        notes.push({ ...note, target });
+    } else {
+      const rack = rackById.get(target.rackId);
+      if (
+        !rack ||
+        !Number.isFinite(target.positionU) ||
+        target.positionU < 1 ||
+        target.positionU > rack.units
+      ) {
+        warnAt(
+          diagnostics,
+          note.source,
+          'Invalid note rack position; ignoring it.',
+        );
+      } else {
+        notes.push({ ...note, target });
+      }
+    }
+  }
+
   return {
     schemaVersion: 2,
     racks,
@@ -790,6 +828,7 @@ export function resolve(
     connections,
     externals,
     diagnostics,
+    ...(notes.length === 0 ? {} : { notes }),
     bounds: {
       widthMm: rackWidthMm,
       heightMm: maxRackHeightMm,

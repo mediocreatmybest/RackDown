@@ -3,7 +3,9 @@ import type { Diagnostic } from './diagnostics.js';
 import type {
   ConnectionEndpointReference,
   ConnectionStatement,
+  DocumentNote,
 } from './document.js';
+import { noteClauseStart, readInlineNotes } from './note-parser.js';
 import { readQuotedText } from './quoted-text.js';
 import { sourceSpan } from './source.js';
 
@@ -182,6 +184,7 @@ export function parseConnection(
   rawLine: string,
   line: number,
   diagnostics: Diagnostic[],
+  notes: DocumentNote[] = [],
 ): ConnectionStatement | undefined {
   const { operators } = scanLine(rawLine);
   const operator = operators[0] ?? -1;
@@ -231,19 +234,28 @@ export function parseConnection(
     leftColumn,
     diagnostics,
     false,
+    rawLine,
+    notes,
   );
+  const noteDiagnostics: Diagnostic[] = [];
+  const connectionNotes: DocumentNote[] = [];
   const right = parseEndpointWithTrailing(
     rightText,
     line,
     rightColumn,
     diagnostics,
     true,
+    rawLine,
+    connectionNotes,
+    noteDiagnostics,
   );
 
   if (!left || !right) {
     return undefined;
   }
 
+  notes.push(...connectionNotes);
+  diagnostics.push(...noteDiagnostics);
   return {
     kind: 'connection',
     id: `connection-${line}`,
@@ -261,6 +273,9 @@ function parseEndpointWithTrailing(
   column: number,
   diagnostics: Diagnostic[],
   allowMedia: boolean,
+  rawLine: string,
+  notes: DocumentNote[],
+  noteDiagnostics: Diagnostic[] = diagnostics,
 ): EndpointWithMedia | undefined {
   const parsed = text.startsWith('[[')
     ? parseWikiEndpoint(text, line, column, diagnostics)
@@ -273,13 +288,51 @@ function parseEndpointWithTrailing(
     return undefined;
   }
 
+  // Extract only the destination suffix after the endpoint parser has protected
+  // quoted references and link destinations. Prose must never enter classification.
+  let remainder = parsed.remainder;
+  if (allowMedia) {
+    let categoryNeedsValue = false;
+    for (let cursor = 0; cursor < remainder.length; cursor += 1) {
+      if (/\s/.test(remainder[cursor] ?? '')) continue;
+      if (remainder[cursor] === '"') {
+        cursor = readQuotedText(remainder, cursor).end - 1;
+        categoryNeedsValue = false;
+        continue;
+      }
+      if (
+        /\s/.test(
+          rawLine[column - 2 + parsed.remainderOffset + cursor] ?? '',
+        ) &&
+        !categoryNeedsValue &&
+        noteClauseStart(remainder.slice(cursor))
+      ) {
+        readInlineNotes(
+          rawLine,
+          column - 1 + parsed.remainderOffset + cursor,
+          line,
+          { kind: 'connection', connectionId: `connection-${line}` },
+          noteDiagnostics,
+          notes,
+        );
+        remainder = remainder.slice(0, cursor);
+        break;
+      }
+      const token = /^\S+/.exec(remainder.slice(cursor))?.[0] ?? '';
+      // `adhoc` is endpoint-local and does not consume a category argument.
+      if (token.toLowerCase() !== 'adhoc')
+        categoryNeedsValue = token.toLowerCase() === 'category';
+      cursor += token.length - 1;
+    }
+  }
+
   let endpoint = parsed.endpoint;
   let media: string | undefined;
   const unsupported: TrailingToken[] = [];
   // Trailing tokens keep their own column so diagnostics point at the offending
   // token rather than at the start of the endpoint that precedes it.
   const trailing: TrailingToken[] = [];
-  for (const match of parsed.remainder.matchAll(/\S+/g)) {
+  for (const match of remainder.matchAll(/\S+/g)) {
     trailing.push({
       text: match[0],
       column: column + parsed.remainderOffset + match.index,

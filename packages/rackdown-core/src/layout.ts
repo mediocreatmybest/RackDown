@@ -4,7 +4,9 @@ import type {
   ExternalLinkIntent,
   RackFace,
   RackU1Position,
+  ResolvedNoteTarget,
 } from './document.js';
+import type { SourceSpan } from './source.js';
 
 export interface PointMm {
   xMm: number;
@@ -98,6 +100,13 @@ export interface LayoutExternal {
   link?: ExternalLinkIntent;
 }
 
+export interface LayoutNote {
+  id: string;
+  text: string;
+  target: ResolvedNoteTarget;
+  source: SourceSpan;
+}
+
 /**
  * Resolved rack model consumed by renderers. Physical geometry is expressed in
  * millimetres; semantic external targets deliberately carry no renderer
@@ -110,5 +119,6 @@ export interface RackLayout {
   connections: LayoutConnection[];
   externals: LayoutExternal[];
   diagnostics: Diagnostic[];
+  notes?: LayoutNote[];
   bounds: LayoutBounds;
 }

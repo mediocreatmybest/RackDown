@@ -6,11 +6,14 @@ import {
 import type { Diagnostic } from './diagnostics.js';
 import type {
   DevicePlacement,
+  DocumentNote,
+  ParsedNoteTarget,
   RackDeclaration,
   RackDocument,
   RackFace,
   RackU1Position,
 } from './document.js';
+import { readInlineNotes, readNote } from './note-parser.js';
 import { readQuotedText } from './quoted-text.js';
 import { sourceSpan } from './source.js';
 
@@ -42,6 +45,7 @@ export function parse(source: string): RackDocument {
     diagnostics: [],
   };
 
+  const notes: DocumentNote[] = [];
   let currentRackId: string | undefined;
   const lines = source.split(/\r?\n/);
 
@@ -61,6 +65,23 @@ export function parse(source: string): RackDocument {
       continue;
     }
     const second = tokens[1];
+    if (
+      !first.quoted &&
+      first.value.toLowerCase() === 'notes' &&
+      second &&
+      !second.quoted &&
+      ['for', 'at'].includes(second.value.toLowerCase())
+    ) {
+      parseStandaloneNote(
+        tokens,
+        rawLine,
+        line,
+        currentRackId ? document.racks.at(-1) : undefined,
+        document.diagnostics,
+        notes,
+      );
+      continue;
+    }
     const positionIndex =
       !first.quoted && POSITION_PATTERN.test(first.value)
         ? 0
@@ -76,12 +97,17 @@ export function parse(source: string): RackDocument {
     const aliasToken =
       positionIndex === undefined
         ? undefined
-        : placementAliasToken(tokens, positionIndex);
+        : placementAliasToken(tokens, positionIndex, rawLine);
 
     if (
       startsWithConnection(rawLine, aliasToken?.quoted ? undefined : aliasToken)
     ) {
-      const connection = parseConnection(rawLine, line, document.diagnostics);
+      const connection = parseConnection(
+        rawLine,
+        line,
+        document.diagnostics,
+        notes,
+      );
       if (connection) {
         document.connections.push({
           ...connection,
@@ -112,6 +138,7 @@ export function parse(source: string): RackDocument {
         document.diagnostics,
         0,
         'front',
+        notes,
       );
       if (device) {
         document.devices.push({
@@ -135,6 +162,7 @@ export function parse(source: string): RackDocument {
         document.diagnostics,
         1,
         'rear',
+        notes,
       );
       if (device) {
         document.devices.push({
@@ -147,7 +175,12 @@ export function parse(source: string): RackDocument {
 
     // Preserve diagnostics for malformed connections with protected operators.
     if (rawLine.includes('--')) {
-      const connection = parseConnection(rawLine, line, document.diagnostics);
+      const connection = parseConnection(
+        rawLine,
+        line,
+        document.diagnostics,
+        notes,
+      );
       if (connection) {
         document.connections.push({
           ...connection,
@@ -166,6 +199,7 @@ export function parse(source: string): RackDocument {
     });
   }
 
+  if (notes.length > 0) document.notes = notes;
   return document;
 }
 
@@ -173,6 +207,7 @@ export function parse(source: string): RackDocument {
 function placementAliasToken(
   tokens: readonly Token[],
   positionIndex: number,
+  rawLine: string,
 ): Token | undefined {
   let cursor = positionIndex + 1;
   const height = tokens[cursor];
@@ -189,7 +224,11 @@ function placementAliasToken(
     if (tokens[cursor]?.quoted) {
       cursor += 1;
     } else {
-      while (tokens[cursor] && tokens[cursor]?.value.toLowerCase() !== 'as')
+      while (
+        tokens[cursor] &&
+        tokens[cursor]?.value.toLowerCase() !== 'as' &&
+        !isNoteToken(tokens, cursor, rawLine)
+      )
         cursor += 1;
     }
   }
@@ -362,6 +401,7 @@ function parseDevice(
   diagnostics: Diagnostic[],
   positionIndex: number,
   mountFace: RackFace,
+  notes: DocumentNote[],
 ): DevicePlacement | undefined {
   const positionToken = tokens[positionIndex];
   if (!positionToken) {
@@ -453,11 +493,19 @@ function parseDevice(
       explicitLabel = true;
       reportUnterminated(labelToken, line, 'device label', diagnostics);
       cursor += 1;
-    } else if (labelToken && labelToken.value.toLowerCase() !== 'as') {
+    } else if (
+      labelToken &&
+      labelToken.value.toLowerCase() !== 'as' &&
+      !isNoteToken(tokens, cursor, rawLine)
+    ) {
       const labelTokens: Token[] = [];
       while (cursor < tokens.length) {
         const token = tokens[cursor];
-        if (!token || token.value.toLowerCase() === 'as') {
+        if (
+          !token ||
+          token.value.toLowerCase() === 'as' ||
+          isNoteToken(tokens, cursor, rawLine)
+        ) {
           break;
         }
         labelTokens.push(token);
@@ -516,7 +564,18 @@ function parseDevice(
     }
   }
 
-  reportTrailingTokens(tokens, cursor, line, 'device', diagnostics);
+  if (isNoteToken(tokens, cursor, rawLine)) {
+    readInlineNotes(
+      rawLine,
+      (tokens[cursor]?.column ?? 1) - 1,
+      line,
+      { kind: 'device', deviceId: `device-${line}` },
+      diagnostics,
+      notes,
+    );
+  } else {
+    reportTrailingTokens(tokens, cursor, line, 'device', diagnostics);
+  }
 
   return {
     kind: 'device',
@@ -531,6 +590,118 @@ function parseDevice(
     source: sourceSpan(rawLine, line),
     explicitLabel,
   };
+}
+
+function isNoteToken(
+  tokens: readonly Token[],
+  cursor: number,
+  rawLine: string,
+): boolean {
+  const token = tokens[cursor];
+  return (
+    token !== undefined &&
+    !token.quoted &&
+    token.value.toLowerCase() === 'notes' &&
+    /\s/.test(rawLine[token.column - 2] ?? '') &&
+    tokens[cursor + 1]?.quoted === true
+  );
+}
+
+function parseStandaloneNote(
+  tokens: readonly Token[],
+  rawLine: string,
+  line: number,
+  rack: RackDeclaration | undefined,
+  diagnostics: Diagnostic[],
+  notes: DocumentNote[],
+): void {
+  let cursor = 2;
+  let target: ParsedNoteTarget;
+  const form = tokens[1]?.value.toLowerCase();
+  if (form === 'for') {
+    const reference = tokens[cursor];
+    if (
+      !reference ||
+      reference.unterminated ||
+      !reference.value.trim() ||
+      (!reference.quoted && /[:[\]]/.test(reference.value))
+    ) {
+      diagnostics.push({
+        severity: 'warn',
+        line,
+        column: reference?.column ?? rawLine.length + 1,
+        message:
+          'Note requires a device reference without a port; ignoring it.',
+      });
+      return;
+    }
+    target = {
+      kind: 'device-reference',
+      reference: reference.value,
+      referenceSource: { line, column: reference.column },
+    };
+    cursor += 1;
+  } else {
+    let mountFace: RackFace = 'front';
+    const face = tokens[cursor];
+    if (face && !face.quoted && isRackFace(face.value)) {
+      mountFace = face.value.toLowerCase() as RackFace;
+      cursor += 1;
+    }
+    const position = tokens[cursor];
+    if (
+      !rack ||
+      !position ||
+      position.quoted ||
+      !POSITION_PATTERN.test(position.value) ||
+      !Number.isFinite(Number(position.value)) ||
+      Number(position.value) < 1 ||
+      Number(position.value) > rack.units
+    ) {
+      diagnostics.push({
+        severity: 'warn',
+        line,
+        column: position?.column ?? rawLine.length + 1,
+        message: !rack
+          ? 'Position note requires a current valid rack; ignoring it.'
+          : 'Invalid note rack position; ignoring it.',
+      });
+      return;
+    }
+    target = {
+      kind: 'rack-position',
+      rackId: rack.id,
+      positionU: Number(position.value),
+      mountFace,
+    };
+    cursor += 1;
+  }
+  const body = tokens[cursor];
+  if (!body?.quoted || !/\s/.test(rawLine[body.column - 2] ?? '')) {
+    diagnostics.push({
+      severity: 'warn',
+      line,
+      column: body?.column ?? rawLine.length + 1,
+      message: 'Note requires quoted text; ignoring it.',
+    });
+    return;
+  }
+  const end = readNote(
+    rawLine,
+    body.column - 1,
+    (tokens[0]?.column ?? 1) - 1,
+    line,
+    target,
+    diagnostics,
+    notes,
+  );
+  if (rawLine.slice(end).trim())
+    diagnostics.push({
+      severity: 'warn',
+      line,
+      column: end + 1,
+      message: 'Ignoring unsupported text after standalone note.',
+    });
 }
 
 function tokenizeLine(line: string): Token[] {

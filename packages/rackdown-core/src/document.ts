@@ -71,6 +71,32 @@ export interface ConnectionStatement {
   source: SourceSpan;
 }
 
+/** Semantic attachment within this document; IDs are deterministic, not persistent across edits. */
+export type ResolvedNoteTarget =
+  | { kind: 'device'; deviceId: string }
+  | { kind: 'connection'; connectionId: string }
+  | {
+      kind: 'rack-position';
+      rackId: string;
+      positionU: number;
+      mountFace: RackFace;
+    };
+
+export type ParsedNoteTarget =
+  | ResolvedNoteTarget
+  | {
+      kind: 'device-reference';
+      reference: string;
+      referenceSource?: SourcePosition;
+    };
+
+export interface DocumentNote {
+  id: string;
+  text: string;
+  target: ParsedNoteTarget;
+  source: SourceSpan;
+}
+
 /** Parsed author intent. Invalid lines are represented by diagnostics, not exceptions. */
 export interface RackDocument {
   schemaVersion: 1;
@@ -78,4 +104,5 @@ export interface RackDocument {
   devices: DevicePlacement[];
   connections: ConnectionStatement[];
   diagnostics: Diagnostic[];
+  notes?: DocumentNote[];
 }

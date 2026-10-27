@@ -105,7 +105,7 @@ Device positions and heights may use fractional U values, but the rack declarati
 
 ### Quoted text
 
-Rack names, device labels, quoted connection ports and plain external labels share two escape sequences: `\"` represents a literal double quote, and `\\` represents a literal backslash. Other backslash sequences remain literal, including `\n`, `\t` and Windows paths such as `C:\Racks\Notes`. Only an unescaped double quote ends the field.
+Rack names, device labels, quoted connection ports, plain external labels and notes share two escape sequences: `\"` represents a literal double quote, and `\\` represents a literal backslash. Other backslash sequences remain literal, including `\n`, `\t` and Windows paths such as `C:\Racks\Notes`. Only an unescaped double quote ends the field.
 
 ```rackdown
 rack "Office \"A\"" 6U
@@ -509,6 +509,30 @@ The four forms separate display labels from host navigation intent:
 Core preserves the display label along with optional link intent (`style` and `target`), but does not resolve filesystem, network or vault targets. Hosts own navigation and interaction behavior using host-neutral metadata emitted by the renderer (`data-label`, `data-link-style`, and optional `data-target`).
 
 External endpoints remain document information rather than physical rack rectangles. `RackLayout` keeps their identity and intent while the renderer or host decides how to draw and interact with them.
+
+### Optional notes
+
+Notes preserve optional plain text for hosts to present:
+
+```rackdown
+rack "Lab" 8U views front rear
+8 switch "Core" as core notes "Primary switch"
+5 "Host" as host
+core:1 -- host:1 fibre category network notes "Backup uplink"
+notes for host "Runs three virtual machines"
+notes at 3 "Temporary installation"
+notes at rear 3.5 "Leave rear access clear"
+```
+
+Inline notes follow the complete device declaration (including any alias) or connection (including any media, `adhoc` and category). Repeat suffixes as `notes "First" notes "Second"`. Standalone `notes for <device-reference> "text"` uses the same document-wide alias, label and type lookup as connections, including quoted references, forward references and ambiguity diagnostics; ports and standalone connection references are not supported. Inline notes attach directly to their exact device or connection, including parallel links.
+
+`notes at [front|rear] <position> "text"` captures the current valid rack. The default face is always front. Positions must be finite numbers between 1 and the rack height, inclusive; fractional positions are allowed. Position notes annotate empty or occupied space without creating equipment. Excluded faces are retained without additional note warnings. A missing or malformed current rack prevents position attachment.
+
+Keywords are case-insensitive and require whitespace boundaries. Text uses the existing quoted-text escapes, preserves Unicode and literal `//`, and has no new length limit or silent truncation. Empty, whitespace-only or unterminated text warns and is omitted; earlier complete notes, valid parents and subsequent lines are preserved. Notes come last. The word `notes` remains available as a device type, label, alias, reference or single-token media: `core -- host notes category network` has media `notes`, while `core -- host notes notes "Annotation"` also has a note. `8 switch notes "Primary"` now means a note on an unlabeled typed device; it previously entered unquoted-label recovery.
+
+Core exposes optional `RackDocument.notes` (`DocumentNote[]`) and `RackLayout.notes` (`LayoutNote[]`) in authored order, retaining duplicate records and raw source spans. Collections are omitted when empty; schema versions remain 1 and 2 respectively. Parsed standalone device references remain available when unresolved, but unresolved or rejected targets are omitted from layout notes without extra inline-parent diagnostics. Targets identify a device, connection or rack position; IDs are deterministic for one input, not persistent across edits. Adding separate source lines can change existing line-derived IDs.
+
+Hosts control presentation. Default SVG output contains no note text or metadata, and changing only the layout notes leaves its bytes unchanged. Notes do not affect geometry, cable schedules or connection selection. Notes remain readable in source and serialized Core data; hosts should render them as plain text and decide explicitly whether to include them in exports.
 
 ## 9. Comments
 
