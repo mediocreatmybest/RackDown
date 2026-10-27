@@ -6,8 +6,9 @@ import {
   RackDownConnectionViews,
 } from './connection-views.js';
 import { RackDownHostLinks } from './host-links.js';
-import { fire, TestElement, TestMenu } from './host-test-support.js';
+import { fire, TestElement, TestMenu, TestModal } from './host-test-support.js';
 import type RackDownPlugin from './main.js';
+import { RackDownNotes } from './notes.js';
 import { prepareRackDown } from './render-rackdown.js';
 import { DEFAULT_SETTINGS } from './settings.js';
 
@@ -17,9 +18,12 @@ vi.mock('@rackdown/core', async (importOriginal) => {
 });
 
 vi.mock('obsidian', async () => {
-  const { TestMenu, TestRenderChild } = await import('./host-test-support.js');
+  const { TestMenu, TestModal, TestRenderChild } = await import(
+    './host-test-support.js'
+  );
   return {
     MarkdownRenderChild: TestRenderChild,
+    Modal: TestModal,
     Menu: TestMenu,
     Keymap: { isModEvent: () => false },
   };
@@ -291,7 +295,7 @@ describe('per-block connection views', () => {
     const fixture = block('rack "Lab" 12U\n10 switch "Core"');
     expect(fixture.controls.getAttribute('role')).toBe('group');
     expect(fixture.controls.getAttribute('aria-label')).toBe(
-      'Connection controls',
+      'Diagram controls',
     );
     expect(
       fixture.controls.querySelector('.rackdown-connection-view-empty')
@@ -456,6 +460,46 @@ describe('per-block connection views', () => {
       fire(fixture.diagram, 'contextmenu', routes(fixture)[0] as TestElement)
         .defaultPrevented,
     ).toBe(true);
+  });
+
+  it('opens full notes without changing manually hidden routes or their interactions', () => {
+    const source = `${SOURCE} notes "route note"\nnotes at rear 3.5 "hidden face position"`;
+    const fixture = block(source);
+    const notes = new RackDownNotes(
+      fixture.block.asHtml(),
+      {} as RackDownPlugin['app'],
+      fixture.controls.asHtml(),
+      prepareRackDown(source).layout,
+    );
+    notes.load();
+    const hiddenRoute = routes(fixture)[4] as TestElement;
+    fire(fixture.diagram, 'contextmenu', hiddenRoute);
+    TestMenu.latest.action?.();
+    const hiddenControls = fixture.block.querySelector(
+      '.rackdown-hidden-routes',
+    );
+    const hits = fixture.diagram.querySelectorAll('.rackdown-connection-hit');
+    const svg = fixture.diagram.innerHTML;
+    const button = fixture.controls.querySelector(
+      '.rackdown-notes-button',
+    ) as TestElement;
+    fire(button, 'click', button);
+    const modal = TestModal.instances.at(-1);
+    expect(
+      modal?.contentEl.querySelectorAll('p').map((p) => p.textContent),
+    ).toEqual(['route note', 'hidden face position']);
+    expect(hiddenRoute.classes.has('rackdown-connection-hidden')).toBe(true);
+    expect(fixture.block.querySelector('.rackdown-hidden-routes')).toBe(
+      hiddenControls,
+    );
+    expect(
+      fixture.diagram.querySelectorAll('.rackdown-connection-hit'),
+    ).toEqual(hits);
+    expect(fixture.diagram.innerHTML).toBe(svg);
+    modal?.close();
+    expect(hiddenRoute.classes.has('rackdown-connection-hidden')).toBe(true);
+    notes.unload();
+    fixture.controller.unload();
   });
 
   it('retains semantic ids, categories, route geometry and automatic colour', () => {

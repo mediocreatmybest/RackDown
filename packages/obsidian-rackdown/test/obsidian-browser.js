@@ -34,6 +34,27 @@ export class MarkdownRenderChild {
   }
 }
 export class Menu {}
+export class Modal {
+  constructor(app) {
+    this.app = app;
+    this.contentEl = document.createElement('div');
+    this.titleEl = document.createElement('div');
+    this.containerEl = document.createElement('div');
+    this.containerEl.append(this.titleEl, this.contentEl);
+  }
+  setTitle(title) {
+    this.titleEl.textContent = title;
+    return this;
+  }
+  open() {
+    document.body.append(this.containerEl);
+    this.onOpen();
+  }
+  close() {
+    this.containerEl.remove();
+    this.onClose();
+  }
+}
 export const Keymap = { isModEvent: () => false };
 
 HTMLElement.prototype.createEl = function (tag, options = {}) {
@@ -51,4 +72,7 @@ HTMLElement.prototype.createDiv = function (options) {
 };
 HTMLElement.prototype.createSpan = function (options) {
   return this.createEl('span', options);
+};
+HTMLElement.prototype.empty = function () {
+  this.replaceChildren();
 };

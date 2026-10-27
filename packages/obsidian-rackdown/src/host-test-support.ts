@@ -25,6 +25,7 @@ export class TestElement extends EventTarget {
   hidden = false;
   clientWidth = 100;
   scrollLeft = 0;
+  isConnected = true;
   focus = vi.fn();
   ownerDocument = {
     createElement: (tag: string) => new TestElement(tag),
@@ -143,6 +144,8 @@ export class TestElement extends EventTarget {
   remove(): void {
     const siblings = this.parentElement?.children;
     siblings?.splice(siblings.indexOf(this), 1);
+    this.parentElement = undefined;
+    this.isConnected = false;
   }
   empty(): void {
     this.children.length = 0;
@@ -248,4 +251,30 @@ export class TestMenu {
       },
     });
   }
+}
+
+/** Only the native modal lifecycle; Obsidian owns close controls and Escape. */
+export class TestModal {
+  static instances: TestModal[] = [];
+  readonly contentEl = new TestElement();
+  readonly titleEl = new TestElement('h1');
+  opened = false;
+  constructor(readonly app: unknown) {
+    TestModal.instances.push(this);
+  }
+  setTitle(title: string): this {
+    this.titleEl.textContent = title;
+    return this;
+  }
+  open(): void {
+    this.opened = true;
+    this.onOpen();
+  }
+  close(): void {
+    if (!this.opened) return;
+    this.opened = false;
+    this.onClose();
+  }
+  onOpen(): void {}
+  onClose(): void {}
 }

@@ -1,4 +1,5 @@
 import { RackDownConnectionViews } from '../src/connection-views.ts';
+import { RackDownNotes } from '../src/notes.ts';
 import { prepareRackDown } from '../src/render-rackdown.ts';
 import { DEFAULT_SETTINGS } from '../src/settings.ts';
 import { RackDownViewport } from '../src/viewport.ts';
@@ -125,30 +126,35 @@ check(
   getComputedStyle(routed.diagram).overflowX === 'auto',
   'overflow is scrollable, not hidden',
 );
-function controlsFixture(width, count) {
+function controlsFixture(width, count, withNotes = false) {
   const block = document
     .querySelector('#fixtures')
     .createDiv({ cls: 'rackdown-block' });
   block.style.width = `${width}px`;
   const controls = block.createDiv({ cls: 'rackdown-connection-view' });
   const diagram = block.createDiv({ cls: 'rackdown-diagram' });
-  const source =
+  let source =
     'rack "Lab" 52U\n50 switch "Core" as core\n2 server "Server" as server' +
     Array.from(
       { length: count },
       (_, i) =>
         `\ncore:${i} -- [[Endpoint ${i}]] category ${i % 2 ? 'power' : 'network'}`,
     ).join('');
+  if (withNotes) source += '\nnotes at rear 1 "browser notes"';
+  const prepared = prepareRackDown(source);
   const controller = new RackDownConnectionViews(
     block,
     controls,
     diagram,
-    prepareRackDown(source),
+    prepared,
     { namespace: `toolbar-${width}-${count}` },
     DEFAULT_SETTINGS,
   );
   controller.load();
   controllers.push({ controller, observer: { disconnect() {} } });
+  const notes = new RackDownNotes(block, {}, controls, prepared.layout);
+  notes.load();
+  controllers.push({ controller: notes, observer: { disconnect() {} } });
   return { block, controls, diagram };
 }
 let reservedHeight;
@@ -230,6 +236,44 @@ for (const width of [120, 240.25, 600]) {
     `${width}px: keyboard focus reveals controls without movement`,
   );
   select.blur();
+}
+
+for (const width of [120, 240.25, 600]) {
+  for (const count of [0, 1, 5]) {
+    const withoutNotes = controlsFixture(width, count);
+    const withNotes = controlsFixture(width, count, true);
+    await frames();
+    const measure = ({ block, controls, diagram }) => ({
+      height: controls.getBoundingClientRect().height,
+      offset:
+        diagram.getBoundingClientRect().top - block.getBoundingClientRect().top,
+    });
+    const baseline = measure(withoutNotes);
+    const annotated = measure(withNotes);
+    const button = withNotes.controls.querySelector('.rackdown-notes-button');
+    const primary =
+      withNotes.controls.querySelector('label') ??
+      withNotes.controls.querySelector('.rackdown-connection-view-empty');
+    const status = withNotes.controls.querySelector(
+      '.rackdown-connection-view-status',
+    );
+    check(
+      annotated.height === baseline.height &&
+        annotated.offset === baseline.offset,
+      `${width}px/${count} routes: notes reserve exactly the existing two toolbar rows`,
+    );
+    check(
+      getComputedStyle(button).gridRowStart === '1' &&
+        getComputedStyle(button).gridColumnStart === '2' &&
+        getComputedStyle(primary).gridRowStart === '1' &&
+        (!status || getComputedStyle(status).gridRowStart === '2'),
+      `${width}px/${count} routes: notes stay beside the selector or No connections`,
+    );
+    check(
+      withNotes.controls.scrollWidth <= withNotes.controls.clientWidth,
+      `${width}px/${count} routes: notes toolbar has no horizontal overflow`,
+    );
+  }
 }
 
 const count = messages.filter((message) => message.startsWith('FAIL')).length;

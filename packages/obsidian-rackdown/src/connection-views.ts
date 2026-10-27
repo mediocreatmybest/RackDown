@@ -53,7 +53,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
 
   private buildControls(controls: HTMLElement): void {
     controls.setAttribute('role', 'group');
-    controls.setAttribute('aria-label', 'Connection controls');
+    controls.setAttribute('aria-label', 'Diagram controls');
     if (this.prepared.layout.connections.length === 0) {
       controls.createSpan({
         cls: 'rackdown-connection-view-empty',

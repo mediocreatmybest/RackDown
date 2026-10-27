@@ -4,6 +4,7 @@ import { MarkdownView, Plugin } from 'obsidian';
 import { CatalogueProvider } from './catalogue.js';
 import { RackDownConnectionViews } from './connection-views.js';
 import { RackDownHostLinks } from './host-links.js';
+import { RackDownNotes } from './notes.js';
 import { prepareRackDown } from './render-rackdown.js';
 import { normalizeSettings, type RackDownPluginSettings } from './settings.js';
 import { RackDownSettingTab } from './settings-tab.js';
@@ -91,6 +92,9 @@ export default class RackDownPlugin extends Plugin {
             { namespace },
             this.settings,
           ),
+        );
+        context.addChild(
+          new RackDownNotes(block, this.app, controls, prepared.layout),
         );
         context.addChild(
           new RackDownHostLinks(block, this, context.sourcePath),

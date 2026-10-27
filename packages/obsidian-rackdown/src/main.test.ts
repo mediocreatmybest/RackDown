@@ -1,7 +1,7 @@
 import type { MarkdownPostProcessorContext } from 'obsidian';
 import { MarkdownView } from 'obsidian';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TestElement } from './host-test-support.js';
+import { fire, TestElement, TestModal } from './host-test-support.js';
 import RackDownPlugin from './main.js';
 import { DEFAULT_SETTINGS } from './settings.js';
 
@@ -19,11 +19,12 @@ const host = vi.hoisted(() => ({
 }));
 
 vi.mock('obsidian', async () => {
-  const { TestElement, TestMenu, TestRenderChild } = await import(
+  const { TestElement, TestMenu, TestModal, TestRenderChild } = await import(
     './host-test-support.js'
   );
   return {
     MarkdownRenderChild: TestRenderChild,
+    Modal: TestModal,
     Menu: TestMenu,
     MarkdownView: class {
       previewMode = { rerender: vi.fn() };
@@ -54,6 +55,38 @@ vi.mock('obsidian', async () => {
     },
   };
 });
+
+async function renderBlock(source: string) {
+  const instance = plugin();
+  await instance.onload();
+  const element = new TestElement();
+  const children: { load(): void; unload(): void }[] = [];
+  const context = {
+    sourcePath: 'Notes/Lab.md',
+    getSectionInfo: () => ({ lineStart: 4 }),
+    addChild: (child: (typeof children)[number]) => {
+      children.push(child);
+      child.load();
+    },
+  } as unknown as MarkdownPostProcessorContext;
+  await host.processor?.(source, element.asHtml(), context);
+  return {
+    element,
+    instance,
+    button: element.querySelector('.rackdown-notes-button'),
+    unload: () => {
+      for (const child of children) child.unload();
+    },
+  };
+}
+
+function openNotes(button: TestElement | undefined): TestModal {
+  expect(button, 'Notes native button').toBeDefined();
+  fire(button as TestElement, 'click', button as TestElement);
+  const modal = TestModal.instances.at(-1);
+  expect(modal?.opened).toBe(true);
+  return modal as TestModal;
+}
 vi.mock('./catalogue.js', () => ({
   CatalogueProvider: class {
     async deviceIndex() {
@@ -72,6 +105,179 @@ describe('Obsidian settings lifecycle', () => {
     host.saved = undefined;
     host.saveData.mockClear();
     host.leaves = [];
+    TestModal.instances = [];
+  });
+
+  it('adds a conditional native Notes count without removing No connections', async () => {
+    const empty = await renderBlock('rack "Lab" 8U');
+    expect(empty.button).toBeUndefined();
+    expect(
+      empty.element.querySelector('.rackdown-notes-present'),
+    ).toBeUndefined();
+    const fixture = await renderBlock(
+      'rack "Lab" 8U\n8 "Core" notes "same" notes "same"',
+    );
+    expect(fixture.button?.tag).toBe('button');
+    expect(fixture.button?.getAttribute('type')).toBe('button');
+    expect(fixture.button?.textContent).toBe('Notes (2)');
+    expect(
+      fixture.element.querySelector('.rackdown-connection-view-empty')
+        ?.textContent,
+    ).toBe('No connections');
+    expect(
+      fixture.element
+        .querySelector('.rackdown-connection-view')
+        ?.getAttribute('aria-label'),
+    ).toBe('Diagram controls');
+    expect(TestModal.instances).toHaveLength(0);
+    const modal = openNotes(fixture.button);
+    expect(modal.titleEl.textContent).toBe('RackDown notes');
+    expect(
+      modal.contentEl.querySelectorAll('p').map((p) => p.textContent),
+    ).toEqual(['same', 'same']);
+  });
+
+  it('keeps authored note order, duplicates, exact targets, hidden faces and fractional positions', async () => {
+    const fixture = await renderBlock(`notes for host "forward"
+rack "Lab" 8U views rear
+8 switch "Core" as core notes "first" notes "first"
+rear 5 server "Host" as host notes "host"
+core:1 -- host:2 fibre category network notes "link one"
+core:1 -- host:2 copper category power notes "link two"
+notes at 3 "empty"
+notes at rear 3.5 "rear"
+notes for core "last"`);
+    expect(fixture.button?.textContent).toBe('Notes (9)');
+    const modal = openNotes(fixture.button);
+    expect(
+      modal.contentEl.querySelectorAll('p').map((p) => p.textContent),
+    ).toEqual([
+      'forward',
+      'first',
+      'first',
+      'host',
+      'link one',
+      'link two',
+      'empty',
+      'rear',
+      'last',
+    ]);
+    const headings = modal.contentEl
+      .querySelectorAll('h3')
+      .map((h) => h.textContent);
+    expect(headings[0]).toContain('Host');
+    expect(headings[0]).toContain('Lab / rear / U5');
+    expect(headings[1]).toContain('Core');
+    expect(headings[1]).toContain('Lab / front / U8');
+    expect(headings[4]).toContain('Core:1');
+    expect(headings[4]).toContain('Host:2');
+    expect(headings[4]).toContain('connection 1');
+    expect(headings[5]).toContain('connection 2');
+    expect(headings[6]).toBe('Lab / front / U3');
+    expect(headings[7]).toBe('Lab / rear / U3.5');
+  });
+
+  it('disambiguates duplicate rack names and parallel external connections in layout order', async () => {
+    const fixture = await renderBlock(`rack "Same" 8U
+8 "Core" as a notes "A"
+a:1 -- [[Remote|WAN]] notes "external one"
+a:1 -- [[Remote|WAN]] notes "external two"
+rack "Same" 8U
+8 "Core" as b notes "B"
+notes at 2 "position B"`);
+    const headings = openNotes(fixture.button)
+      .contentEl.querySelectorAll('h3')
+      .map((h) => h.textContent);
+    expect(headings[0]).toContain('Same (rack 1) / front / U8');
+    expect(headings[1]).toContain('Core:1');
+    expect(headings[1]).toContain('WAN');
+    expect(headings[1]).toContain('connection 1');
+    expect(headings[2]).toContain('connection 2');
+    expect(headings[3]).toContain('Same (rack 2) / front / U8');
+    expect(headings[4]).toBe('Same (rack 2) / front / U2');
+  });
+
+  it('renders malicious HTML, Markdown and URLs literally using text elements', async () => {
+    const text =
+      '<img src=x onerror=alert(1)> **bold** [[Wiki]] [URL](https://example.com/)';
+    const fixture = await renderBlock(
+      `rack "<script>rack</script>" 8U\n8 "<b>Core</b>" notes "${text}"`,
+    );
+    const modal = openNotes(fixture.button);
+    expect(modal.contentEl.querySelector('p')?.textContent).toBe(text);
+    expect(modal.contentEl.querySelector('h3')?.textContent).toContain(
+      '<b>Core</b>',
+    );
+    expect(modal.contentEl.querySelector('h3')?.textContent).toContain(
+      '<script>rack</script>',
+    );
+    for (const tag of ['img', 'script', 'a', 'b'])
+      expect(modal.contentEl.querySelector(tag)).toBeUndefined();
+    expect(modal.contentEl.innerHTML).toBe('');
+  });
+
+  it('retains every note across category filters without changing SVG, scroll or settings when opened', async () => {
+    const fixture = await renderBlock(
+      'rack "Lab" 8U views rear\n8 "Core" as core notes "hidden face"\ncore:1 -- [[WAN]] category network notes "network"\ncore:2 -- [[Power]] category power notes "power"',
+    );
+    const select = fixture.element.querySelector('select') as TestElement;
+    select.value = 'console';
+    fire(select, 'change', select);
+    const diagram = fixture.element.querySelector(
+      '.rackdown-diagram',
+    ) as TestElement;
+    diagram.scrollLeft = 24;
+    diagram.asHtml().scrollTop = 67;
+    const svg = diagram.innerHTML;
+    const settings = JSON.stringify(fixture.instance.settings);
+    const status = fixture.element.querySelector(
+      '.rackdown-connection-view-status',
+    )?.textContent;
+    expect(
+      openNotes(fixture.button)
+        .contentEl.querySelectorAll('p')
+        .map((p) => p.textContent),
+    ).toEqual(['hidden face', 'network', 'power']);
+    expect(diagram.innerHTML).toBe(svg);
+    expect(diagram.scrollLeft).toBe(24);
+    expect(diagram.asHtml().scrollTop).toBe(67);
+    expect(select.value).toBe('console');
+    expect(
+      fixture.element.querySelector('.rackdown-connection-view-status')
+        ?.textContent,
+    ).toBe(status);
+    expect(JSON.stringify(fixture.instance.settings)).toBe(settings);
+    expect(host.saveData).not.toHaveBeenCalled();
+  });
+
+  it('owns independent modal lifecycles and restores connected opener focus on native close', async () => {
+    const first = await renderBlock('rack "A" 8U\n8 "Core" notes "first"');
+    const second = await renderBlock('rack "B" 8U\n8 "Core" notes "second"');
+    const firstModal = openNotes(first.button);
+    const secondModal = openNotes(second.button);
+    expect(firstModal).not.toBe(secondModal);
+    expect(firstModal.contentEl.querySelector('p')?.textContent).toBe('first');
+    firstModal.close();
+    expect(first.button?.focus).toHaveBeenCalledExactlyOnceWith({
+      preventScroll: true,
+    });
+    expect(secondModal.opened).toBe(true);
+    const reopened = openNotes(first.button);
+    expect(reopened.contentEl.querySelectorAll('p')).toHaveLength(1);
+    if (first.button) first.button.isConnected = false;
+    first.unload();
+    expect(reopened.opened).toBe(false);
+    expect(first.button?.focus).toHaveBeenCalledOnce();
+    expect(secondModal.opened).toBe(true);
+    const modalCount = TestModal.instances.length;
+    fire(first.button as TestElement, 'click', first.button as TestElement);
+    expect(TestModal.instances).toHaveLength(modalCount);
+    second.unload();
+    expect(secondModal.opened).toBe(false);
+    expect(second.button?.focus).not.toHaveBeenCalled();
+    expect(
+      second.element.querySelector('.rackdown-notes-button'),
+    ).toBeUndefined();
   });
 
   it('loads validated settings before registering blocks and the settings tab', async () => {

@@ -78,6 +78,44 @@
   grid-row: 2;
 }
 
+.rackdown-connection-view.rackdown-notes-present {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.rackdown-notes-present > .rackdown-connection-view-label,
+.rackdown-notes-present > .rackdown-connection-view-empty {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.rackdown-notes-button {
+  grid-row: 1;
+  grid-column: 2;
+  height: 100%;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.rackdown-notes-present > .rackdown-connection-view-status {
+  grid-column: 1 / -1;
+}
+
+.rackdown-notes {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.rackdown-notes h3 {
+  font-size: var(--font-ui-medium);
+  margin-block: 1em 0.25em;
+}
+
+.rackdown-notes p {
+  margin-block: 0;
+  white-space: pre-wrap;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .rackdown-connection-view {
     opacity: 0.7;
