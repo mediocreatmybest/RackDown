@@ -197,6 +197,42 @@ notes at 2 "position B"`);
     expect(headings[4]).toBe('Same (rack 2) / front / U2');
   });
 
+  it.each([true, false])(
+    'disambiguates colliding shared-row device descriptions with aliases=%s',
+    async (withAliases) => {
+      const fixture = await renderBlock(`rack "Lab" 8U
+8 "Solo" notes "unique"
+8 "Core"${withAliases ? ' as first' : ''} notes "first"
+8 "Core"${withAliases ? ' as second' : ''} notes "second"${withAliases ? '\nfirst:1 -- [[WAN]] notes "first connection"\nsecond:1 -- [[WAN]] notes "second connection"' : ''}`);
+      const modal = openNotes(fixture.button);
+      const headings = modal.contentEl
+        .querySelectorAll('h3')
+        .map((h) => h.textContent);
+      expect(headings.slice(0, 3)).toEqual([
+        'Solo — Lab / front / U8',
+        'Core (device 1) — Lab / front / U8',
+        'Core (device 2) — Lab / front / U8',
+      ]);
+      if (withAliases) {
+        expect(headings[3]).toBe('Core (device 1):1 (Lab / front / U8) — WAN');
+        expect(headings[4]).toBe('Core (device 2):1 (Lab / front / U8) — WAN');
+      }
+      expect(
+        modal.contentEl.querySelectorAll('p').map((p) => p.textContent),
+      ).toEqual(
+        withAliases
+          ? [
+              'unique',
+              'first',
+              'second',
+              'first connection',
+              'second connection',
+            ]
+          : ['unique', 'first', 'second'],
+      );
+    },
+  );
+
   it('renders malicious HTML, Markdown and URLs literally using text elements', async () => {
     const text =
       '<img src=x onerror=alert(1)> **bold** [[Wiki]] [URL](https://example.com/)';
@@ -213,7 +249,8 @@ notes at 2 "position B"`);
     );
     for (const tag of ['img', 'script', 'a', 'b'])
       expect(modal.contentEl.querySelector(tag)).toBeUndefined();
-    expect(modal.contentEl.innerHTML).toBe('');
+    modal.close();
+    expect(modal.contentEl.children).toHaveLength(0);
   });
 
   it('retains every note across category filters without changing SVG, scroll or settings when opened', async () => {

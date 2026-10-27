@@ -22,10 +22,22 @@ function noteHeadings(layout: RackLayout): Map<string, string> {
   function devicePosition(device: LayoutDevice): string {
     return position(device.rackId, device.mountFace, device.positionU);
   }
+  function deviceLabel(device: LayoutDevice): string {
+    const namesakes = layout.devices.filter(
+      (item) =>
+        item.label === device.label &&
+        item.rackId === device.rackId &&
+        item.mountFace === device.mountFace &&
+        item.positionU === device.positionU,
+    );
+    return namesakes.length > 1
+      ? `${device.label} (device ${namesakes.findIndex((item) => item.id === device.id) + 1})`
+      : device.label;
+  }
   function endpoint(endpoint: LayoutConnectionEndpoint): string {
     if (endpoint.kind === 'external') return endpoint.label;
     const device = devices.get(endpoint.deviceId);
-    const label = device?.label ?? endpoint.deviceId;
+    const label = device ? deviceLabel(device) : endpoint.deviceId;
     const port = endpoint.portName === undefined ? '' : `:${endpoint.portName}`;
     return `${label}${port}${device ? ` (${devicePosition(device)})` : ''}`;
   }
@@ -58,7 +70,7 @@ function noteHeadings(layout: RackLayout): Map<string, string> {
       if (target.kind === 'device') {
         const device = devices.get(target.deviceId);
         heading = device
-          ? `${device.label} — ${devicePosition(device)}`
+          ? `${deviceLabel(device)} — ${devicePosition(device)}`
           : target.deviceId;
       } else if (target.kind === 'connection') {
         heading = connections.get(target.connectionId) ?? target.connectionId;
