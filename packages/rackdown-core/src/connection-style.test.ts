@@ -25,7 +25,9 @@ function connectionTags(svg: string): string[] {
 }
 
 function connectionStyleRule(svg: string): string {
-  const match = svg.match(/\.rackdown-connection \{[^}]*\}/);
+  const match = svg.match(
+    /:where\(#[A-Za-z0-9_-]+\) \.rackdown-connection \{[^}]*\}/,
+  );
   if (!match) {
     throw new Error('SVG is missing the .rackdown-connection style rule');
   }
@@ -265,7 +267,7 @@ describe('connection presentation styles', () => {
 
     expect(connectionStyleRule(svg)).toContain('fill: none');
     expect(connectionStyleRule(svg)).not.toContain('stroke:');
-    expect(svg).toContain(MONOCHROME_RULE);
+    expect(svg).toContain(`:where(#${rootId(svg)}) ${MONOCHROME_RULE}`);
   });
 
   it('rejects unsafe explicit colours and falls back to the automatic palette', () => {
@@ -357,7 +359,7 @@ describe('connection presentation styles', () => {
     expect(tags).toHaveLength(3);
     expect(tags.every((tag) => tag.includes(DEFAULT_WIDTH_CLASS))).toBe(true);
     expect(tags.every((tag) => tag.includes('stroke-width="2"'))).toBe(true);
-    expect(svg).toContain(DEFAULT_WIDTH_RULE);
+    expect(svg).toContain(`:where(#${rootId(svg)}) ${DEFAULT_WIDTH_RULE}`);
   });
 
   it('keeps a global explicit width authoritative over the default-width rule', () => {

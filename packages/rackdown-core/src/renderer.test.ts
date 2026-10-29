@@ -166,6 +166,14 @@ function lightSchemeSection(style: string): string {
   return opening === -1 ? style : style.slice(0, opening);
 }
 
+/** Each renderer rule is emitted on its own line, including grouped selectors. */
+function styleSelectors(style: string): string[] {
+  return style
+    .split('\n')
+    .filter((line) => line.includes(' { '))
+    .flatMap((line) => line.trim().split(' { ')[0]?.split(', ') ?? []);
+}
+
 describe('toSvg', () => {
   it('renders rack units and devices deterministically', () => {
     const layout = resolve(
@@ -464,6 +472,8 @@ describe('toSvg', () => {
   });
 
   it.each([
+    ['123', '123'],
+    ['9 / " <style> 日本語', '9-style'],
     ['hello world', 'hello-world'],
     [' \tHello_123\r\n ', 'Hello_123'],
     ['---hello---', 'hello'],
@@ -483,6 +493,12 @@ describe('toSvg', () => {
     const svg = toSvg(layout, { namespace });
 
     expect(derivedRootId(svg)).toBe(`rackdown-${expected}-root`);
+    expect(derivedRootId(svg)).toMatch(/^[A-Za-z][A-Za-z0-9_-]*$/);
+    for (const selector of styleSelectors(svgStyleBlock(svg))) {
+      expect(selector.startsWith(`:where(#rackdown-${expected}-root) `)).toBe(
+        true,
+      );
+    }
     expect(svg).toBe(toSvg(layout, { namespace: expected }));
     expect(svg).toBe(toSvg(layout, { namespace }));
   });
@@ -946,6 +962,78 @@ describe('toSvg', () => {
       expect(firstSvg).toContain('rackdown-connection');
     });
   });
+  describe('embedded stylesheet isolation', () => {
+    const layout = () =>
+      resolve(
+        parse(
+          'rack "Scoped" 3U\n3 switch "Core" as core\n2 blank "Spare"\n1 shelf "Tray"\ncore:1 -- [[Uplink]]',
+        ),
+      );
+
+    it.each(['auto', 'light', 'dark'] as const)(
+      'scopes every %s selector to its own root without adding specificity',
+      (theme) => {
+        const svg = toSvg(layout(), { namespace: 'scoped', theme });
+        const selectors = styleSelectors(svgStyleBlock(svg));
+        const scope = ':where(#rackdown-scoped-root) ';
+
+        expect(selectors.length).toBeGreaterThan(20);
+        for (const selector of selectors) {
+          expect(selector.startsWith(scope)).toBe(true);
+          // The root belongs inside :where(), leaving the original class or
+          // zero-specificity connection selector authoritative in host CSS.
+          expect(selector.slice(scope.length)).toMatch(
+            /^(?:\.rackdown-[\w-]+(?: \.rackdown-[\w-]+)?|:where\(\.rackdown-connection(?:\.rackdown-connection-default-width|\[data-colour-source="monochrome"\])\))$/,
+          );
+        }
+        expect(selectors).toContain(`${scope}.rackdown-rack-title`);
+        expect(selectors).toContain(`${scope}.rackdown-u-label`);
+        expect(selectors).toContain(`${scope}.rackdown-device-label`);
+        expect(selectors).toContain(`${scope}.rackdown-external-label`);
+        expect(selectors).toContain(`${scope}.rackdown-empty`);
+        expect(selectors).toContain(`${scope}.rackdown-blank-label`);
+        expect(selectors).toContain(`${scope}.rackdown-shelf-label`);
+        expect(selectors).toContain(
+          `${scope}:where(.rackdown-connection.rackdown-connection-default-width)`,
+        );
+        expect(selectors).toContain(
+          `${scope}:where(.rackdown-connection[data-colour-source="monochrome"])`,
+        );
+      },
+    );
+
+    it('uses the same deterministic root for styles, references and geometry', () => {
+      const resolved = layout();
+      const options = {
+        namespace: 'same-layout',
+        connectionRouting: 'orthogonal' as const,
+        connectionStyle: {
+          color: '#ff00aa',
+          width: 3.5,
+          opacity: 0.4,
+          pattern: 'dotted' as const,
+        },
+      };
+      const withoutStyle = (svg: string) =>
+        svg.replace(/\n {2}<style>[\s\S]*?<\/style>/, '');
+      const none = toSvg(resolved, { ...options, theme: 'none' });
+
+      for (const theme of ['auto', 'light', 'dark'] as const) {
+        const svg = toSvg(resolved, { ...options, theme });
+        expect(withoutStyle(svg)).toBe(none);
+        expect(svg).toBe(toSvg(resolved, { ...options, theme }));
+      }
+      const derived = toSvg(resolved);
+      const derivedScope = `:where(#${derivedRootId(derived)}) `;
+      expect(
+        styleSelectors(svgStyleBlock(derived)).every((selector) =>
+          selector.startsWith(derivedScope),
+        ),
+      ).toBe(true);
+      expect(derived).toBe(toSvg(resolved));
+    });
+  });
+
   describe('standalone colour-scheme fallbacks', () => {
     const styleOnly = () =>
       svgStyleBlock(
@@ -999,7 +1087,7 @@ describe('toSvg', () => {
       const dark = darkSchemeBlock(styleOnly());
 
       expect(dark).toContain(
-        ':where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }',
+        ':where(#rackdown-scheme-root) :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }',
       );
     });
 

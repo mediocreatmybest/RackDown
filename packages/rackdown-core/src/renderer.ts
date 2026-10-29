@@ -1444,63 +1444,69 @@ function renderExternal(external: ProjectedExternal, id: string): string[] {
  * Shared structural, typography and host custom-property rules together with
  * RackDown's light colour fallbacks.
  */
-const SVG_BASE_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); }
-.rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
-.rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
-.rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
-.rackdown-frame-outline { fill: none; stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
-.rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
-.rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
-.rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
-.rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
-.rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
-.rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
-.rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
-.rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
-.rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
-.rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
-.rackdown-device-label { font-size: var(--rackdown-label-size, 12px); font-weight: 600; }
-.rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #64748b); font-weight: 500; }
-.rackdown-device-label-compact { font-size: var(--rackdown-label-size, 9px); }
-.rackdown-connection { fill: none; vector-effect: non-scaling-stroke; }
-:where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
-:where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
-.rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
-.rackdown-empty { font-size: var(--rackdown-label-size, 10px); }`;
+function svgBaseRules(scope: string): string {
+  return `${scope} .rackdown-rack { fill: var(--rackdown-rack-fill, #f8fafc); }
+${scope} .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #cbd5e1); }
+${scope} .rackdown-frame-cap { fill: var(--rackdown-device-fill, #dbe2e9); }
+${scope} .rackdown-frame-inner { fill: none; stroke: var(--rackdown-muted-text, #64748b); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-frame-outline { fill: none; stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.15); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #f8fafc); stroke: var(--rackdown-rack-stroke, #475569); stroke-width: var(--rackdown-stroke-width, 1.2); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #64748b); }
+${scope} .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-width: var(--rackdown-stroke-width, 0.5); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-rack-title, ${scope} .rackdown-u-label, ${scope} .rackdown-device-label, ${scope} .rackdown-external-label, ${scope} .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
+${scope} .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
+${scope} .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
+${scope} .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+${scope} .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
+${scope} .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
+${scope} .rackdown-device-label { font-size: var(--rackdown-label-size, 12px); font-weight: 600; }
+${scope} .rackdown-blank-label, ${scope} .rackdown-shelf-label { fill: var(--rackdown-muted-text, #64748b); font-weight: 500; }
+${scope} .rackdown-device-label-compact { font-size: var(--rackdown-label-size, 9px); }
+${scope} .rackdown-connection { fill: none; vector-effect: non-scaling-stroke; }
+${scope} :where(.rackdown-connection.rackdown-connection-default-width) { stroke-width: var(--rackdown-connection-width, 2); }
+${scope} :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #64748b); }
+${scope} .rackdown-external-box { fill: var(--rackdown-external-fill, #ffffff); stroke: var(--rackdown-external-stroke, #64748b); stroke-width: var(--rackdown-stroke-width, 1); stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; }
+${scope} .rackdown-empty { font-size: var(--rackdown-label-size, 10px); }`;
+}
 
 /**
  * Dark colour fallback overrides. Every rule is zero- or single-class
- * specificity and colour-only, so appending it after `SVG_BASE_RULES` selects
+ * specificity and colour-only, so appending it after the base rules selects
  * the dark fallback scheme without disturbing shared structural rules or host
  * custom-property overrides.
  */
-const SVG_DARK_RULES = `.rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); }
-.rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
-.rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
-.rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
-.rackdown-frame-outline { stroke: var(--rackdown-rack-stroke, #94a3b8); }
-.rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
-.rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
-.rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
-.rackdown-rack-title, .rackdown-u-label, .rackdown-device-label, .rackdown-external-label, .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
-.rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
-.rackdown-blank { fill: var(--rackdown-blank-fill, #475569); stroke: var(--rackdown-blank-stroke, #94a3b8); }
-.rackdown-shelf { fill: var(--rackdown-shelf-fill, #293548); stroke: var(--rackdown-shelf-stroke, #94a3b8); }
-.rackdown-blank-label, .rackdown-shelf-label { fill: var(--rackdown-muted-text, #cbd5e1); }
-:where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }
-.rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }`;
+function svgDarkRules(scope: string): string {
+  return `${scope} .rackdown-rack { fill: var(--rackdown-rack-fill, #1e293b); }
+${scope} .rackdown-frame-rail { fill: var(--rackdown-blank-fill, #475569); }
+${scope} .rackdown-frame-cap { fill: var(--rackdown-device-fill, #334155); }
+${scope} .rackdown-frame-inner { stroke: var(--rackdown-muted-text, #cbd5e1); }
+${scope} .rackdown-frame-outline { stroke: var(--rackdown-rack-stroke, #94a3b8); }
+${scope} .rackdown-frame-bolt { fill: var(--rackdown-rack-fill, #1e293b); stroke: var(--rackdown-rack-stroke, #94a3b8); }
+${scope} .rackdown-frame-bolt-inner { fill: var(--rackdown-muted-text, #cbd5e1); }
+${scope} .rackdown-u-line { stroke: var(--rackdown-u-line, #64748b); }
+${scope} .rackdown-rack-title, ${scope} .rackdown-u-label, ${scope} .rackdown-device-label, ${scope} .rackdown-external-label, ${scope} .rackdown-empty { fill: var(--rackdown-text, #e2e8f0); }
+${scope} .rackdown-device { fill: var(--rackdown-device-fill, #334155); stroke: var(--rackdown-device-stroke, #cbd5e1); }
+${scope} .rackdown-blank { fill: var(--rackdown-blank-fill, #475569); stroke: var(--rackdown-blank-stroke, #94a3b8); }
+${scope} .rackdown-shelf { fill: var(--rackdown-shelf-fill, #293548); stroke: var(--rackdown-shelf-stroke, #94a3b8); }
+${scope} .rackdown-blank-label, ${scope} .rackdown-shelf-label { fill: var(--rackdown-muted-text, #cbd5e1); }
+${scope} :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }
+${scope} .rackdown-external-box { fill: var(--rackdown-external-fill, #0f172a); stroke: var(--rackdown-external-stroke, #94a3b8); }`;
+}
 
 /** Compose the embedded stylesheet for a theme, or omit it entirely. */
-function svgStyle(theme: SvgTheme): string | undefined {
+function svgStyle(theme: SvgTheme, namespace: string): string | undefined {
+  // rendererNamespace supplies a CSS-safe id, including its rackdown- prefix.
+  const scope = `:where(#${namespace}-root)`;
   switch (theme) {
     case 'none':
       return undefined;
     case 'light':
-      return `<style>\n${SVG_BASE_RULES}\n</style>`;
+      return `<style>\n${svgBaseRules(scope)}\n</style>`;
     case 'dark':
-      return `<style>\n${SVG_BASE_RULES}\n${SVG_DARK_RULES}\n</style>`;
+      return `<style>\n${svgBaseRules(scope)}\n${svgDarkRules(scope)}\n</style>`;
     default:
-      return `<style>\n${SVG_BASE_RULES}\n@media (prefers-color-scheme: dark) {\n${SVG_DARK_RULES}\n}\n</style>`;
+      return `<style>\n${svgBaseRules(scope)}\n@media (prefers-color-scheme: dark) {\n${svgDarkRules(scope)}\n}\n</style>`;
   }
 }
 
@@ -1553,7 +1559,6 @@ export function toSvg(
   const routing = connectionRouting(options);
   const colourMode = connectionColourMode(options);
   const sizing = svgSizing(options);
-  const style = svgStyle(svgTheme(options));
   const selected = selectConnections(layout, options.connectionSelection);
   const selectedIds = new Set(selected.map((connection) => connection.id));
   const filtered = selected.length !== layout.connections.length;
@@ -1562,6 +1567,7 @@ export function toSvg(
     options,
     filtered ? selected.map((connection) => connection.id) : undefined,
   );
+  const style = svgStyle(svgTheme(options), namespace);
   // Every view shares the complete scene, including corridor allocation,
   // callout packing and the measured viewport. Selection affects emission only.
   const scene = routeWithMeasuredExternalFloor(
