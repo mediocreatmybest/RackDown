@@ -1,4 +1,4 @@
-import { parseArgs } from 'node:util';
+import { type ParseArgsOptionsConfig, parseArgs } from 'node:util';
 import {
   buildCableSchedule,
   type ConnectionCategory,
@@ -100,6 +100,47 @@ const SCHEDULE_OPTIONS = {
   category: { type: 'string', multiple: true },
 } as const;
 
+function parseCommandArgs<Options extends ParseArgsOptionsConfig>(
+  command: 'render' | 'check' | 'schedule',
+  args: readonly string[],
+  options: Options,
+  environment: CliEnvironment,
+):
+  | ReturnType<typeof parseArgs<{ options: Options; allowPositionals: true }>>
+  | 0
+  | 2 {
+  let parsed: ReturnType<
+    typeof parseArgs<{ options: Options; allowPositionals: true }>
+  >;
+  try {
+    parsed = parseArgs({ args, options, allowPositionals: true });
+  } catch (error) {
+    environment.writeStderr(`Error: ${(error as Error).message}\n`);
+    return 2;
+  }
+
+  if ('help' in parsed.values && parsed.values.help) {
+    environment.writeStdout(`${USAGE_TEXT}\n`);
+    return 0;
+  }
+
+  if (parsed.positionals.length === 0) {
+    environment.writeStderr(
+      `Error: Missing source file argument for ${command}.\n`,
+    );
+    return 2;
+  }
+
+  if (parsed.positionals.length > 1) {
+    environment.writeStderr(
+      `Error: Unexpected extra argument "${parsed.positionals[1]}".\n`,
+    );
+    return 2;
+  }
+
+  return parsed;
+}
+
 async function loadLayout(
   sourceArg: string,
   environment: CliEnvironment,
@@ -191,41 +232,13 @@ export async function runCli(
   }
 
   if (command === 'schedule') {
-    let parsed: ReturnType<
-      typeof parseArgs<{
-        options: typeof SCHEDULE_OPTIONS;
-        allowPositionals: true;
-      }>
-    >;
-    try {
-      parsed = parseArgs({
-        args: argv.slice(1),
-        options: SCHEDULE_OPTIONS,
-        allowPositionals: true,
-      });
-    } catch (error) {
-      environment.writeStderr(`Error: ${(error as Error).message}\n`);
-      return 2;
-    }
-
-    if (parsed.values.help) {
-      environment.writeStdout(`${USAGE_TEXT}\n`);
-      return 0;
-    }
-
-    if (parsed.positionals.length === 0) {
-      environment.writeStderr(
-        'Error: Missing source file argument for schedule.\n',
-      );
-      return 2;
-    }
-
-    if (parsed.positionals.length > 1) {
-      environment.writeStderr(
-        `Error: Unexpected extra argument "${parsed.positionals[1]}".\n`,
-      );
-      return 2;
-    }
+    const parsed = parseCommandArgs(
+      command,
+      argv.slice(1),
+      SCHEDULE_OPTIONS,
+      environment,
+    );
+    if (typeof parsed === 'number') return parsed;
 
     const requestedFormat = parsed.values.format ?? 'md';
     if (!VALID_SCHEDULE_FORMATS.has(requestedFormat as CableScheduleFormat)) {
@@ -281,41 +294,13 @@ export async function runCli(
   }
 
   if (command === 'render') {
-    let parsed: ReturnType<
-      typeof parseArgs<{
-        options: typeof RENDER_OPTIONS;
-        allowPositionals: true;
-      }>
-    >;
-    try {
-      parsed = parseArgs({
-        args: argv.slice(1),
-        options: RENDER_OPTIONS,
-        allowPositionals: true,
-      });
-    } catch (error) {
-      environment.writeStderr(`Error: ${(error as Error).message}\n`);
-      return 2;
-    }
-
-    if (parsed.values.help) {
-      environment.writeStdout(`${USAGE_TEXT}\n`);
-      return 0;
-    }
-
-    if (parsed.positionals.length === 0) {
-      environment.writeStderr(
-        'Error: Missing source file argument for render.\n',
-      );
-      return 2;
-    }
-
-    if (parsed.positionals.length > 1) {
-      environment.writeStderr(
-        `Error: Unexpected extra argument "${parsed.positionals[1]}".\n`,
-      );
-      return 2;
-    }
+    const parsed = parseCommandArgs(
+      command,
+      argv.slice(1),
+      RENDER_OPTIONS,
+      environment,
+    );
+    if (typeof parsed === 'number') return parsed;
 
     const renderOptions: SvgRenderOptions = {};
 
@@ -399,39 +384,13 @@ export async function runCli(
   }
 
   // command === 'check'
-  let parsed: ReturnType<
-    typeof parseArgs<{
-      options: typeof CHECK_OPTIONS;
-      allowPositionals: true;
-    }>
-  >;
-  try {
-    parsed = parseArgs({
-      args: argv.slice(1),
-      options: CHECK_OPTIONS,
-      allowPositionals: true,
-    });
-  } catch (error) {
-    environment.writeStderr(`Error: ${(error as Error).message}\n`);
-    return 2;
-  }
-
-  if (parsed.values.help) {
-    environment.writeStdout(`${USAGE_TEXT}\n`);
-    return 0;
-  }
-
-  if (parsed.positionals.length === 0) {
-    environment.writeStderr('Error: Missing source file argument for check.\n');
-    return 2;
-  }
-
-  if (parsed.positionals.length > 1) {
-    environment.writeStderr(
-      `Error: Unexpected extra argument "${parsed.positionals[1]}".\n`,
-    );
-    return 2;
-  }
+  const parsed = parseCommandArgs(
+    command,
+    argv.slice(1),
+    CHECK_OPTIONS,
+    environment,
+  );
+  if (typeof parsed === 'number') return parsed;
 
   const sourceArg = parsed.positionals[0];
   if (!sourceArg) {

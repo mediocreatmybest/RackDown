@@ -7,6 +7,131 @@ import { resolve } from './resolver.js';
 const source =
   'rack "Rack" 4U\n4 switch "Core" as core\n3 server "Host" as host\n';
 
+describe('wiki endpoint recovery', () => {
+  it.each([
+    {
+      raw: '[[  Docs/Target  ]]',
+      target: 'Docs/Target',
+      label: 'Docs/Target',
+      warnings: [],
+    },
+    {
+      raw: '[[  ../Target  |  Display | extra  ]]',
+      target: '../Target',
+      label: 'Display | extra',
+      warnings: [],
+    },
+    {
+      raw: '[[Target|  ]]',
+      target: 'Target',
+      label: 'Target',
+      warnings: [
+        'External connection alias is empty; recovered to target label.',
+      ],
+    },
+    {
+      raw: '[[Target|  ',
+      target: 'Target',
+      label: 'Target',
+      warnings: [
+        'External connection alias is empty; recovered to target label.',
+        'Unterminated external `[[target]]`; recovered to end of line.',
+      ],
+    },
+    {
+      raw: '[[ Target ',
+      target: 'Target',
+      label: 'Target',
+      warnings: [
+        'Unterminated external `[[target]]`; recovered to end of line.',
+      ],
+    },
+    {
+      raw: '[[Target--backup // notes "literal"',
+      target: 'Target--backup // notes "literal"',
+      label: 'Target--backup // notes "literal"',
+      warnings: [
+        'Unterminated external `[[target]]`; recovered to end of line.',
+      ],
+    },
+    {
+      raw: '[[]]',
+      warnings: ['External connection target is empty; ignoring it.'],
+    },
+    {
+      raw: '[[ |alias]]',
+      warnings: ['External connection target is empty; ignoring it.'],
+    },
+    {
+      raw: '[[ ',
+      warnings: ['External connection target is empty; ignoring it.'],
+    },
+    {
+      raw: '[[ |alias',
+      warnings: ['External connection target is empty; ignoring it.'],
+    },
+  ])(
+    'preserves recovered identity and warning order for $raw',
+    ({ raw, target, label, warnings }) => {
+      const result = parse(`${source}  core:1 -- ${raw}`);
+
+      expect(result.connections.map((connection) => connection.to)).toEqual(
+        target === undefined
+          ? []
+          : [{ kind: 'external', label, link: { style: 'wiki', target } }],
+      );
+      expect(result.diagnostics).toEqual(
+        warnings.map((message) => ({
+          severity: 'warn',
+          line: 4,
+          column: 13,
+          message,
+        })),
+      );
+    },
+  );
+
+  it('keeps terminated links separate from modifiers, notes and comments', () => {
+    const line =
+      '  core:1 -- [[ Docs--Target // literal | Display ]] adhoc fibre category network notes "link -- // note" // comment';
+    const result = parse(source + line);
+
+    expect(result.connections).toHaveLength(1);
+    expect(result.connections[0]?.to).toEqual({
+      kind: 'external',
+      label: 'Display',
+      link: { style: 'wiki', target: 'Docs--Target // literal' },
+    });
+    expect(result.connections[0]?.media).toBe('fibre');
+    expect(result.connections[0]?.category).toBe('network');
+    expect(
+      result.notes?.map(({ text, target, source }) => ({
+        text,
+        target,
+        source,
+      })),
+    ).toEqual([
+      {
+        text: 'link -- // note',
+        target: { kind: 'connection', connectionId: 'connection-4' },
+        source: {
+          start: { line: 4, column: line.indexOf('notes "') + 1 },
+          end: { line: 4, column: line.indexOf(' // comment') + 1 },
+        },
+      },
+    ]);
+    expect(result.diagnostics).toEqual([
+      {
+        severity: 'warn',
+        line: 4,
+        column: line.indexOf('adhoc') + 1,
+        message:
+          'The `adhoc` modifier applies only to a device endpoint with a port; ignoring it.',
+      },
+    ]);
+  });
+});
+
 describe('connection structure', () => {
   it.each([
     ['core:"uplink--backup" -- host:nic1', 'uplink--backup'],

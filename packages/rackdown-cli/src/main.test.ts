@@ -91,6 +91,105 @@ external "Mains" -- core:power IEC-C13 category power
 core:odd -- pve:odd custom category unclassified`;
 
 describe.each(['render', 'check', 'schedule'] as const)(
+  '%s argument handling',
+  (command) => {
+    it.each([
+      { args: ['--help', 'first', 'second'], code: 0, stderr: '' },
+      {
+        args: [],
+        code: 2,
+        stderr: `Error: Missing source file argument for ${command}.\n`,
+      },
+      {
+        args: [''],
+        code: 2,
+        stderr: `Error: Missing source file argument for ${command}.\n`,
+      },
+      {
+        args: ['', 'second'],
+        code: 2,
+        stderr: 'Error: Unexpected extra argument "second".\n',
+      },
+      {
+        args: ['--help=bad'],
+        code: 2,
+        stderr: "Error: Option '-h, --help' does not take an argument\n",
+      },
+      {
+        args: ['--help', '--unknown'],
+        code: 2,
+        stderr:
+          "Error: Unknown option '--unknown'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--unknown\"\n",
+      },
+    ])(
+      'preserves output and precedence for $args',
+      async ({ args, code, stderr }) => {
+        const memory = createMemoryEnvironment();
+
+        expect(await runCli([command, ...args], memory.env)).toBe(code);
+        expect(memory.stdout()).toBe(code === 0 ? `${USAGE_TEXT}\n` : '');
+        expect(memory.stderr()).toBe(stderr);
+        expect(memory.events()).toEqual([
+          code === 0 ? 'write stdout' : 'write stderr',
+        ]);
+      },
+    );
+  },
+);
+
+it.each([
+  {
+    args: ['render', 'first', 'second', '--routing', 'invalid'],
+    message: 'Unexpected extra argument "second".',
+  },
+  { args: ['render', '--help', '--routing', 'invalid'], message: undefined },
+  {
+    args: ['schedule', '--format', 'invalid'],
+    message: 'Missing source file argument for schedule.',
+  },
+  {
+    args: ['schedule', '', '--format', 'invalid'],
+    message: 'Invalid value for --format: "invalid". Expected md|csv|json.',
+  },
+  {
+    args: ['schedule', '', '--category', 'invalid'],
+    message:
+      'Invalid value for --category: "invalid". Expected power|network|console|unclassified.',
+  },
+  {
+    args: ['schedule', 'first', 'second', '--format', 'invalid'],
+    message: 'Unexpected extra argument "second".',
+  },
+  {
+    args: [
+      'schedule',
+      '--help',
+      '--format',
+      'invalid',
+      '--category',
+      'invalid',
+    ],
+    message: undefined,
+  },
+])(
+  'preserves command validation precedence for $args',
+  async ({ args, message }) => {
+    const memory = createMemoryEnvironment();
+
+    expect(await runCli(args, memory.env)).toBe(message === undefined ? 0 : 2);
+    expect(memory.stdout()).toBe(
+      message === undefined ? `${USAGE_TEXT}\n` : '',
+    );
+    expect(memory.stderr()).toBe(
+      message === undefined ? '' : `Error: ${message}\n`,
+    );
+    expect(memory.events()).toEqual([
+      message === undefined ? 'write stdout' : 'write stderr',
+    ]);
+  },
+);
+
+describe.each(['render', 'check', 'schedule'] as const)(
   '%s shared input and diagnostics',
   (command) => {
     it('reads a file before the catalogue and reports warnings before output', async () => {

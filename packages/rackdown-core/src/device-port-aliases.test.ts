@@ -1,9 +1,155 @@
-import { describe, expect, it } from 'vitest';
-import type { DeviceIndex } from './devices.js';
+import { describe, expect, it, vi } from 'vitest';
+import type { DeviceIndex, DevicePortDefinition } from './devices.js';
 import { parse } from './parser.js';
 import { resolve } from './resolver.js';
 
 describe('device endpoint aliases', () => {
+  it('does not inspect labels or aliases after an exact canonical match', () => {
+    const readLabel = vi.fn(() => 'LAN');
+    const readAliases = vi.fn(() => ['uplink']);
+    const port: DevicePortDefinition = {
+      name: 'eth0',
+      get label() {
+        return readLabel();
+      },
+      get aliases() {
+        return readAliases();
+      },
+    };
+    const layout = resolve(
+      parse(
+        'rack "Rack" 4U\n4 vendor-switch as core\ncore:eth0 -- [[External]]',
+      ),
+      { 'vendor-switch': { slug: 'vendor-switch', ports: [port] } },
+    );
+
+    expect(layout.connections[0]?.from).toMatchObject({
+      portName: 'eth0',
+      adHocPort: false,
+    });
+    expect(layout.diagnostics).toEqual([]);
+    expect(readLabel).not.toHaveBeenCalled();
+    expect(readAliases).not.toHaveBeenCalled();
+  });
+
+  it('does not scan folded aliases after an exact alias match', () => {
+    const aliases = ['uplink'];
+    const foldedAliases = vi.spyOn(aliases, 'some');
+    const layout = resolve(
+      parse(
+        'rack "Rack" 4U\n4 vendor-switch as core\ncore:uplink -- [[External]]',
+      ),
+      {
+        'vendor-switch': {
+          slug: 'vendor-switch',
+          ports: [{ name: 'eth0', aliases }],
+        },
+      },
+    );
+
+    expect(layout.connections[0]?.from).toMatchObject({
+      portName: 'eth0',
+      adHocPort: false,
+    });
+    expect(layout.diagnostics).toEqual([]);
+    expect(foldedAliases).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['eth0', 'eth0'],
+    ['LAN', 'eth0'],
+    ['uplink', 'eth0'],
+    ['ETH0', 'eth0'],
+    ['backup', 'lan'],
+    ['alternate', 'lan'],
+  ])(
+    'resolves %s at the first matching layer as %s',
+    (reference, canonical) => {
+      const layout = resolve(
+        parse(
+          `rack "Rack" 4U\n4 vendor-switch as core\ncore:${reference} -- [[External]]`,
+        ),
+        {
+          'vendor-switch': {
+            slug: 'vendor-switch',
+            ports: [
+              { name: 'eth0', label: 'LAN', aliases: ['uplink'] },
+              {
+                name: 'lan',
+                label: 'Backup',
+                aliases: ['UPLINK', 'Alternate'],
+              },
+            ],
+          },
+        },
+      );
+
+      expect(layout.connections[0]?.from).toMatchObject({
+        portName: canonical,
+        adHocPort: false,
+      });
+      expect(
+        layout.devices[0]?.ports.map(({ name, adHoc }) => ({ name, adHoc })),
+      ).toEqual([
+        { name: 'eth0', adHoc: false },
+        { name: 'lan', adHoc: false },
+      ]);
+      expect(layout.diagnostics).toEqual([]);
+    },
+  );
+
+  it.each<{ reference: string; ports: DevicePortDefinition[]; hint: string }>([
+    {
+      reference: 'LAN',
+      ports: [
+        { name: 'LAN' },
+        { name: 'LAN' },
+        { name: 'third', aliases: ['LAN'] },
+      ],
+      hint: 'LAN, LAN, third',
+    },
+    {
+      reference: 'LAN',
+      ports: [
+        { name: 'eth0', label: 'LAN' },
+        { name: 'eth1', aliases: ['LAN'] },
+        { name: 'lan' },
+      ],
+      hint: 'eth0 (LAN), eth1, lan',
+    },
+    {
+      reference: 'Lan',
+      ports: [{ name: 'LAN' }, { name: 'eth1', aliases: ['lan'] }],
+      hint: 'LAN, eth1',
+    },
+  ])(
+    'preserves ambiguity at the first matching layer for $reference',
+    ({ reference, ports, hint }) => {
+      for (const modifier of ['', ' adhoc']) {
+        const layout = resolve(
+          parse(
+            `rack "Rack" 4U\n4 vendor-switch as core\ncore:${reference}${modifier} -- [[External]]`,
+          ),
+          { 'vendor-switch': { slug: 'vendor-switch', ports } },
+        );
+
+        expect(layout.connections[0]?.from).toMatchObject({
+          portName: reference,
+          adHocPort: true,
+        });
+        expect(layout.diagnostics).toEqual([
+          {
+            severity: 'warn',
+            line: 3,
+            column: 6,
+            message: `Ambiguous port "${reference}" on "vendor-switch"; preserving it as an ad-hoc endpoint.`,
+            hint: `Known endpoints for "vendor-switch": ${hint}.`,
+          },
+        ]);
+      }
+    },
+  );
+
   it('resolves aliases while materialising canonical upstream port names', () => {
     const devices: DeviceIndex = {
       'vendor-gateway': {

@@ -643,63 +643,12 @@ function parsePlainExternalEndpoint(
   };
 }
 
-function parseWikiEndpoint(
-  text: string,
+function parseWikiBody(
+  rawBody: string,
   line: number,
   column: number,
   diagnostics: Diagnostic[],
-): ParsedEndpointText | undefined {
-  const close = text.indexOf(']]', 2);
-
-  if (close < 0) {
-    const rawBody = text.slice(2);
-    const pipeIndex = rawBody.indexOf('|');
-    const target = (
-      pipeIndex >= 0 ? rawBody.slice(0, pipeIndex) : rawBody
-    ).trim();
-    let label = (
-      pipeIndex >= 0 ? rawBody.slice(pipeIndex + 1) : rawBody
-    ).trim();
-
-    if (!target) {
-      diagnostics.push({
-        severity: 'warn',
-        line,
-        column,
-        message: 'External connection target is empty; ignoring it.',
-      });
-      return undefined;
-    }
-
-    if (!label) {
-      diagnostics.push({
-        severity: 'warn',
-        line,
-        column,
-        message:
-          'External connection alias is empty; recovered to target label.',
-      });
-      label = target;
-    }
-
-    diagnostics.push({
-      severity: 'warn',
-      line,
-      column,
-      message: 'Unterminated external `[[target]]`; recovered to end of line.',
-    });
-    return {
-      endpoint: {
-        kind: 'external',
-        label,
-        link: { style: 'wiki', target },
-      },
-      remainder: '',
-      remainderOffset: text.length,
-    };
-  }
-
-  const rawBody = text.slice(2, close);
+): ConnectionEndpointReference | undefined {
   const pipeIndex = rawBody.indexOf('|');
   const target = (
     pipeIndex >= 0 ? rawBody.slice(0, pipeIndex) : rawBody
@@ -727,13 +676,38 @@ function parseWikiEndpoint(
   }
 
   return {
-    endpoint: {
-      kind: 'external',
-      label,
-      link: { style: 'wiki', target },
-    },
-    ...trailingText(text, close + 2),
+    kind: 'external',
+    label,
+    link: { style: 'wiki', target },
   };
+}
+
+function parseWikiEndpoint(
+  text: string,
+  line: number,
+  column: number,
+  diagnostics: Diagnostic[],
+): ParsedEndpointText | undefined {
+  const close = text.indexOf(']]', 2);
+  const endpoint = parseWikiBody(
+    text.slice(2, close < 0 ? undefined : close),
+    line,
+    column,
+    diagnostics,
+  );
+  if (!endpoint) return undefined;
+
+  if (close < 0) {
+    diagnostics.push({
+      severity: 'warn',
+      line,
+      column,
+      message: 'Unterminated external `[[target]]`; recovered to end of line.',
+    });
+    return { endpoint, remainder: '', remainderOffset: text.length };
+  }
+
+  return { endpoint, ...trailingText(text, close + 2) };
 }
 
 function parseMarkdownEndpoint(

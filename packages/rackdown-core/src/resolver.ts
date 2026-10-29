@@ -232,27 +232,25 @@ function findKnownPort(
   reference: string,
 ): DevicePortDefinition | 'ambiguous' | undefined {
   const ports = definition?.ports ?? [];
-  const folded = reference.toLowerCase();
   // Known ports resolve in layers:
   // exact name -> exact label/alias -> case-insensitive match.
   // Ambiguity is rejected at the first matching layer.
-  const layers = [
-    ports.filter((port) => port.name === reference),
-    ports.filter(
+  let candidates = ports.filter((port) => port.name === reference);
+  if (candidates.length === 0) {
+    candidates = ports.filter(
       (port) => port.label === reference || port.aliases?.includes(reference),
-    ),
-    ports.filter(
+    );
+  }
+  if (candidates.length === 0) {
+    const folded = reference.toLowerCase();
+    candidates = ports.filter(
       (port) =>
         port.name.toLowerCase() === folded ||
         port.label?.toLowerCase() === folded ||
         port.aliases?.some((alias) => alias.toLowerCase() === folded),
-    ),
-  ];
-  for (const candidates of layers) {
-    if (candidates.length > 1) return 'ambiguous';
-    if (candidates.length === 1) return candidates[0];
+    );
   }
-  return undefined;
+  return candidates.length > 1 ? 'ambiguous' : candidates[0];
 }
 
 function knownEndpointHint(
