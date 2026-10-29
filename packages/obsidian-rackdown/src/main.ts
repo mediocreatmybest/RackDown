@@ -43,7 +43,7 @@ export default class RackDownPlugin extends Plugin {
 
   async updateSetting(
     key: keyof RackDownPluginSettings,
-    value: string | number,
+    value: string | number | boolean,
   ): Promise<void> {
     this.settings = normalizeSettings({ ...this.settings, [key]: value });
     await this.saveData(this.settings);
@@ -94,7 +94,13 @@ export default class RackDownPlugin extends Plugin {
           ),
         );
         context.addChild(
-          new RackDownNotes(block, this.app, controls, prepared.layout),
+          new RackDownNotes(
+            block,
+            this.app,
+            controls,
+            prepared.layout,
+            this.settings.showNotesButton,
+          ),
         );
         context.addChild(
           new RackDownHostLinks(block, this, context.sourcePath),

@@ -1,9 +1,21 @@
 import type {
+  ConnectionCategory,
   ConnectionColourMode,
   SvgConnectionRouting,
   SvgExternalPlacement,
   SvgRenderOptions,
 } from '@rackdown/core';
+
+export type RackDownConnectionView = 'all' | 'none' | ConnectionCategory;
+
+export const CONNECTION_VIEW_LABELS = {
+  all: 'All',
+  none: 'None',
+  network: 'Network',
+  power: 'Power',
+  console: 'Console',
+  unclassified: 'Unclassified',
+} as const satisfies Record<RackDownConnectionView, string>;
 
 export interface RackDownPluginSettings {
   routing: SvgConnectionRouting;
@@ -11,6 +23,8 @@ export interface RackDownPluginSettings {
   connectionColourMode: ConnectionColourMode;
   connectionThickness: number;
   theme: 'auto' | 'light' | 'dark';
+  defaultConnectionView: RackDownConnectionView;
+  showNotesButton: boolean;
 }
 
 export const DEFAULT_SETTINGS: Readonly<RackDownPluginSettings> = {
@@ -19,6 +33,8 @@ export const DEFAULT_SETTINGS: Readonly<RackDownPluginSettings> = {
   connectionColourMode: 'auto',
   connectionThickness: 2,
   theme: 'auto',
+  defaultConnectionView: 'all',
+  showNotesButton: true,
 };
 
 export const CONNECTION_THICKNESS = { min: 1, max: 4, step: 0.25 } as const;
@@ -73,6 +89,15 @@ export function normalizeSettings(data: unknown): RackDownPluginSettings {
       : {};
 
   return {
+    defaultConnectionView: supportedValue(
+      saved.defaultConnectionView,
+      CONNECTION_VIEW_LABELS,
+      DEFAULT_SETTINGS.defaultConnectionView,
+    ),
+    showNotesButton:
+      typeof saved.showNotesButton === 'boolean'
+        ? saved.showNotesButton
+        : DEFAULT_SETTINGS.showNotesButton,
     routing: supportedValue(
       saved.routing,
       ROUTING_CHOICES,

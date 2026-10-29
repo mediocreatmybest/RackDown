@@ -25,6 +25,12 @@ vi.mock('obsidian', async () => {
       configure(new Control(this.element.createEl('select')));
       return this;
     }
+    addToggle(configure: (control: Control) => void) {
+      configure(
+        new Control(this.element.createEl('input', { type: 'checkbox' })),
+      );
+      return this;
+    }
     addSlider(configure: (control: Control) => void) {
       configure(new Control(this.element.createEl('input', { type: 'range' })));
       return this;
@@ -38,7 +44,7 @@ vi.mock('obsidian', async () => {
       }
       return this;
     }
-    setValue(value: string | number) {
+    setValue(value: string | number | boolean) {
       this.element.setAttribute('value', String(value));
       return this;
     }
@@ -52,10 +58,16 @@ vi.mock('obsidian', async () => {
       this.element.setAttribute('data-dynamic-tooltip', 'true');
       return this;
     }
-    onChange(callback: (value: string | number) => Promise<void>) {
+    onChange(callback: (value: string | number | boolean) => Promise<void>) {
       this.element.addEventListener('change', () => {
         const value = this.element.getAttribute('value') ?? '';
-        void callback(this.element.tag === 'input' ? Number(value) : value);
+        void callback(
+          this.element.getAttribute('type') === 'checkbox'
+            ? value === 'true'
+            : this.element.tag === 'input'
+              ? Number(value)
+              : value,
+        );
       });
       return this;
     }
@@ -93,7 +105,12 @@ describe('native settings presentation', () => {
       host.grouped = grouped;
       const plugin = {
         app: {},
-        settings: { ...DEFAULT_SETTINGS, connectionThickness: 2.75 },
+        settings: {
+          ...DEFAULT_SETTINGS,
+          connectionThickness: 2.75,
+          defaultConnectionView: 'power',
+          showNotesButton: false,
+        },
         updateSetting: vi.fn().mockResolvedValue(undefined),
       };
       const tab = new RackDownSettingTab(plugin as unknown as RackDownPlugin);
@@ -104,7 +121,7 @@ describe('native settings presentation', () => {
       expect(groups).toHaveLength(grouped ? 1 : 0);
       const parent = grouped ? (groups[0] as TestElement) : container;
       const rows = container.querySelectorAll('.setting-item');
-      expect(rows).toHaveLength(5);
+      expect(rows).toHaveLength(7);
       expect(rows.every((row) => row.parentElement === parent)).toBe(true);
       expect(
         rows.map((row) => row.querySelector('.setting-item-name')?.textContent),
@@ -114,6 +131,8 @@ describe('native settings presentation', () => {
         'Connection colour',
         'Connection thickness',
         'Theme',
+        'Default connection view',
+        'Show Notes button',
       ]);
       expect(
         rows[4]?.querySelector('.setting-item-description')?.textContent,
@@ -128,10 +147,11 @@ describe('native settings presentation', () => {
         ['Bottom', 'Right'],
         ['Auto', 'Monochrome'],
         ['Auto', 'Light', 'Dark'],
+        ['All', 'None', 'Network', 'Power', 'Console', 'Unclassified'],
       ]);
       expect(
         dropdowns.map((dropdown) => dropdown.getAttribute('value')),
-      ).toEqual(['perimeter', 'bottom', 'auto', 'auto']);
+      ).toEqual(['perimeter', 'bottom', 'auto', 'auto', 'power']);
       const slider = container.querySelector('input') as TestElement;
       expect(Object.fromEntries(slider.attributes)).toMatchObject({
         type: 'range',
@@ -146,6 +166,22 @@ describe('native settings presentation', () => {
       expect(plugin.updateSetting).toHaveBeenCalledWith(
         'connectionThickness',
         3.25,
+      );
+      const toggle = container.querySelectorAll('input')[1] as TestElement;
+      expect(toggle.getAttribute('type')).toBe('checkbox');
+      expect(toggle.getAttribute('value')).toBe('false');
+      toggle.setAttribute('value', 'true');
+      toggle.dispatchEvent(new Event('change'));
+      expect(plugin.updateSetting).toHaveBeenCalledWith(
+        'showNotesButton',
+        true,
+      );
+      const view = dropdowns[4] as TestElement;
+      view.setAttribute('value', 'none');
+      view.dispatchEvent(new Event('change'));
+      expect(plugin.updateSetting).toHaveBeenCalledWith(
+        'defaultConnectionView',
+        'none',
       );
       const theme = dropdowns[3] as TestElement;
       theme.setAttribute('value', 'dark');

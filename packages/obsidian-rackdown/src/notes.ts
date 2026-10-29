@@ -119,13 +119,14 @@ export class RackDownNotes extends MarkdownRenderChild {
     private readonly app: App,
     private readonly controls: HTMLElement,
     private readonly layout: RackLayout,
+    private readonly showNotesButton = true,
   ) {
     super(containerEl);
   }
 
   override onload(): void {
     const notes = this.layout.notes;
-    if (!notes?.length) return;
+    if (!this.showNotesButton || !notes?.length) return;
     this.controls.classList.add('rackdown-notes-present');
     const button = this.controls.createEl('button', {
       cls: 'rackdown-notes-button',

@@ -1,16 +1,17 @@
 import { parse, resolve } from '@rackdown/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  CONNECTION_VIEW_LABELS,
-  type RackDownConnectionView,
-  RackDownConnectionViews,
-} from './connection-views.js';
+import { RackDownConnectionViews } from './connection-views.js';
 import { RackDownHostLinks } from './host-links.js';
 import { fire, TestElement, TestMenu, TestModal } from './host-test-support.js';
 import type RackDownPlugin from './main.js';
 import { RackDownNotes } from './notes.js';
 import { prepareRackDown } from './render-rackdown.js';
-import { DEFAULT_SETTINGS } from './settings.js';
+import {
+  DEFAULT_SETTINGS,
+  normalizeSettings,
+  type RackDownConnectionView,
+  type RackDownPluginSettings,
+} from './settings.js';
 
 vi.mock('@rackdown/core', async (importOriginal) => {
   const core = await importOriginal<typeof import('@rackdown/core')>();
@@ -103,9 +104,14 @@ interface BlockFixture {
   controls: TestElement;
   diagram: TestElement;
   controller: RackDownConnectionViews;
+  prepared: ReturnType<typeof prepareRackDown>;
 }
 
-function block(source = SOURCE, namespace = 'note-block-1'): BlockFixture {
+function block(
+  source = SOURCE,
+  namespace = 'note-block-1',
+  settings: RackDownPluginSettings = DEFAULT_SETTINGS,
+): BlockFixture {
   const prepared = prepareRackDown(source);
   const block = new TestElement('div', 'rackdown-block');
   const controls = block.createDiv({ cls: 'rackdown-connection-view' });
@@ -117,10 +123,10 @@ function block(source = SOURCE, namespace = 'note-block-1'): BlockFixture {
     diagram.asHtml(),
     prepared,
     { namespace },
-    DEFAULT_SETTINGS,
+    settings,
   );
   controller.load();
-  return { block, controls, diagram, controller };
+  return { block, controls, diagram, controller, prepared };
 }
 
 function selectView(fixture: BlockFixture, view: RackDownConnectionView): void {
@@ -148,6 +154,102 @@ describe('per-block connection views', () => {
     vi.stubGlobal('Element', TestElement);
     vi.mocked(parse).mockClear();
     vi.mocked(resolve).mockClear();
+  });
+
+  it.each([
+    ['all', 5],
+    ['none', 0],
+    ['network', 2],
+    ['power', 1],
+    ['console', 1],
+    ['unclassified', 1],
+  ] as const)('initializes a new block with saved %s view', (view, count) => {
+    const fixture = block(
+      SOURCE,
+      'default-view',
+      normalizeSettings({ defaultConnectionView: view }),
+    );
+    expect(fixture.controls.querySelector('select')?.value).toBe(view);
+    expect(routes(fixture)).toHaveLength(count);
+    expect(
+      fixture.controls.querySelector('.rackdown-connection-view-status')
+        ?.textContent,
+    ).toBe(`Showing ${count} of 5 connections`);
+  });
+
+  it('copies the default at construction and keeps temporary changes local until recreation', () => {
+    const settings = normalizeSettings({ defaultConnectionView: 'power' });
+    const first = block(SOURCE, 'first', settings);
+    const second = block(SOURCE, 'second', settings);
+    selectView(first, 'network');
+    fire(first.diagram, 'contextmenu', routes(first)[0] as TestElement);
+    TestMenu.latest.action?.();
+    expect(first.controls.querySelector('select')?.value).toBe('network');
+    expect(
+      first.controls.querySelector('.rackdown-connection-view-status')
+        ?.textContent,
+    ).toBe('Showing 2 of 5 connections');
+    expect(second.controls.querySelector('select')?.value).toBe('power');
+    expect(routes(second)).toHaveLength(1);
+    expect(settings.defaultConnectionView).toBe('power');
+    settings.defaultConnectionView = 'console';
+    expect(first.controls.querySelector('select')?.value).toBe('network');
+    first.controller.unload();
+    const recreated = block(SOURCE, 'first', settings);
+    expect(recreated.controls.querySelector('select')?.value).toBe('console');
+    expect(routes(recreated)).toHaveLength(1);
+  });
+
+  it('uses None without discarding prepared data, complete geometry or viewport, then restores Power and All', () => {
+    const fixture = block();
+    const original = JSON.stringify(fixture.prepared);
+    const all = routeSummary(fixture);
+    const svg = fixture.diagram.querySelector('svg') as TestElement;
+    const geometry = {
+      box: svg.getAttribute('viewBox'),
+      width: svg.style.getPropertyValue('width'),
+      height: svg.style.getPropertyValue('height'),
+      racks: svg
+        .querySelectorAll('.rackdown-rack')
+        .map((rack) => Object.fromEntries(rack.attributes)),
+      devices: svg
+        .querySelectorAll('.rackdown-device-group')
+        .map((device) => Object.fromEntries(device.attributes)),
+    };
+    fixture.diagram.scrollLeft = 20;
+    fixture.diagram.asHtml().scrollTop = 50;
+    for (const [view, count] of [
+      ['none', 0],
+      ['power', 1],
+      ['all', 5],
+    ] as const) {
+      selectView(fixture, view);
+      const current = fixture.diagram.querySelector('svg') as TestElement;
+      expect(routes(fixture)).toHaveLength(count);
+      expect(
+        fixture.controls.querySelector('.rackdown-connection-view-status')
+          ?.textContent,
+      ).toBe(`Showing ${count} of 5 connections`);
+      expect({
+        box: current.getAttribute('viewBox'),
+        width: current.style.getPropertyValue('width'),
+        height: current.style.getPropertyValue('height'),
+        racks: current
+          .querySelectorAll('.rackdown-rack')
+          .map((rack) => Object.fromEntries(rack.attributes)),
+        devices: current
+          .querySelectorAll('.rackdown-device-group')
+          .map((device) => Object.fromEntries(device.attributes)),
+      }).toEqual(geometry);
+      expect(fixture.diagram.scrollLeft).toBe(20);
+      expect(fixture.diagram.asHtml().scrollTop).toBe(50);
+      expect(routeSummary(fixture)).toEqual(
+        view === 'all' ? all : all.filter(({ category }) => category === view),
+      );
+    }
+    expect(JSON.stringify(fixture.prepared)).toBe(original);
+    expect(parse).toHaveBeenCalledOnce();
+    expect(resolve).toHaveBeenCalledOnce();
   });
 
   it.each([6, 12, 42, 52])(
@@ -195,7 +297,7 @@ describe('per-block connection views', () => {
     expect(select?.value).toBe('all');
     expect(
       select?.querySelectorAll('option').map((option) => option.textContent),
-    ).toEqual(Object.values(CONNECTION_VIEW_LABELS));
+    ).toEqual(['All', 'None', 'Network', 'Power', 'Console', 'Unclassified']);
     expect(
       fixture.controls
         ?.querySelector('.rackdown-connection-view-label')
@@ -292,7 +394,11 @@ describe('per-block connection views', () => {
   });
 
   it('keeps an accessible empty controls container for a zero-connection document', () => {
-    const fixture = block('rack "Lab" 12U\n10 switch "Core"');
+    const fixture = block(
+      'rack "Lab" 12U\n10 switch "Core"',
+      'empty',
+      normalizeSettings({ defaultConnectionView: 'none' }),
+    );
     expect(fixture.controls.getAttribute('role')).toBe('group');
     expect(fixture.controls.getAttribute('aria-label')).toBe(
       'Diagram controls',
@@ -460,6 +566,37 @@ describe('per-block connection views', () => {
       fire(fixture.diagram, 'contextmenu', routes(fixture)[0] as TestElement)
         .defaultPrevented,
     ).toBe(true);
+  });
+
+  it('disables the notes lifecycle affordance without removing resolved notes or changing a None diagram', () => {
+    const fixture = block(
+      `${SOURCE} notes "route"\nnotes at 3 "position"`,
+      'disabled-notes',
+      normalizeSettings({ defaultConnectionView: 'none' }),
+    );
+    const before = JSON.stringify(fixture.prepared);
+    const svg = fixture.diagram.innerHTML;
+    const notes = new RackDownNotes(
+      fixture.block.asHtml(),
+      {} as RackDownPlugin['app'],
+      fixture.controls.asHtml(),
+      fixture.prepared.layout,
+      false,
+    );
+    notes.load();
+    expect(
+      fixture.controls.querySelector('.rackdown-notes-button'),
+    ).toBeUndefined();
+    expect(fixture.controls.classes.has('rackdown-notes-present')).toBe(false);
+    expect(fixture.prepared.layout.notes?.map((note) => note.text)).toEqual([
+      'route',
+      'position',
+    ]);
+    expect(JSON.stringify(fixture.prepared)).toBe(before);
+    expect(fixture.diagram.innerHTML).toBe(svg);
+    notes.unload();
+    expect(JSON.stringify(fixture.prepared)).toBe(before);
+    expect(fixture.diagram.innerHTML).toBe(svg);
   });
 
   it('opens full notes without changing manually hidden routes or their interactions', () => {

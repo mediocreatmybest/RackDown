@@ -3,6 +3,7 @@ import type RackDownPlugin from './main.js';
 import {
   CONNECTION_COLOUR_CHOICES,
   CONNECTION_THICKNESS,
+  CONNECTION_VIEW_LABELS,
   EXTERNAL_PLACEMENT_CHOICES,
   type RackDownPluginSettings,
   ROUTING_CHOICES,
@@ -72,13 +73,35 @@ export class RackDownSettingTab extends PluginSettingTab {
       'theme',
       THEME_CHOICES,
     );
+    this.addDropdown(
+      addSetting,
+      'Default connection view',
+      'Initial connection view for each rendered diagram.',
+      'defaultConnectionView',
+      CONNECTION_VIEW_LABELS,
+    );
+    addSetting((setting) => {
+      setting
+        .setName('Show Notes button')
+        .setDesc('Show the Notes button on diagrams with notes.')
+        .addToggle((toggle) => {
+          toggle
+            .setValue(this.plugin.settings.showNotesButton)
+            .onChange(async (value) => {
+              await this.plugin.updateSetting('showNotesButton', value);
+            });
+        });
+    });
   }
 
   private addDropdown(
     addSetting: (configure: (setting: Setting) => void) => void,
     name: string,
     description: string,
-    key: Exclude<keyof RackDownPluginSettings, 'connectionThickness'>,
+    key: Exclude<
+      keyof RackDownPluginSettings,
+      'connectionThickness' | 'showNotesButton'
+    >,
     choices: Record<string, string>,
   ): void {
     addSetting((setting) =>

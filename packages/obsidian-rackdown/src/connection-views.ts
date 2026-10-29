@@ -1,8 +1,4 @@
-import {
-  type ConnectionCategory,
-  type SvgRenderOptions,
-  selectConnections,
-} from '@rackdown/core';
+import { type SvgRenderOptions, selectConnections } from '@rackdown/core';
 import { MarkdownRenderChild } from 'obsidian';
 import { decorateRackDownHostLinks } from './host-links.js';
 import {
@@ -10,18 +6,12 @@ import {
   renderPreparedRackDown,
 } from './render-rackdown.js';
 import { RackDownRouteInteractions } from './route-interactions.js';
-import type { RackDownPluginSettings } from './settings.js';
+import {
+  CONNECTION_VIEW_LABELS,
+  type RackDownConnectionView,
+  type RackDownPluginSettings,
+} from './settings.js';
 import { RackDownViewport } from './viewport.js';
-
-export type RackDownConnectionView = 'all' | ConnectionCategory;
-
-export const CONNECTION_VIEW_LABELS = {
-  all: 'All',
-  network: 'Network',
-  power: 'Power',
-  console: 'Console',
-  unclassified: 'Unclassified',
-} as const satisfies Record<RackDownConnectionView, string>;
 
 function isConnectionView(value: string): value is RackDownConnectionView {
   return Object.hasOwn(CONNECTION_VIEW_LABELS, value);
@@ -29,7 +19,7 @@ function isConnectionView(value: string): value is RackDownConnectionView {
 
 /** Owns the temporary selected view and every SVG-scoped interaction child. */
 export class RackDownConnectionViews extends MarkdownRenderChild {
-  private selected: RackDownConnectionView = 'all';
+  private selected: RackDownConnectionView;
   private status: HTMLElement | undefined;
   private routeInteractions: RackDownRouteInteractions | undefined;
   private viewport: RackDownViewport | undefined;
@@ -43,6 +33,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
     private readonly settings: RackDownPluginSettings,
   ) {
     super(containerEl);
+    this.selected = settings.defaultConnectionView;
   }
 
   override onload(): void {
@@ -93,13 +84,16 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
     }
 
     const { connectionSelection: _selection, ...baseOptions } = this.options;
-    const options: SvgRenderOptions =
+    const selection =
       this.selected === 'all'
-        ? baseOptions
-        : {
-            ...baseOptions,
-            connectionSelection: { categories: [this.selected] },
-          };
+        ? undefined
+        : this.selected === 'none'
+          ? { connectionIds: [] }
+          : { categories: [this.selected] };
+    const options: SvgRenderOptions = {
+      ...baseOptions,
+      ...(selection ? { connectionSelection: selection } : {}),
+    };
     const rendered = renderPreparedRackDown(
       this.prepared,
       options,
@@ -113,12 +107,7 @@ export class RackDownConnectionViews extends MarkdownRenderChild {
       new RackDownRouteInteractions(this.containerEl, this.diagram),
     );
     if (this.status) {
-      const selected =
-        this.selected === 'all'
-          ? this.prepared.layout.connections
-          : selectConnections(this.prepared.layout, {
-              categories: [this.selected],
-            });
+      const selected = selectConnections(this.prepared.layout, selection);
       const total = this.prepared.layout.connections.length;
       this.status.textContent = `Showing ${selected.length} of ${total} connections`;
     }

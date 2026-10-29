@@ -56,9 +56,11 @@ vi.mock('obsidian', async () => {
   };
 });
 
-async function renderBlock(source: string) {
-  const instance = plugin();
-  await instance.onload();
+async function renderBlock(source: string, instance?: RackDownPlugin) {
+  if (!instance) {
+    instance = plugin();
+    await instance.onload();
+  }
   const element = new TestElement();
   const children: { load(): void; unload(): void }[] = [];
   const context = {
@@ -107,6 +109,106 @@ describe('Obsidian settings lifecycle', () => {
     host.leaves = [];
     TestModal.instances = [];
   });
+
+  it('keeps block selections temporary and resets recreated previews to the newly saved default', async () => {
+    host.saved = { defaultConnectionView: 'none' };
+    const source =
+      'rack "Lab" 8U\n8 "Core" as core\ncore:1 -- [[Power]] category power\ncore:2 -- [[WAN]] category network';
+    const first = await renderBlock(source);
+    const second = await renderBlock(source, first.instance);
+    expect(first.element.querySelector('select')?.value).toBe('none');
+    const select = first.element.querySelector('select') as TestElement;
+    select.value = 'network';
+    fire(select, 'change', select);
+    expect(second.element.querySelector('select')?.value).toBe('none');
+    expect(first.instance.settings.defaultConnectionView).toBe('none');
+    expect(host.saveData).not.toHaveBeenCalled();
+    const markdown = Reflect.construct(MarkdownView, []) as MarkdownView;
+    host.leaves = [{ view: markdown }];
+    await first.instance.updateSetting('defaultConnectionView', 'power');
+    expect(markdown.previewMode.rerender).toHaveBeenCalledExactlyOnceWith(true);
+    first.unload();
+    second.unload();
+    const recreated = await renderBlock(source, first.instance);
+    expect(recreated.element.querySelector('select')?.value).toBe('power');
+    expect(
+      recreated.element.querySelector('.rackdown-connection-view-status')
+        ?.textContent,
+    ).toBe('Showing 1 of 2 connections');
+    expect(host.saveData).toHaveBeenCalledOnce();
+  });
+
+  it('hides only the Notes affordance and restores all notes after saving and recreating a None view', async () => {
+    host.saved = { defaultConnectionView: 'none', showNotesButton: false };
+    const source =
+      'rack "Lab" 8U\n8 "Core" as core notes "same" notes "same"\ncore:1 -- [[Power]] category power notes "power"\nbanana';
+    const disabled = await renderBlock(source);
+    expect(disabled.button).toBeUndefined();
+    expect(
+      disabled.element.querySelector('.rackdown-notes-present'),
+    ).toBeUndefined();
+    expect(disabled.element.querySelector('button')).toBeUndefined();
+    expect(TestModal.instances).toHaveLength(0);
+    const diagram =
+      disabled.element.querySelector('.rackdown-diagram')?.innerHTML;
+    const diagnostics = disabled.element.querySelector('.rackdown-diagnostics');
+    expect(diagram).toContain('<svg');
+    expect(diagram).toContain('Selected 0 of 1');
+    expect(diagnostics).toBeDefined();
+    expect(host.saveData).not.toHaveBeenCalled();
+    const markdown = Reflect.construct(MarkdownView, []) as MarkdownView;
+    host.leaves = [{ view: markdown }];
+    await disabled.instance.updateSetting('showNotesButton', true);
+    expect(markdown.previewMode.rerender).toHaveBeenCalledExactlyOnceWith(true);
+    disabled.unload();
+    const enabled = await renderBlock(source, disabled.instance);
+    expect(enabled.button?.textContent).toBe('Notes (3)');
+    expect(enabled.element.querySelector('.rackdown-diagram')?.innerHTML).toBe(
+      diagram,
+    );
+    expect(
+      enabled.element
+        .querySelector('.rackdown-diagnostics')
+        ?.querySelectorAll('li')
+        .map((item) => item.textContent),
+    ).toEqual(
+      diagnostics?.querySelectorAll('li').map((item) => item.textContent),
+    );
+    expect(enabled.element.querySelector('select')?.value).toBe('none');
+    const modal = openNotes(enabled.button);
+    expect(
+      modal.contentEl.querySelectorAll('p').map((p) => p.textContent),
+    ).toEqual(['same', 'same', 'power']);
+    modal.close();
+    expect(enabled.button?.focus).toHaveBeenCalledExactlyOnceWith({
+      preventScroll: true,
+    });
+    await enabled.instance.updateSetting('showNotesButton', false);
+    enabled.unload();
+    const hiddenAgain = await renderBlock(source, enabled.instance);
+    expect(hiddenAgain.button).toBeUndefined();
+    expect(
+      hiddenAgain.element.querySelector('.rackdown-diagram')?.innerHTML,
+    ).toBe(diagram);
+    expect(host.saveData).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([true, false])(
+    'has no Notes affordance without authored notes when enabled=%s',
+    async (showNotesButton) => {
+      host.saved = { showNotesButton };
+      const fixture = await renderBlock('rack "Lab" 8U');
+      expect(fixture.button).toBeUndefined();
+      expect(
+        fixture.element.querySelector('.rackdown-connection-view-empty')
+          ?.textContent,
+      ).toBe('No connections');
+      expect(fixture.element.querySelector('select')).toBeUndefined();
+      expect(
+        fixture.element.querySelector('.rackdown-diagram')?.innerHTML,
+      ).toContain('<svg');
+    },
+  );
 
   it('adds a conditional native Notes count without removing No connections', async () => {
     const empty = await renderBlock('rack "Lab" 8U');
@@ -340,13 +442,18 @@ notes at 2 "position B"`);
     await instance.updateSetting('connectionColourMode', 'monochrome');
     await instance.updateSetting('theme', 'dark');
     await instance.updateSetting('connectionThickness', 2.75);
+    await instance.updateSetting('defaultConnectionView', 'none');
+    await instance.updateSetting('showNotesButton', false);
     expect(host.saveData).toHaveBeenLastCalledWith({
       routing: 'direct',
       externalPlacement: 'right',
       connectionColourMode: 'monochrome',
       connectionThickness: 2.75,
       theme: 'dark',
+      defaultConnectionView: 'none',
+      showNotesButton: false,
     });
+    expect(first.previewMode.rerender).toHaveBeenCalledTimes(7);
     expect(first.previewMode.rerender).toHaveBeenCalledWith(true);
     expect(second.previewMode.rerender).toHaveBeenCalledWith(true);
     const reloaded = plugin();

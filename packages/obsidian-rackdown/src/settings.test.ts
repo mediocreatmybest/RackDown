@@ -16,6 +16,52 @@ core:1 -- server:1
 core:2 -- [[Remote]]`;
 
 describe('settings normalization', () => {
+  it('defaults older data to all connections and a visible Notes button', () => {
+    expect(normalizeSettings({ routing: 'direct', retired: true })).toEqual({
+      routing: 'direct',
+      externalPlacement: 'bottom',
+      connectionColourMode: 'auto',
+      connectionThickness: 2,
+      theme: 'auto',
+      defaultConnectionView: 'all',
+      showNotesButton: true,
+    });
+  });
+
+  it.each(['all', 'none', 'network', 'power', 'console', 'unclassified'])(
+    'retains saved default connection view %s',
+    (defaultConnectionView) => {
+      expect(
+        normalizeSettings({ defaultConnectionView }).defaultConnectionView,
+      ).toBe(defaultConnectionView);
+    },
+  );
+
+  it.each([undefined, null, '', 'All', 'toString', true, 1, {}, []])(
+    'falls back to all for malformed connection view %j',
+    (defaultConnectionView) => {
+      expect(
+        normalizeSettings({ defaultConnectionView }).defaultConnectionView,
+      ).toBe('all');
+    },
+  );
+
+  it.each([undefined, null, 'false', 0, 1, {}, []])(
+    'keeps Notes enabled for nonboolean %j',
+    (showNotesButton) => {
+      expect(normalizeSettings({ showNotesButton }).showNotesButton).toBe(true);
+    },
+  );
+
+  it.each([true, false])(
+    'retains boolean Notes preference %s',
+    (showNotesButton) => {
+      expect(normalizeSettings({ showNotesButton }).showNotesButton).toBe(
+        showNotesButton,
+      );
+    },
+  );
+
   it.each([undefined, null, false, 'direct', [], 42, {}])(
     'uses defaults for missing or malformed data: %j',
     (data) => expect(normalizeSettings(data)).toEqual(DEFAULT_SETTINGS),
@@ -36,6 +82,10 @@ describe('settings normalization', () => {
     ['theme', 'none'],
     ['theme', 'sepia'],
     ['theme', null],
+    ['defaultConnectionView', 'invalid'],
+    ['defaultConnectionView', 'toString'],
+    ['showNotesButton', 'false'],
+    ['showNotesButton', null],
   ])('falls back independently for invalid %s=%s', (key, value) => {
     const valid = {
       ...DEFAULT_SETTINGS,
@@ -43,6 +93,8 @@ describe('settings normalization', () => {
       externalPlacement: 'right',
       connectionColourMode: 'monochrome',
       theme: 'dark',
+      defaultConnectionView: 'power',
+      showNotesButton: false,
     };
     expect(normalizeSettings({ ...valid, [key as string]: value })).toEqual({
       ...valid,
