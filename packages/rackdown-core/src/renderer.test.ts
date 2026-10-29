@@ -1395,7 +1395,7 @@ describe('toSvg', () => {
       )?.[0];
 
       expect(style).toContain(
-        ':where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }',
+        ':where(#rackdown-theme-dark-mono-root) :where(.rackdown-connection[data-colour-source="monochrome"]) { stroke: var(--rackdown-connection-stroke, #94a3b8); }',
       );
       expect(style).not.toContain('prefers-color-scheme');
       expect(connection).toContain('data-colour-source="monochrome"');
