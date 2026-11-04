@@ -1,92 +1,44 @@
 # Specification
 
-RackDown is a small, text-first library for describing physical equipment racks in plain text and rendering them as diagrams.
+RackDown is a line-oriented language for describing equipment racks, placements and connections, then resolving them into a layout and rendering SVG.
 
-We want the source to stay useful on its own. Someone reading a RackDown file without the renderer should still be able to work out what rack is being described, what equipment is in it, where things sit and what the important connections are.
-
-## 1. What we're trying to do
-
-The aim is to make documenting a rack roughly as quick as typing it into a spreadsheet, while giving us a consistent diagram that can be embedded in Markdown-oriented tools and other hosts.
+The source remains useful without a renderer. An optional device catalogue enriches known hardware; it does not make the catalogue mandatory or turn RackDown into a hardware-compatibility checker.
 
 ```text
-plain text
-   |
-   v
-RackDown
-   |
-   v
-rack model + diagnostics
-   |
-   v
-renderer
+RackDown source -> parse() -> RackDocument
+                              |
+                              v
+                 resolve(DeviceIndex?)
+                              |
+                              v
+                          RackLayout
+                              |
+                              v
+                          renderer
 ```
 
-Right now Obsidian is one host integration. It is useful, and my primary testing so far, but it is not part of the core language or runtime architecture.
+## Contents
 
-## 2. A few design choices
+1. [Rack declaration](#1-rack-declaration)
+2. [Devices](#2-devices)
+3. [Vertical occupancy and shared rows](#3-vertical-occupancy-and-shared-rows)
+4. [Connections](#4-connections)
+5. [External references and notes](#5-external-references)
+6. [Comments](#6-comments)
+7. [Diagnostics and recovery](#7-diagnostics-and-recovery)
+8. [Device enrichment and discovery](#8-device-enrichment-and-discovery)
+9. [Rendering and presentation](#9-rendering-and-presentation)
+10. [Deterministic output](#10-deterministic-output)
+11. [Current scope](#11-current-scope)
 
-These are the ideas shaping the current language. They explain why RackDown behaves the way it does today, but they are not meant to read like laws that can never change.
+## Language and implementation boundaries
 
-### Useful source text
+- `RackDocument` represents parsed author intent; `RackLayout` contains resolved geometry and semantic relationships.
+- Core is independent of the DOM, filesystem, network, YAML and host adapters. Hosts own navigation and interaction behaviour.
+- Unknown devices and endpoints can remain in the document. RackDown reports diagnostics and recovers where it can rather than inventing meaning.
+- Checks cover diagram-relevant issues such as malformed input, ambiguous references, overlap and overflow. They do not establish electrical, mechanical or network safety.
 
-We want a RackDown file to remain understandable even if the renderer is unavailable. The diagram is generated from the source, but the source should still make sense in a text editor, a note or a Git diff.
-
-### Trying To Keep The Author's Intent
-
-We generally prefer to trust what the author wrote. RackDown may warn when something looks odd or when catalogue information disagrees, but it is not currently trying to decide what hardware someone is allowed to install or connect.
-
-For example:
-
-```rackdown
-core:banana -- server:toaster
-```
-
-is still a valid relationship if that is what the author wants to document.
-
-### Device metadata and enrichment
-
-A recognised device definition can add useful information such as its usual U-height, model name, depth or airflow facts and known endpoints. Unknown devices and endpoints still render, so the catalogue remains optional.
-
-### Recovering from problems
-
-Rack files are likely to be edited by hand, so we try not to throw the whole diagram away because one line is wrong. Where RackDown can recover sensibly, it keeps the useful parts and reports the problem as a diagnostic.
-
-### What RackDown currently checks
-
-RackDown checks things that affect the diagram, such as overlap, overflow and ambiguous references. We do not try to determine whether hardware is electrically, mechanically or topologically correct.
-
-### Keeping the rack readable
-
-The rack itself should remain the main visual subject. External references and connection paths support the diagram, so we currently keep their presentation separate from the physical rack geometry.
-
-### Keeping core independent
-
-Right now we keep `@rackdown/core` independent of the DOM, filesystem access, network calls, live NetBox data, YAML parsing and Obsidian. That keeps the parser, resolver and renderer usable from different hosts without dragging host-specific assumptions into core.
-
-## 3. Core pipeline
-
-```text
-RackDown source
-      |
-      v
-   parse()
-      |
-      v
- RackDocument
-      |
-      v
-resolve(DeviceIndex?)
-      |
-      v
-  RackLayout
-      |
-      v
-   renderer
-```
-
-`RackDocument` should represent what the author wrote. `RackLayout` represents the resolved physical arrangement and semantic relationships. SVG is one rendering of that layout rather than the definition of the rack itself.
-
-## 4. Rack declaration
+## 1. Rack declaration
 
 Preferred forms:
 
@@ -134,7 +86,7 @@ View order is presentation intent. `views front rear` renders front then rear, w
 
 The rack name remains immediately after `rack`. Prefix variants such as `rack front rear "Name" ...` are not accepted syntax.
 
-## 5. Devices
+## 2. Devices
 
 A common placement looks like this:
 
@@ -222,7 +174,7 @@ If a device's mounting face is excluded by its rack's requested views, resolutio
 
 If we add opposite-face enrichment later, it should continue to describe the same physical placement rather than creating a second source device behind the scenes.
 
-## 6. Vertical occupancy and shared rows
+## 3. Vertical occupancy and shared rows
 
 U-height affects layout.
 
@@ -276,7 +228,7 @@ For other overlaps and rack-boundary overflow, RackDown tries to render somethin
 
 Front and rear mounting faces have independent vertical occupancy for diagram checks. We do not currently validate opposite-face depth compatibility.
 
-## 7. Connections
+## 4. Connections
 
 Connections are kept in the source because they are useful documentation even without a renderer.
 
@@ -480,7 +432,7 @@ Front/rear projection does not duplicate connections. There is one semantic conn
 
 Known endpoint metadata can add factual endpoint information, but RackDown does not currently infer network topology, VLANs, routing, compatibility or physical cable path from it.
 
-## 8. External references
+## 5. External references
 
 A connection may leave the document using one of four supported forms:
 
@@ -534,7 +486,7 @@ Core exposes optional `RackDocument.notes` (`DocumentNote[]`) and `RackLayout.no
 
 Hosts control presentation. Default SVG output contains no note text or metadata, and changing only the layout notes leaves its bytes unchanged. Notes do not affect geometry, cable schedules or connection selection. Notes remain readable in source and serialized Core data; hosts should render them as plain text and decide explicitly whether to include them in exports.
 
-## 9. Comments
+## 6. Comments
 
 Use `//` for full-line comments or trailing comments on rack declarations,
 front/rear placements and connections:
@@ -557,7 +509,7 @@ quote escapes and balanced Markdown destinations still apply; an unfinished
 protected value keeps the rest of the line for normal error recovery.
 Comments do not change the meaning of tokens before them.
 
-## 10. Diagnostics and recovery
+## 7. Diagnostics and recovery
 
 The current diagnostic shape is conceptually:
 
@@ -590,7 +542,7 @@ RackDown is line-oriented and recovery-oriented. A malformed line should not des
 
 RackDown tries to be forgiving, but it's not a magical psychic wizard.
 
-## 11. Device enrichment and discovery
+## 8. Device enrichment and discovery
 
 `resolve()` accepts an optional `DeviceIndex`, and core still works when one is not supplied.
 
@@ -624,7 +576,7 @@ We currently avoid inventing semantic aliases such as mapping `wan`, `lan`, `upl
 
 See [Upstream catalogue](upstream-catalogue.md) for provenance and normalisation rules.
 
-## 12. Rendering and presentation
+## 9. Rendering and presentation
 
 The current renderer produces deterministic SVG.
 
@@ -722,7 +674,7 @@ Automatic colour differentiation and monochrome rendering are supported programm
 
 There is currently no accepted source-language syntax for routing or connection styling. Hosts and renderers choose those presentation options.
 
-## 13. Deterministic output
+## 10. Deterministic output
 
 Given the same source, device index and render options, RackDown should produce the same output.
 
@@ -732,7 +684,7 @@ SVG IDs are namespaced. A host may supply a stable namespace; otherwise core der
 
 Generated catalogue data follows the same reproducibility approach described in [Upstream catalogue](upstream-catalogue.md).
 
-## 14. Current scope
+## 11. Current scope
 
 This is the scope we are aiming at for the current version. It is useful as a boundary for 0.1.0, not a promise that RackDown can never grow beyond it.
 

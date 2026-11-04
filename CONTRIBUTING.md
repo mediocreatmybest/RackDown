@@ -1,19 +1,12 @@
 # Contributing
 
-RackDown is still an early project, so contributions do not need to arrive as polished feature proposals. If you have a rack that RackDown cannot describe properly, an awkward bit of syntax, a rendering problem or an idea that would make the documentation more useful, a small example and an explanation of the problem is a good place to start.
+Small, focused contributions are welcome: a rack that cannot be described, confusing syntax, a rendering issue, a documentation gap or a concrete improvement to the project.
 
-We generally prefer small changes that solve a real problem we can point at. New syntax in particular is much easier to reason about when there is an example showing why the current language falls short.
+Prefer changes that solve a clear problem. For proposed syntax, include an example that shows why the existing language is insufficient. Keep host-specific behaviour in the relevant adapter where practical, rather than adding host assumptions to core.
 
-Right now we are trying to keep RackDown focused on rack documentation in a simple format. That may move over time, but a new feature should have a fairly clear reason to live here.
+## Development setup
 
-We also prefer straightforward code and boring dependencies where they do the job. Host-specific behaviour should stay in the relevant adapter where practical and not into the core function itself.
-
-## Getting started
-
-To test the development setup:
-
-1. Use Node.js 22 or newer and the pnpm version pinned in `package.json`.
-2. From the project root:
+Requirements: Node.js 22 or newer and the pnpm version pinned in the root `package.json`.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -22,34 +15,31 @@ pnpm build
 pnpm dev
 ```
 
-`pnpm check` runs formatting and lint checks, typechecking, tests and curated catalogue verification. `pnpm build` builds the packages and browser playground.
+The playground should be available at <http://127.0.0.1:4173> after `pnpm dev`.
 
-If you want to poke at RackDown interactively while working on something, run:
+- `pnpm check` runs formatting and lint checks, typechecking, tests and curated catalogue verification.
+- `pnpm build` builds the packages and browser playground.
 
-```bash
-pnpm dev
-```
+## Tests and documentation
 
-The playground should then be available at <http://127.0.0.1:4173>.
+Add focused tests for the behaviour being changed, especially parsing, resolution, diagnostics, recovery and deterministic output. Include malformed input or unknown hardware cases when relevant.
 
-## Tests and behaviour
+For rendering changes, inspect the resulting diagram as well as running tests. Deterministic SVG alone does not guarantee that a route is visually useful.
 
-Tests should protect behaviour we actually care about: parsing and resolution, diagnostics, recovery and deterministic output. Focused assertions are usually more useful than enormous whole-diagram SVG snapshots that fail because three pixels moved sideways.
-
-Malformed input and unknown hardware are useful test cases. RackDown tries to recover from both, so please test the unhappy path when a change touches that behaviour.
-
-If a change affects how a rack looks, please look at the resulting diagram as well. A test suite can tell us that the SVG is deterministic; it is less gifted at telling us that a cable now takes the scenic route through half the rack.
+When changing documentation, keep examples aligned with the parser, resolver, renderer and CLI. Prefer linking to the authoritative explanation over repeating long sections across files.
 
 ## Device catalogue changes
 
-The generated catalogue files should not be edited by hand. Change the selected inputs or the generator, then regenerate the output so the source, provenance and generated data continue to agree.
+Do not edit generated catalogue files by hand. Update the selected inputs or generator, then regenerate the output so source, provenance and generated data stay aligned. The curated and full catalogues have different generation and verification paths, and the upstream revision is pinned.
 
-The curated and full catalogues have different generation and verification paths, and the upstream revision is deliberately pinned. [Upstream catalogue](docs/upstream-catalogue.md) explains how that works and what needs to move together when the data is updated.
+See [upstream catalogue](docs/upstream-catalogue.md) for generation, provenance and verification details.
 
-## Where to look next
+## Project references
 
-The [language specification](docs/specification.md) describes how RackDown currently behaves and the choices behind the language.
+- [Authoring cheat sheet](docs/authoring-cheat-sheet.md) — common syntax and examples.
+- [Language specification](docs/specification.md) — full language behaviour, validation and recovery.
+- [Architecture](docs/architecture.md) — package responsibilities and integration boundaries.
+- [Core API](packages/rackdown-core/README.md) — parsing, selection, schedules and SVG rendering.
+- [CLI](packages/rackdown-cli/README.md) — commands, options and exit codes.
 
-The [architecture](docs/architecture.md) explains how core, device data, rendering and host integrations currently fit together.
-
-If those documents and the code disagree, please call it out. Stale documentation is considerably easier to fix when somebody notices it before we start treating it as archaeology.
+If the docs and implementation disagree, please raise it or include a correction in your contribution.

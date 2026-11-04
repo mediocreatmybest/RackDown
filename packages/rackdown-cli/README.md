@@ -1,100 +1,86 @@
-# @rackdown/cli
+# `@rackdown/cli`
 
-Command-line interface for RackDown equipment rack diagrams and cable schedules.
+Render RackDown source to SVG, check it for diagnostics, or export a cable schedule. The CLI uses the pinned offline device catalogue and does not require a browser, Obsidian vault or network connection.
 
-The CLI provides standalone diagram rendering and syntax/semantic validation without requiring an Obsidian vault, a browser, or an active network connection.
+The package is currently private to the workspace.
 
-## Installation and Usage
-
-`@rackdown/cli` is currently a private workspace package.
+## Common commands
 
 ```bash
-# Render to stdout
+# Render to stdout or a file
 rackdown render rack.rackdown
-
-# Render to an SVG file
 rackdown render rack.rackdown -o rack.svg
 
-# Read from stdin and render to stdout
+# Read source from stdin
 cat rack.rackdown | rackdown render -
 
-# Write a Markdown cable schedule to stdout
+# Check source
+rackdown check rack.rackdown
+cat rack.rackdown | rackdown check -
+
+# Export all documented connections as Markdown
 rackdown schedule rack.rackdown
 
-# Select documented power and network relationships
+# Export network connections as CSV
+rackdown schedule rack.rackdown --category network --format csv -o network-cables.csv
+
+# Select multiple categories
 rackdown schedule rack.rackdown \
   --category power \
   --category network \
   --format md
-
-# Write documented network relationships as CSV
-rackdown schedule rack.rackdown \
-  --category network \
-  --format csv \
-  -o network-cables.csv
-
-# Check for diagnostics (exits non-zero on error)
-rackdown check rack.rackdown
-
-# Check from stdin
-cat rack.rackdown | rackdown check -
 ```
+
+Use `-` as the input path to read stdin. For `render` and `schedule`, omitted output or `-o -` writes to stdout.
 
 ## Commands
 
-### `rackdown render <file.rackdown|-> [-o <out.svg|->] [options]`
+### `render <file|-> [-o <file|->]`
 
-Renders a RackDown document to SVG.
+Renders a document to SVG.
 
-- **Source**: A file path or `-` to read from stdin.
-- **Output (`-o, --output`)**: Specifies the destination file path. If omitted or set to `-`, SVG output is written directly to stdout.
-- **Diagnostics**: Any non-fatal warnings or information diagnostics are written to stderr.
-- **Errors**: If any error-severity diagnostic is encountered, diagnostics are emitted to stderr, no SVG is output or written to disk, and the command exits with code `1`.
+| Option | Values | Default |
+| --- | --- | --- |
+| `-o, --output` | File path or `-` for stdout | stdout |
+| `--routing` | `direct`, `orthogonal`, `lanes`, `perimeter` | `direct` |
+| `--externals` | `bottom`, `right` | `bottom` |
+| `--colour` | `auto`, `monochrome` | `auto` |
+| `--theme` | `auto`, `light`, `dark`, `none` | `auto` |
+| `--sizing` | `pixels`, `physical`, `responsive` | `pixels` |
 
-#### Render Options
+Non-fatal diagnostics go to stderr. If any error-severity diagnostic is produced, the CLI writes no SVG and exits with code `1`.
 
-The CLI inherits `@rackdown/core` defaults unless explicitly overridden by the following flags:
+### `check <file|->`
 
-- `--routing direct|orthogonal|lanes|perimeter`: Connection routing mode (default: `direct`).
-- `--externals bottom|right`: External target placement (default: `bottom`).
-- `--colour auto|monochrome`: Connection colour mode (default: `auto`).
-- `--theme auto|light|dark|none`: SVG theme stylesheet (default: `auto`).
-- `--sizing pixels|physical|responsive`: Root SVG dimension sizing mode (default: `pixels`).
+Reports parser and resolver diagnostics to stderr. It produces no output when there are no diagnostics. Warnings and informational diagnostics do not cause failure; an error-severity diagnostic exits with code `1`.
 
-### `rackdown check <file.rackdown|->`
+### `schedule <file|-> [-o <file|->] [options]`
 
-Validates a RackDown document and reports parser and resolver diagnostics to stderr.
+Builds a cable schedule from the resolved layout. It does not parse source a second time or inspect SVG output.
 
-- **Source**: A file path or `-` to read from stdin.
-- **Output**: Purely diagnostic. If no diagnostics exist, stdout and stderr remain empty.
-- **Exit Code**: Exits `0` if there are no errors (including when warnings or info diagnostics exist); exits `1` if any error-severity diagnostic is produced.
+| Option | Values | Default |
+| --- | --- | --- |
+| `-o, --output` | File path or `-` for stdout | stdout |
+| `--format` | `md`, `csv`, `json` | `md` |
+| `--category` | `power`, `network`, `console`, `unclassified` | All categories |
 
-### `rackdown schedule <file.rackdown|-> [-o <output|->] [options]`
+Repeat `--category` to include multiple categories; values combine with OR. With no category filter, all documented connections are included. A valid empty selection still exits successfully and emits the format's empty representation or headers.
 
-Builds a cable schedule from the resolved `RackLayout`; source is not parsed a
-second time and SVG output is not inspected.
+Schedule columns use **Endpoint A** and **Endpoint B**. Their order follows the source and does not imply electrical or network direction. `unclassified` is valid data, not a validation error. A schedule documents RackDown relationships; it does not prove that real-world cabling is complete.
 
-- **Source**: A file path or `-` to read from stdin.
-- **Output (`-o, --output`)**: A file path, or stdout when omitted or set to `-`.
-- **Format (`--format md|csv|json`)**: Markdown by default; CSV uses the same columns, while JSON returns structured schedule rows under schedule `schemaVersion: 1`.
-- **Category (`--category power|network|console|unclassified`)**: Exact, repeatable filter values combined with OR. With no category flag, all documented connections are included.
-- **Diagnostics**: Warnings are written to stderr without preventing output. Error diagnostics prevent output and exit with code `1`. A valid empty selection still exits `0` and emits format-appropriate headers or an empty JSON array.
+## Exit codes
 
-The columns use neutral **Endpoint A** and **Endpoint B** terminology. Their
-order preserves RackDown authoring order and does not imply electrical or
-network direction. `unclassified` is valid data, not a validation error.
-Schedules report documented RackDown relationships; they do not verify that
-real-world cabling is complete.
+| Code | Meaning |
+| --- | --- |
+| `0` | Success, including runs with warnings or informational diagnostics |
+| `1` | Source produced an error-severity diagnostic |
+| `2` | CLI usage error or unexpected runtime/filesystem failure |
 
-## Exit Codes
+Usage errors include unknown commands, invalid flags or enum values, and missing arguments.
 
-- `0`: Successful execution (including clean runs and runs with info or warning diagnostics).
-- `1`: Source validation failed (one or more error-severity diagnostics were produced).
-- `2`: CLI usage error (e.g. unknown command, invalid flag/enum, missing argument) or unexpected runtime/filesystem failure.
+## Diagnostic format
 
-## Diagnostics
-
-Diagnostics are written deterministically to stderr in plain text:
+Diagnostics are deterministic plain text on stderr:
 
 ```text
 <source>:<line>:<severity>: <message>
@@ -102,17 +88,8 @@ Diagnostics are written deterministically to stderr in plain text:
 <source>:<line>:<severity>: <message> [hint: <hint>]
 ```
 
-When reading from stdin, `<source>` is labelled as `<stdin>`.
+For stdin, `<source>` is `<stdin>`.
 
-## Device Catalogue
+## Deferred features
 
-The CLI uses the pinned full offline device catalogue from `@rackdown/devices` by default. No network requests are made.
-
-## Deferred Features
-
-The following features are intentionally deferred to future iterations:
-- Device search and discovery (`devices search`);
-- Raster and PDF output (PNG, PDF);
-- Connection emphasis options;
-- GitHub Actions workflows;
-- File watch mode and configuration files.
+Not currently implemented: device search/discovery commands, PNG/PDF output, connection-emphasis options, GitHub Actions workflows, watch mode and configuration files.
