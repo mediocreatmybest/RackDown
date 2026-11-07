@@ -1190,6 +1190,11 @@ describe('toSvg', () => {
         structural?.filter(
           (rule) => rule === 'stroke-width: var(--rackdown-stroke-width, 1)',
         ),
+      ).toHaveLength(1);
+      expect(
+        structural?.filter(
+          (rule) => rule === 'stroke-width: var(--rackdown-stroke-width, 0.65)',
+        ),
       ).toHaveLength(2);
     });
 

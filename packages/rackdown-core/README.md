@@ -92,7 +92,7 @@ The embedded stylesheet reads CSS custom properties for colours, typography and 
 | `--rackdown-title-size` | Rack titles | `14px` |
 | `--rackdown-label-size` | Device, external and empty-diagram labels | Distinct defaults when unset |
 | `--rackdown-u-label-size` | Rack U labels | `8.5px` |
-| `--rackdown-stroke-width` | Structural strokes | `1` (`0.5` for U lines) |
+| `--rackdown-stroke-width` | Equipment and structural strokes (one override for all) | `0.65` equipment and inner frame; `1.15` outer frame; `1.2` bolts; `1` external callouts; `0.5` U lines |
 | `--rackdown-connection-width` | Default connection stroke width | `2` |
 
 Connection elements include `.rackdown-connection` and data hooks such as `data-connection-id`, `data-routing`, `data-pattern`, `data-colour-source` and optional `data-media`. Hosts may add hover emphasis with CSS; core does not embed hover-interaction rules.

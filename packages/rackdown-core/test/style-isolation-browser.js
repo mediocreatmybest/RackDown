@@ -257,6 +257,60 @@ try {
     style(sanitized, DEVICE).fill === rgb('e2e8f0'),
     'sanitized root matches its stylesheet',
   );
+
+  fixtures.replaceChildren();
+  const faceplates = render(
+    resolve(
+      parse(
+        'rack "Faceplates" 6U\n6 device "Device"\n5 switch "Switch"\n4 server "Server"\n3 blank "Blank"\n2 shelf "Shelf"\n1 unavailable-model "Unknown"',
+      ),
+    ),
+    { namespace: 'faceplates', theme: 'light' },
+  );
+  const groups = [...faceplates.querySelectorAll('.rackdown-device-group')];
+  for (const group of groups) {
+    const body = group.querySelector(':scope > .rackdown-device');
+    check(
+      body.tagName === 'rect' &&
+        body.getAttribute('x') === '7.3' &&
+        body.getAttribute('width') === '468' &&
+        getComputedStyle(body).strokeWidth === '0.65px',
+      `${group.dataset.deviceType}: rail-aligned rectangle stays in its semantic group`,
+    );
+    group.style.opacity = '0.35';
+    const role = group.dataset.itemRole ?? 'device';
+    group.style.setProperty(`--rackdown-${role}-fill`, '#b9e8d5');
+    group.style.setProperty(`--rackdown-${role}-stroke`, '#187663');
+    group.style.setProperty('--rackdown-stroke-width', '1.8');
+    check(
+      getComputedStyle(group).opacity === '0.35' &&
+        getComputedStyle(body).fill === rgb('b9e8d5') &&
+        getComputedStyle(body).stroke === rgb('187663') &&
+        getComputedStyle(body).strokeWidth === '1.8px',
+      `${group.dataset.deviceType}: per-device opacity and inherited fill/stroke/width work`,
+    );
+    body.style.stroke = '#abcdef';
+    body.style.fill = '#123456';
+    check(
+      getComputedStyle(body).stroke === rgb('abcdef') &&
+        getComputedStyle(body).fill === rgb('123456'),
+      `${group.dataset.deviceType}: direct host CSS still overrides the rectangle`,
+    );
+    body.removeAttribute('style');
+    group.removeAttribute('style');
+  }
+  check(
+    getComputedStyle(
+      faceplates.querySelector('.rackdown-device-unknown .rackdown-device'),
+    ).strokeDasharray === '3px, 2px',
+    'unknown faceplate retains its dashed style',
+  );
+  check(
+    style(faceplates, '.rackdown-frame-inner').strokeWidth === '0.65px' &&
+      style(faceplates, '.rackdown-frame-outline').strokeWidth === '1.15px' &&
+      style(faceplates, '.rackdown-frame-bolt').strokeWidth === '1.2px',
+    'device-local custom properties leave rack structural widths unchanged',
+  );
 } catch (error) {
   check(false, error.stack ?? String(error));
 }

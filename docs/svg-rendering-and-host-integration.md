@@ -46,15 +46,16 @@ so output is unchanged when a host sets none of them.
 | `--rackdown-title-size` | rack titles | `14px` |
 | `--rackdown-label-size` | device, external and empty-diagram labels | `12px` device, `9px` compact device, `10px` external and empty |
 | `--rackdown-u-label-size` | rack U labels | `8.5px` |
-| `--rackdown-stroke-width` | structural strokes: rack outline, device outline, external callout outline, U lines | `1`, except `0.5` for U lines |
+| `--rackdown-stroke-width` | equipment outlines, rack frame, bolts, external callout outlines and U lines | `0.65` equipment and inner frame; `1.15` outer frame; `1.2` bolts; `1` external callouts; `0.5` U lines |
 | `--rackdown-connection-width` | connections drawn at the renderer default width | `2` |
 
 Title sizing, label sizing and U-label sizing are independent, so a host can
 enlarge body labels without inflating rack titles or the U ruler. Setting
 `--rackdown-label-size` deliberately collapses the three label defaults onto one
 host-chosen size; leaving it unset preserves the distinct `12px` / `9px` / `10px`
-defaults. `--rackdown-stroke-width` behaves the same way: unset it keeps the
-thinner U lines, and setting it applies one weight to every structural stroke.
+defaults. `--rackdown-stroke-width` behaves the same way: leaving it unset preserves
+these distinct fallback widths; setting it applies one weight to equipment and
+all other structural strokes.
 
 ```css
 .rackdown-dense {

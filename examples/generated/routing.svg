@@ -13,7 +13,7 @@
   :where(#rackdown-1vp2hgp-root) .rackdown-rack-title, :where(#rackdown-1vp2hgp-root) .rackdown-u-label, :where(#rackdown-1vp2hgp-root) .rackdown-device-label, :where(#rackdown-1vp2hgp-root) .rackdown-external-label, :where(#rackdown-1vp2hgp-root) .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
   :where(#rackdown-1vp2hgp-root) .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
   :where(#rackdown-1vp2hgp-root) .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
-  :where(#rackdown-1vp2hgp-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  :where(#rackdown-1vp2hgp-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
   :where(#rackdown-1vp2hgp-root) .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
   :where(#rackdown-1vp2hgp-root) .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
   :where(#rackdown-1vp2hgp-root) .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
@@ -192,7 +192,7 @@
       <rect x="0" y="0" width="482.6" height="44.45" />
     </clipPath>
     <title>Gateway</title>
-    <rect class="rackdown-device" x="0" y="0" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="0" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-1-clip)" x="241.3" y="22.225" text-anchor="middle" dominant-baseline="middle">Gateway</text>
   </g>
   <g id="rackdown-1vp2hgp-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="switch" data-position-u="11" data-u-height="1" data-mount-face="front" data-alias="core">
@@ -200,7 +200,7 @@
       <rect x="0" y="44.45" width="482.6" height="44.45" />
     </clipPath>
     <title>Core</title>
-    <rect class="rackdown-device" x="0" y="44.45" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="44.45" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-2-clip)" x="241.3" y="66.675" text-anchor="middle" dominant-baseline="middle">Core</text>
   </g>
   <g id="rackdown-1vp2hgp-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-8" data-device-type="server" data-position-u="9" data-u-height="2" data-mount-face="front" data-alias="pve1">
@@ -208,7 +208,7 @@
       <rect x="0" y="88.9" width="482.6" height="88.9" />
     </clipPath>
     <title>PVE01</title>
-    <rect class="rackdown-device" x="0" y="88.9" width="482.6" height="88.9" />
+    <rect class="rackdown-device" x="7.3" y="88.9" width="468" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-3-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">PVE01</text>
   </g>
   <g id="rackdown-1vp2hgp-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-9" data-device-type="server" data-position-u="7" data-u-height="2" data-mount-face="front" data-alias="pve2">
@@ -216,7 +216,7 @@
       <rect x="0" y="177.8" width="482.6" height="88.9" />
     </clipPath>
     <title>PVE02</title>
-    <rect class="rackdown-device" x="0" y="177.8" width="482.6" height="88.9" />
+    <rect class="rackdown-device" x="7.3" y="177.8" width="468" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-4-clip)" x="241.3" y="222.25" text-anchor="middle" dominant-baseline="middle">PVE02</text>
   </g>
   <g id="rackdown-1vp2hgp-device-5" class="rackdown-device-group rackdown-device-front" data-device-id="device-10" data-device-type="patch" data-position-u="5" data-u-height="1" data-mount-face="front" data-alias="patch">
@@ -224,7 +224,7 @@
       <rect x="0" y="311.15" width="482.6" height="44.45" />
     </clipPath>
     <title>Patch A</title>
-    <rect class="rackdown-device" x="0" y="311.15" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="311.15" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-5-clip)" x="241.3" y="333.375" text-anchor="middle" dominant-baseline="middle">Patch A</text>
   </g>
   <g id="rackdown-1vp2hgp-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-11" data-device-type="pdu" data-position-u="4" data-u-height="1" data-mount-face="rear" data-alias="pdu">
@@ -232,7 +232,7 @@
       <rect x="508" y="355.6" width="482.6" height="44.45" />
     </clipPath>
     <title>PDU A</title>
-    <rect class="rackdown-device" x="508" y="355.6" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="515.3" y="355.6" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-6-clip)" x="749.3" y="377.825" text-anchor="middle" dominant-baseline="middle">PDU A</text>
   </g>
   <g id="rackdown-1vp2hgp-device-7" class="rackdown-device-group rackdown-device-front" data-device-id="device-22" data-device-type="switch" data-position-u="6" data-u-height="1" data-mount-face="front" data-alias="garage">
@@ -240,7 +240,7 @@
       <rect x="0" y="571.5" width="482.6" height="44.45" />
     </clipPath>
     <title>Garage Switch</title>
-    <rect class="rackdown-device" x="0" y="571.5" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="571.5" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-7-clip)" x="241.3" y="593.725" text-anchor="middle" dominant-baseline="middle">Garage Switch</text>
   </g>
   <g id="rackdown-1vp2hgp-device-8" class="rackdown-device-group rackdown-device-front" data-device-id="device-23" data-device-type="server" data-position-u="4" data-u-height="1" data-mount-face="front" data-alias="garage-host">
@@ -248,7 +248,7 @@
       <rect x="0" y="660.4" width="482.6" height="44.45" />
     </clipPath>
     <title>Garage Host</title>
-    <rect class="rackdown-device" x="0" y="660.4" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="660.4" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-1vp2hgp-device-8-clip)" x="241.3" y="682.625" text-anchor="middle" dominant-baseline="middle">Garage Host</text>
   </g>
   </g>
