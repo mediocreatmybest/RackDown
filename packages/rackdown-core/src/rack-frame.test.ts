@@ -3,6 +3,190 @@ import { parse } from './parser.js';
 import { toSvg } from './renderer.js';
 import { resolve } from './resolver.js';
 
+function deviceGroups(svg: string) {
+  return [
+    ...svg.matchAll(
+      /<g\b[^>]*class="rackdown-device-group[^>]*>[\s\S]*?<\/g>/g,
+    ),
+  ].map(([group]) => {
+    const body = group.match(
+      /<rect class="rackdown-device[^"]*" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/,
+    );
+    if (!body) throw new Error('Missing equipment body');
+    return {
+      group,
+      x: Number(body[1]),
+      y: Number(body[2]),
+      width: Number(body[3]),
+      height: Number(body[4]),
+    };
+  });
+}
+
+describe('equipment faceplates', () => {
+  it.each([
+    'device',
+    'switch',
+    'server',
+    'unavailable-model',
+    'blank',
+    'shelf',
+  ])(
+    'aligns %s with the rails while retaining its group and label geometry',
+    (type) => {
+      const layout = resolve(parse(`rack "R" 6U\n3 2U ${type} "Host" as host`));
+      const before = JSON.stringify(layout);
+      const svg = toSvg(layout, { namespace: 'faceplate', theme: 'light' });
+      const [body] = deviceGroups(svg);
+      expect(body).toMatchObject({ x: 7.3, y: 88.9, width: 468, height: 88.9 });
+      expect(body?.group).toContain('id="rackdown-faceplate-device-1"');
+      expect(body?.group).toContain('data-alias="host"');
+      expect(body?.group).toContain('data-mount-face="front"');
+      expect(body?.group).toContain(
+        '<rect x="0" y="88.9" width="482.6" height="88.9"',
+      );
+      expect(body?.group).toContain('<title>Host</title>');
+      expect(body?.group).toContain('x="241.3" y="133.35"');
+      if (type === 'unavailable-model')
+        expect(body?.group).toContain('rackdown-device-unknown');
+      if (type === 'blank' || type === 'shelf')
+        expect(body?.group).toContain(`data-item-role="${type}"`);
+      expect(svg).toContain(
+        '.rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 0.65)',
+      );
+      expect(svg).toContain('stroke-width: var(--rackdown-stroke-width, 1.15)');
+      expect(JSON.stringify(layout)).toBe(before);
+      expect(toSvg(layout, { namespace: 'faceplate', theme: 'light' })).toBe(
+        svg,
+      );
+    },
+  );
+
+  it.each([3, 4])(
+    'retains the internal boundaries of a %i-device shelf row',
+    (count) => {
+      const source =
+        'rack "R" 6U\n3 2U shelf "Tray"\n' +
+        Array.from({ length: count }, (_, i) => `3 2U device "Node ${i}"`).join(
+          '\n',
+        );
+      const layout = resolve(parse(source));
+      const bodies = deviceGroups(toSvg(layout));
+      expect(bodies).toHaveLength(count + 1);
+      expect(bodies[0]).toMatchObject({ x: 7.3, width: 468 });
+      const nodes = bodies.slice(1);
+      const round = (n: number) => Math.round(n * 1000) / 1000;
+      for (let i = 0; i < count; i++) {
+        expect(nodes[i]?.x).toBe(i === 0 ? 7.3 : round((482.6 * i) / count));
+        expect(nodes[i]?.width).toBe(
+          round(482.6 / count - (i === 0 || i === count - 1 ? 7.3 : 0)),
+        );
+      }
+    },
+  );
+
+  it('uses the matching projected rack, including repeated faces and non-19-inch racks', () => {
+    const layout = resolve(
+      parse(
+        'rack "A" 6U views front rear\n3 device "Front"\nrear 2 switch "Rear"\nrack "B" 4U 10in\n2 server "Narrow"',
+      ),
+    );
+    const first = layout.racks[0];
+    if (!first) throw new Error('Missing rack');
+    first.views = ['front', 'rear', 'front'];
+    // Declared inches are metadata; the resolver uses a fixed diagram width.
+    // Exercise a genuinely narrower caller-supplied rack as well.
+    const narrow = layout.racks[1];
+    const narrowDevice = layout.devices[2];
+    if (!narrow || !narrowDevice) throw new Error('Missing narrow rack');
+    expect(narrow.widthInches).toBe(10);
+    narrow.widthMm = 254;
+    narrowDevice.widthMm = 254;
+    const svg = toSvg(layout);
+    const bodies = deviceGroups(svg);
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0]).toMatchObject({ x: 7.3, y: 438.15, width: 468 });
+    expect(bodies[1]).toMatchObject({ x: 515.3, y: 177.8, width: 468 });
+    expect(bodies[2]).toMatchObject({ x: 515.3, width: 239.4 });
+  });
+
+  it('retains fractional and vertically overflowing bodies, labels and diagnostics', () => {
+    const layout = resolve(
+      parse(
+        'rack "R" 6U\n7 1U device "Above"\n3.5 0.5U device "Half"\n0 1U device "Below"',
+      ),
+    );
+    const before = JSON.stringify(layout);
+    expect(layout.diagnostics.length).toBeGreaterThan(0);
+    const bodies = deviceGroups(toSvg(layout));
+    expect(bodies.map(({ y, height }) => [y, height])).toEqual(
+      layout.devices.map((d) => [
+        Math.round(d.yMm * 1000) / 1000,
+        Math.round(d.heightMm * 1000) / 1000,
+      ]),
+    );
+    expect(bodies.every((b) => b.x === 7.3 && b.width === 468)).toBe(true);
+    expect(JSON.stringify(layout)).toBe(before);
+  });
+
+  it('retains ordering and full rail paths beside blanks, shelves and warned overlaps', () => {
+    const layout = resolve(
+      parse(
+        'rack "R" 10U\n7 2U device "Host"\n6 blank "Lower blank"\n5 shelf "Exposed shelf"\n4 server "Below shelf"\n2 blank "Standalone"\n7 2U blank "Overlap"',
+      ),
+    );
+    expect(layout.diagnostics.length).toBeGreaterThan(0);
+    const svg = toSvg(layout);
+    const labels = deviceGroups(svg).map(
+      (b) => b.group.match(/<title>([^<]+)<\/title>/)?.[1],
+    );
+    expect(labels).toEqual([
+      'Exposed shelf',
+      'Host',
+      'Lower blank',
+      'Below shelf',
+      'Standalone',
+      'Overlap',
+    ]);
+    expect(svg).toContain(
+      'class="rackdown-frame-inner" d="M7.3 0 V444.5 M475.3 0 V444.5"',
+    );
+    expect(svg).not.toContain('rackdown-equipment-outline');
+  });
+
+  it.each([-100, -2.7, 475.3, 600])(
+    'retains an empty horizontal intersection at x=%s for the existing clip',
+    (x) => {
+      const layout = resolve(
+        parse('rack "R" 6U views front rear\n3 1U device "Outside"'),
+      );
+      const device = layout.devices[0];
+      if (!device) throw new Error('Missing device');
+      device.xMm = x;
+      device.widthMm = 10;
+      const before = JSON.stringify(layout);
+      const [body] = deviceGroups(toSvg(layout));
+      expect(body).toMatchObject({ x, width: 10 });
+      expect(body?.group).toContain('<title>Outside</title>');
+      expect(JSON.stringify(layout)).toBe(before);
+    },
+  );
+
+  it('intersects partially visible caller geometry and never emits a negative body width', () => {
+    const layout = resolve(parse('rack "R" 6U\n3 device "Partial"'));
+    const device = layout.devices[0];
+    if (!device) throw new Error('Missing device');
+    device.xMm = -10;
+    device.widthMm = 30;
+    expect(deviceGroups(toSvg(layout))[0]).toMatchObject({
+      x: 7.3,
+      width: 12.7,
+    });
+    device.widthMm = -1;
+    expect(deviceGroups(toSvg(layout))[0]?.width).toBe(0);
+  });
+});
+
 describe('open rack frame', () => {
   it.each([6, 42])(
     'frames a %iU rack without changing its usable geometry',
@@ -67,10 +251,10 @@ core:1 -- host:1`),
       expect(svg.match(/class="rackdown-frame-cap"/g)).toHaveLength(4);
       expect(svg.match(/class="rackdown-frame-bolt"/g)).toHaveLength(8);
       expect(svg).toContain(
-        'class="rackdown-device" x="0" y="44.45" width="482.6" height="44.45"',
+        'class="rackdown-device" x="7.3" y="44.45" width="468" height="44.45"',
       );
       expect(svg).toContain(
-        'class="rackdown-device" x="0" y="177.8" width="482.6" height="44.45"',
+        'class="rackdown-device" x="7.3" y="177.8" width="468" height="44.45"',
       );
       expect(svg).toContain(
         'class="rackdown-u-line" x1="0" y1="44.45" x2="482.6" y2="44.45"',

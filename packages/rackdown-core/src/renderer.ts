@@ -1381,7 +1381,26 @@ const DEVICE_ROLE_CLASSES = {
   },
 } as const;
 
-function renderDevice(device: LayoutDevice, id: string): string[] {
+function renderDevice(
+  device: LayoutDevice,
+  id: string,
+  rack: ProjectedRack | undefined,
+): string[] {
+  // Only the painted body is a faceplate. Labels, clips, routing and the
+  // resolved device retain their original geometry.
+  const left = rack
+    ? Math.max(device.xMm, rack.xMm + FRAME_RAIL_MM)
+    : device.xMm;
+  const right = rack
+    ? Math.min(
+        device.xMm + device.widthMm,
+        rack.xMm + rack.widthMm - FRAME_RAIL_MM,
+      )
+    : device.xMm + device.widthMm;
+  // An empty intersection can still paint a stroke into the existing clip
+  // (or another rack interior in its union). Retain that observable behaviour.
+  const bodyX = right > left ? left : device.xMm;
+  const bodyWidth = Math.max(0, right > left ? right - left : device.widthMm);
   const alias =
     device.alias === undefined
       ? ''
@@ -1406,7 +1425,7 @@ function renderDevice(device: LayoutDevice, id: string): string[] {
     `    <rect x="${formatNumber(device.xMm)}" y="${formatNumber(device.yMm)}" width="${formatNumber(device.widthMm)}" height="${formatNumber(device.heightMm)}" />`,
     `  </clipPath>`,
     `  <title>${escapeXml(device.label)}</title>`,
-    `  <rect class="${rectClass}" x="${formatNumber(device.xMm)}" y="${formatNumber(device.yMm)}" width="${formatNumber(device.widthMm)}" height="${formatNumber(device.heightMm)}" />`,
+    `  <rect class="${rectClass}" x="${formatNumber(bodyX)}" y="${formatNumber(device.yMm)}" width="${formatNumber(bodyWidth)}" height="${formatNumber(device.heightMm)}" />`,
   ];
 
   if (shouldRenderDeviceLabel(device)) {
@@ -1456,7 +1475,7 @@ ${scope} .rackdown-u-line { stroke: var(--rackdown-u-line, #cbd5e1); stroke-widt
 ${scope} .rackdown-rack-title, ${scope} .rackdown-u-label, ${scope} .rackdown-device-label, ${scope} .rackdown-external-label, ${scope} .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
 ${scope} .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
 ${scope} .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
-${scope} .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+${scope} .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
 ${scope} .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
 ${scope} .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
 ${scope} .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
@@ -1575,6 +1594,10 @@ export function toSvg(
     routing,
   );
   const viewport = computeViewport(scene);
+  // Match buildRenderScene's last projection for a repeated rack/face key.
+  const rackByProjection = new Map(
+    scene.racks.map((rack) => [rackProjectionKey(rack.id, rack.face), rack]),
+  );
   const title =
     layout.racks.length === 1 && layout.racks[0]
       ? `${layout.racks[0].name} rack diagram`
@@ -1664,7 +1687,14 @@ export function toSvg(
     lines,
     scene.devices,
     `${namespace}-device`,
-    (device, id) => renderDevice(device, id),
+    (device, id) =>
+      renderDevice(
+        device,
+        id,
+        rackByProjection.get(
+          rackProjectionKey(device.rackId, device.mountFace),
+        ),
+      ),
   );
   lines.push('  </g>');
   // Bottom-align using the host's actual font metrics, not a fixed baseline

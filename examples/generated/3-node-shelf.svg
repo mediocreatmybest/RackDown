@@ -13,7 +13,7 @@
   :where(#rackdown-181k0dq-root) .rackdown-rack-title, :where(#rackdown-181k0dq-root) .rackdown-u-label, :where(#rackdown-181k0dq-root) .rackdown-device-label, :where(#rackdown-181k0dq-root) .rackdown-external-label, :where(#rackdown-181k0dq-root) .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
   :where(#rackdown-181k0dq-root) .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
   :where(#rackdown-181k0dq-root) .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
-  :where(#rackdown-181k0dq-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  :where(#rackdown-181k0dq-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
   :where(#rackdown-181k0dq-root) .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
   :where(#rackdown-181k0dq-root) .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
   :where(#rackdown-181k0dq-root) .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
@@ -91,7 +91,7 @@
       <rect x="0" y="88.9" width="482.6" height="88.9" />
     </clipPath>
     <title>Shelf</title>
-    <rect class="rackdown-device rackdown-shelf" x="0" y="88.9" width="482.6" height="88.9" />
+    <rect class="rackdown-device rackdown-shelf" x="7.3" y="88.9" width="468" height="88.9" />
     <text class="rackdown-device-label rackdown-shelf-label" clip-path="url(#rackdown-181k0dq-device-1-clip)" x="241.3" y="133.35" text-anchor="middle" dominant-baseline="middle">Shelf</text>
   </g>
   <g id="rackdown-181k0dq-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-3" data-device-type="device" data-position-u="3" data-u-height="2" data-mount-face="front" data-alias="a">
@@ -99,7 +99,7 @@
       <rect x="0" y="88.9" width="160.867" height="88.9" />
     </clipPath>
     <title>Node A</title>
-    <rect class="rackdown-device" x="0" y="88.9" width="160.867" height="88.9" />
+    <rect class="rackdown-device" x="7.3" y="88.9" width="153.567" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-181k0dq-device-2-clip)" x="80.433" y="133.35" text-anchor="middle" dominant-baseline="middle">Node A</text>
   </g>
   <g id="rackdown-181k0dq-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-4" data-device-type="device" data-position-u="3" data-u-height="2" data-mount-face="front" data-alias="b">
@@ -115,7 +115,7 @@
       <rect x="321.733" y="88.9" width="160.867" height="88.9" />
     </clipPath>
     <title>Node C</title>
-    <rect class="rackdown-device" x="321.733" y="88.9" width="160.867" height="88.9" />
+    <rect class="rackdown-device" x="321.733" y="88.9" width="153.567" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-181k0dq-device-4-clip)" x="402.167" y="133.35" text-anchor="middle" dominant-baseline="middle">Node C</text>
   </g>
   </g>

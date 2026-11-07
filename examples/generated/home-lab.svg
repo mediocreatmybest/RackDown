@@ -13,7 +13,7 @@
   :where(#rackdown-11ppvl8-root) .rackdown-rack-title, :where(#rackdown-11ppvl8-root) .rackdown-u-label, :where(#rackdown-11ppvl8-root) .rackdown-device-label, :where(#rackdown-11ppvl8-root) .rackdown-external-label, :where(#rackdown-11ppvl8-root) .rackdown-empty { fill: var(--rackdown-text, #0f172a); font-family: var(--rackdown-font, ui-sans-serif, system-ui, sans-serif); }
   :where(#rackdown-11ppvl8-root) .rackdown-rack-title { font-size: var(--rackdown-title-size, 14px); font-weight: 600; }
   :where(#rackdown-11ppvl8-root) .rackdown-u-label { font-size: var(--rackdown-u-label-size, 8.5px); }
-  :where(#rackdown-11ppvl8-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 1); vector-effect: non-scaling-stroke; }
+  :where(#rackdown-11ppvl8-root) .rackdown-device { fill: var(--rackdown-device-fill, #e2e8f0); stroke: var(--rackdown-device-stroke, #334155); stroke-width: var(--rackdown-stroke-width, 0.65); vector-effect: non-scaling-stroke; }
   :where(#rackdown-11ppvl8-root) .rackdown-blank { fill: var(--rackdown-blank-fill, #cbd5e1); stroke: var(--rackdown-blank-stroke, #94a3b8); }
   :where(#rackdown-11ppvl8-root) .rackdown-shelf { fill: var(--rackdown-shelf-fill, #f1f5f9); stroke: var(--rackdown-shelf-stroke, #64748b); }
   :where(#rackdown-11ppvl8-root) .rackdown-device-unknown .rackdown-device { stroke-dasharray: 3 2; }
@@ -206,7 +206,7 @@
       <rect x="0" y="266.7" width="482.6" height="44.45" />
     </clipPath>
     <title>Gateway</title>
-    <rect class="rackdown-device" x="0" y="266.7" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="266.7" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-1-clip)" x="241.3" y="288.925" text-anchor="middle" dominant-baseline="middle">Gateway</text>
   </g>
   <g id="rackdown-11ppvl8-device-2" class="rackdown-device-group rackdown-device-front" data-device-id="device-5" data-device-type="ubiquiti-unifi-switch-pro-hd-24-poe" data-position-u="16" data-u-height="1" data-mount-face="front" data-alias="core">
@@ -214,7 +214,7 @@
       <rect x="0" y="355.6" width="482.6" height="44.45" />
     </clipPath>
     <title>Core Switch</title>
-    <rect class="rackdown-device" x="0" y="355.6" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="355.6" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-2-clip)" x="241.3" y="377.825" text-anchor="middle" dominant-baseline="middle">Core Switch</text>
   </g>
   <g id="rackdown-11ppvl8-device-3" class="rackdown-device-group rackdown-device-front" data-device-id="device-6" data-device-type="patch" data-position-u="14" data-u-height="1" data-mount-face="front" data-alias="fibre">
@@ -222,7 +222,7 @@
       <rect x="0" y="444.5" width="482.6" height="44.45" />
     </clipPath>
     <title>Fibre Patch</title>
-    <rect class="rackdown-device" x="0" y="444.5" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="7.3" y="444.5" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-3-clip)" x="241.3" y="466.725" text-anchor="middle" dominant-baseline="middle">Fibre Patch</text>
   </g>
   <g id="rackdown-11ppvl8-device-4" class="rackdown-device-group rackdown-device-front" data-device-id="device-7" data-device-type="dell-poweredge-r740" data-position-u="10" data-u-height="2" data-mount-face="front" data-alias="server-a">
@@ -230,7 +230,7 @@
       <rect x="0" y="577.85" width="482.6" height="88.9" />
     </clipPath>
     <title>Server A</title>
-    <rect class="rackdown-device" x="0" y="577.85" width="482.6" height="88.9" />
+    <rect class="rackdown-device" x="7.3" y="577.85" width="468" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-4-clip)" x="241.3" y="622.3" text-anchor="middle" dominant-baseline="middle">Server A</text>
   </g>
   <g id="rackdown-11ppvl8-device-5" class="rackdown-device-group rackdown-device-front" data-device-id="device-8" data-device-type="dell-poweredge-r740" data-position-u="8" data-u-height="2" data-mount-face="front" data-alias="server-b">
@@ -238,7 +238,7 @@
       <rect x="0" y="666.75" width="482.6" height="88.9" />
     </clipPath>
     <title>Server B</title>
-    <rect class="rackdown-device" x="0" y="666.75" width="482.6" height="88.9" />
+    <rect class="rackdown-device" x="7.3" y="666.75" width="468" height="88.9" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-5-clip)" x="241.3" y="711.2" text-anchor="middle" dominant-baseline="middle">Server B</text>
   </g>
   <g id="rackdown-11ppvl8-device-6" class="rackdown-device-group rackdown-device-rear" data-device-id="device-9" data-device-type="pdu" data-position-u="4" data-u-height="1" data-mount-face="rear" data-alias="power">
@@ -246,7 +246,7 @@
       <rect x="508" y="889" width="482.6" height="44.45" />
     </clipPath>
     <title>Power</title>
-    <rect class="rackdown-device" x="508" y="889" width="482.6" height="44.45" />
+    <rect class="rackdown-device" x="515.3" y="889" width="468" height="44.45" />
     <text class="rackdown-device-label" clip-path="url(#rackdown-11ppvl8-device-6-clip)" x="749.3" y="911.225" text-anchor="middle" dominant-baseline="middle">Power</text>
   </g>
   <g id="rackdown-11ppvl8-device-7" class="rackdown-device-group rackdown-blank-group rackdown-device-front" data-device-id="device-10" data-device-type="blank" data-position-u="1" data-u-height="1" data-mount-face="front" data-item-role="blank">
@@ -254,7 +254,7 @@
       <rect x="0" y="1022.35" width="482.6" height="44.45" />
     </clipPath>
     <title>blank</title>
-    <rect class="rackdown-device rackdown-blank" x="0" y="1022.35" width="482.6" height="44.45" />
+    <rect class="rackdown-device rackdown-blank" x="7.3" y="1022.35" width="468" height="44.45" />
   </g>
   </g>
   <text class="rackdown-rack-title" x="241.3" y="-14" text-anchor="middle" dominant-baseline="text-after-edge">Home Lab · Front</text>
