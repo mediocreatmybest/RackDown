@@ -18,10 +18,10 @@ const fixture = () => ({
   },
   scope: 'full',
   devices: { example: { slug: 'example', model: 'Example' } },
-  racks: {},
+  racks: { example: { slug: 'example', model: 'Example', u_height: 42 } },
 });
 
-test('exported asset decodes independently of Obsidian and matches the upstream pin', async () => {
+test('exported asset decodes through the public package export and matches the upstream pin', async () => {
   const lock = JSON.parse(
     await readFile(
       new URL('../../upstream/netbox.lock.json', import.meta.url),
@@ -74,7 +74,7 @@ test('rejects wrong pin, repository, schema, scope and missing indexes', () => {
     );
 });
 
-test('core remains runtime-dependency-free and host uses the supported boundary', async () => {
+test('core remains runtime-dependency-free', async () => {
   const core = JSON.parse(
     await readFile(
       new URL('../rackdown-core/package.json', import.meta.url),
@@ -82,6 +82,14 @@ test('core remains runtime-dependency-free and host uses the supported boundary'
     ),
   );
   assert.deepEqual(core.dependencies ?? {}, {});
-  const adapter = await import('../obsidian-rackdown/src/catalogue.ts');
-  assert.equal(adapter.CatalogueProvider, CatalogueProvider);
+});
+
+test('decoder rejects unsupported schemas through the public package export', async () => {
+  const encoded = gzipSync(
+    JSON.stringify({ ...fixture(), schemaVersion: 2 }),
+  ).toString('base64');
+  await assert.rejects(
+    decodeCataloguePayload(encoded),
+    /unsupported schema version/,
+  );
 });

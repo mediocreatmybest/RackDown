@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -36,23 +37,9 @@ function createWorkspace({ complete = false } = {}) {
   );
 
   if (complete) {
-    write(
-      join(repository, 'packages/obsidian-rackdown/dist/manifest.json'),
-      `${JSON.stringify({
-        id: 'rackdown',
-        version: '1.0.0',
-        minAppVersion: '1.0.0',
-      })}\n`,
-    );
-    write(
-      join(repository, 'packages/obsidian-rackdown/dist/main.js'),
-      'export {};\n',
-    );
-    write(join(repository, 'packages/obsidian-rackdown/dist/styles.css'), '');
-
     for (const [directory, name, files] of [
-      ['rackdown-core', '@rackdown/core', []],
-      ['rackdown-devices', '@rackdown/devices', []],
+      ['rackdown-core', '@rackdown/core', ['dist']],
+      ['rackdown-devices', '@rackdown/devices', ['generated']],
       ['rackdown-cli', '@rackdown/cli', ['dist']],
     ]) {
       write(
@@ -64,7 +51,16 @@ function createWorkspace({ complete = false } = {}) {
       join(repository, 'packages/rackdown-cli/dist/cli.mjs'),
       'export {};\n',
     );
-    mkdirSync(join(repository, 'examples'), { recursive: true });
+    write(
+      join(repository, 'packages/rackdown-core/dist/index.js'),
+      'export {};\n',
+    );
+    write(
+      join(repository, 'packages/rackdown-devices/generated/device-index.json'),
+      '{}\n',
+    );
+    write(join(repository, 'examples/sample.rackdown'), 'rack "Sample" 12U\n');
+    write(join(repository, 'examples/generated/sample.svg'), '<svg/>\n');
     write(join(repository, 'LICENSE'), 'test licence\n');
     write(
       join(repository, 'upstream/netbox.lock.json'),
@@ -291,6 +287,59 @@ test('permits an existing valid staging destination after resolving it', {
 
     assert.equal(result.status, 0, result.stderr);
     assert.equal(existsSync(join(existingOutput, 'MANIFEST.json')), true);
+  } finally {
+    clean(workspace);
+  }
+});
+
+test('stages exactly the packages, examples, licences and provenance', () => {
+  const workspace = createWorkspace({ complete: true });
+  try {
+    const result = runStage(workspace);
+    assert.equal(result.status, 0, result.stderr);
+    const destination = join(workspace.repository, 'release-staging');
+    const files = [
+      'LICENSE',
+      'MANIFEST.json',
+      'examples/generated/sample.svg',
+      'examples/sample.rackdown',
+      'packages/rackdown-cli/dist/cli.mjs',
+      'packages/rackdown-cli/package.json',
+      'packages/rackdown-core/dist/index.js',
+      'packages/rackdown-core/package.json',
+      'packages/rackdown-devices/generated/device-index.json',
+      'packages/rackdown-devices/package.json',
+      'provenance/netbox-LICENSE.txt',
+      'provenance/netbox.lock.json',
+    ];
+    const manifest = JSON.parse(
+      readFileSync(join(destination, 'MANIFEST.json'), 'utf8'),
+    );
+    assert.deepEqual(manifest, {
+      workspaceVersion: '1.0.0',
+      packages: ['core', 'devices', 'cli'].map((name) => ({
+        name: `@rackdown/${name}`,
+        version: '1.0.0',
+      })),
+      upstreamCatalogue: { source: 'test/source', ref: 'test-ref' },
+      files,
+    });
+    assert.deepEqual(readdirSync(destination).sort(), [
+      'LICENSE',
+      'MANIFEST.json',
+      'examples',
+      'packages',
+      'provenance',
+    ]);
+    for (const file of files.filter((file) => file !== 'MANIFEST.json')) {
+      const source = file
+        .replace('provenance/netbox-LICENSE.txt', 'upstream/netbox/LICENSE.txt')
+        .replace('provenance/netbox.lock.json', 'upstream/netbox.lock.json');
+      assert.deepEqual(
+        readFileSync(join(destination, file)),
+        readFileSync(join(workspace.repository, source)),
+      );
+    }
   } finally {
     clean(workspace);
   }
