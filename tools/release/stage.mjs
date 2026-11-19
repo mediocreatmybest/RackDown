@@ -33,20 +33,8 @@ import { fileURLToPath } from 'node:url';
 const toolDirectory = dirname(fileURLToPath(import.meta.url));
 const rackdownRoot = resolve(toolDirectory, '../..');
 
-// The Obsidian community-plugin distribution must contain exactly these files.
-const OBSIDIAN_DIST_FILES = ['main.js', 'manifest.json', 'styles.css'];
-
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
-}
-
-function requireDirectory(path, hint) {
-  try {
-    if (statSync(path).isDirectory()) return;
-  } catch {
-    // fall through to the shared error below
-  }
-  throw new Error(`Missing ${relative(rackdownRoot, path)}. ${hint}`);
 }
 
 function requireFile(path, hint) {
@@ -56,25 +44,6 @@ function requireFile(path, hint) {
     // fall through to the shared error below
   }
   throw new Error(`Missing ${relative(rackdownRoot, path)}. ${hint}`);
-}
-
-function verifyObsidianDistribution() {
-  const distribution = resolve(rackdownRoot, 'packages/obsidian-rackdown/dist');
-  requireDirectory(
-    distribution,
-    'Run "pnpm --filter obsidian-rackdown build" first.',
-  );
-
-  const actual = readdirSync(distribution).sort();
-  const expected = [...OBSIDIAN_DIST_FILES].sort();
-
-  if (actual.join('\n') !== expected.join('\n')) {
-    throw new Error(
-      `Obsidian distribution must contain exactly ${expected.join(', ')} but contains ${actual.join(', ') || '(nothing)'}.`,
-    );
-  }
-
-  return distribution;
 }
 
 function copyPackage(packageDirectory, stagingRoot) {
@@ -175,16 +144,7 @@ try {
   rmSync(stagingRoot, { recursive: true, force: true });
   mkdirSync(stagingRoot, { recursive: true });
 
-  // 1. Obsidian adapter distribution, in the folder shape a vault expects.
-  const obsidianDistribution = verifyObsidianDistribution();
-  const obsidianTarget = resolve(stagingRoot, 'obsidian-plugin/rackdown');
-  mkdirSync(obsidianTarget, { recursive: true });
-  for (const file of OBSIDIAN_DIST_FILES) {
-    cpSync(resolve(obsidianDistribution, file), resolve(obsidianTarget, file));
-  }
-  const obsidianManifest = readJson(resolve(obsidianTarget, 'manifest.json'));
-
-  // 2. Publishable package payloads.
+  // 1. Publishable package payloads.
   const packages = [
     copyPackage('packages/rackdown-core', stagingRoot),
     copyPackage('packages/rackdown-devices', stagingRoot),
@@ -196,7 +156,7 @@ try {
     'Run "pnpm --filter @rackdown/cli build" first.',
   );
 
-  // 3. Example sources and any committed generated renders.
+  // 2. Example sources and any committed generated renders.
   const examplesTarget = resolve(stagingRoot, 'examples');
   mkdirSync(examplesTarget, { recursive: true });
   for (const entry of readdirSync(resolve(rackdownRoot, 'examples'), {
@@ -224,7 +184,7 @@ try {
     // No committed generated renders yet.
   }
 
-  // 4. Licence and upstream provenance travel with the release.
+  // 3. Licence and upstream provenance travel with the release.
   cpSync(resolve(rackdownRoot, 'LICENSE'), resolve(stagingRoot, 'LICENSE'));
   const provenanceTarget = resolve(stagingRoot, 'provenance');
   mkdirSync(provenanceTarget, { recursive: true });
@@ -238,15 +198,9 @@ try {
   );
   const upstreamLock = readJson(resolve(provenanceTarget, 'netbox.lock.json'));
 
-  // 5. A manifest describing exactly what was staged.
+  // 4. A manifest describing exactly what was staged.
   const manifest = {
     workspaceVersion: workspace.version,
-    obsidianPlugin: {
-      id: obsidianManifest.id,
-      version: obsidianManifest.version,
-      minAppVersion: obsidianManifest.minAppVersion,
-      files: OBSIDIAN_DIST_FILES,
-    },
     packages: packages.map(({ name, version }) => ({ name, version })),
     upstreamCatalogue: {
       source: upstreamLock.source,
@@ -273,9 +227,6 @@ try {
   for (const entry of manifest.packages) {
     console.log(`  ${entry.name}@${entry.version}`);
   }
-  console.log(
-    `  obsidian plugin ${manifest.obsidianPlugin.id}@${manifest.obsidianPlugin.version}`,
-  );
   console.log(
     `  catalogue pin ${manifest.upstreamCatalogue.source}@${manifest.upstreamCatalogue.ref}`,
   );
